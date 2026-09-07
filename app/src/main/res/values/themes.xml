@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Splash/window theme only. All in-app colour comes from PskTheme in Compose. -->
+    <style name="Theme.Ambient" parent="android:Theme.Material.NoActionBar">
+        <item name="android:statusBarColor">#1852BE</item>
+        <item name="android:navigationBarColor">#0E0E10</item>
+        <item name="android:windowBackground">#0E0E10</item>
+    </style>
+</resources>
