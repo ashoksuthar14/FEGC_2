@@ -1,0 +1,242 @@
+[
+  {
+    "id": "g000",
+    "name": "Book of Ra Deluxe",
+    "provider": "Play'n GO",
+    "section": "PSK Favorites",
+    "badge": "EXCLUSIVE",
+    "jackpot": null
+  },
+  {
+    "id": "g001",
+    "name": "Gates of Olympus",
+    "provider": "Play'n GO",
+    "section": "PSK Favorites",
+    "badge": null,
+    "jackpot": null
+  },
+  {
+    "id": "g002",
+    "name": "Sweet Bonanza",
+    "provider": "Pragmatic Play",
+    "section": "PSK Favorites",
+    "badge": null,
+    "jackpot": null
+  },
+  {
+    "id": "g003",
+    "name": "Big Bass Bonanza",
+    "provider": "Evolution",
+    "section": "PSK Favorites",
+    "badge": null,
+    "jackpot": null
+  },
+  {
+    "id": "g004",
+    "name": "Sizzling Hot",
+    "provider": "Pragmatic Play",
+    "section": "PSK Favorites",
+    "badge": null,
+    "jackpot": null
+  },
+  {
+    "id": "g005",
+    "name": "Lucky Lady's Charm",
+    "provider": "Pragmatic Play",
+    "section": "PSK Favorites",
+    "badge": null,
+    "jackpot": null
+  },
+  {
+    "id": "g006",
+    "name": "Wanted Dead or a Wild",
+    "provider": "Pragmatic Play",
+    "section": "New Games",
+    "badge": "NEW",
+    "jackpot": null
+  },
+  {
+    "id": "g007",
+    "name": "Le Bandit",
+    "provider": "Pragmatic Play",
+    "section": "New Games",
+    "badge": "NEW",
+    "jackpot": null
+  },
+  {
+    "id": "g008",
+    "name": "Mental 2",
+    "provider": "Novomatic",
+    "section": "New Games",
+    "badge": "NEW",
+    "jackpot": null
+  },
+  {
+    "id": "g009",
+    "name": "Rip City",
+    "provider": "NetEnt",
+    "section": "New Games",
+    "badge": "NEW",
+    "jackpot": null
+  },
+  {
+    "id": "g010",
+    "name": "San Quentin 2",
+    "provider": "Hacksaw",
+    "section": "New Games",
+    "badge": "NEW",
+    "jackpot": null
+  },
+  {
+    "id": "g011",
+    "name": "Fire in the Hole 3",
+    "provider": "Play'n GO",
+    "section": "New Games",
+    "badge": "NEW",
+    "jackpot": null
+  },
+  {
+    "id": "g012",
+    "name": "Mega Joker",
+    "provider": "Hacksaw",
+    "section": "Jackpots",
+    "badge": "JACKPOT",
+    "jackpot": "\u20ac263,235.42"
+  },
+  {
+    "id": "g013",
+    "name": "Divine Fortune",
+    "provider": "Evolution",
+    "section": "Jackpots",
+    "badge": "JACKPOT",
+    "jackpot": "\u20ac266,846.66"
+  },
+  {
+    "id": "g014",
+    "name": "Hall of Gods",
+    "provider": "Play'n GO",
+    "section": "Jackpots",
+    "badge": "JACKPOT",
+    "jackpot": "\u20ac244,045.03"
+  },
+  {
+    "id": "g015",
+    "name": "Arabian Nights",
+    "provider": "Evolution",
+    "section": "Jackpots",
+    "badge": "JACKPOT",
+    "jackpot": "\u20ac351,668.23"
+  },
+  {
+    "id": "g016",
+    "name": "Mega Fortune",
+    "provider": "NetEnt",
+    "section": "Jackpots",
+    "badge": "JACKPOT",
+    "jackpot": "\u20ac118,111.85"
+  },
+  {
+    "id": "g017",
+    "name": "Empire Fortune",
+    "provider": "Hacksaw",
+    "section": "Jackpots",
+    "badge": "JACKPOT",
+    "jackpot": "\u20ac397,914.34"
+  },
+  {
+    "id": "g018",
+    "name": "Crazy Time",
+    "provider": "Pragmatic Play",
+    "section": "Game Show",
+    "badge": null,
+    "jackpot": null
+  },
+  {
+    "id": "g019",
+    "name": "Monopoly Live",
+    "provider": "Pragmatic Play",
+    "section": "Game Show",
+    "badge": null,
+    "jackpot": null
+  },
+  {
+    "id": "g020",
+    "name": "Dream Catcher",
+    "provider": "Play'n GO",
+    "section": "Game Show",
+    "badge": null,
+    "jackpot": null
+  },
+  {
+    "id": "g021",
+    "name": "Funky Time",
+    "provider": "Hacksaw",
+    "section": "Game Show",
+    "badge": null,
+    "jackpot": null
+  },
+  {
+    "id": "g022",
+    "name": "Lightning Roulette",
+    "provider": "Pragmatic Play",
+    "section": "Game Show",
+    "badge": null,
+    "jackpot": null
+  },
+  {
+    "id": "g023",
+    "name": "Sweet Bonanza CandyLand",
+    "provider": "Evolution",
+    "section": "Game Show",
+    "badge": null,
+    "jackpot": null
+  },
+  {
+    "id": "g024",
+    "name": "Starburst",
+    "provider": "NetEnt",
+    "section": "Popularly",
+    "badge": null,
+    "jackpot": null
+  },
+  {
+    "id": "g025",
+    "name": "Gonzo's Quest",
+    "provider": "Novomatic",
+    "section": "Popularly",
+    "badge": null,
+    "jackpot": null
+  },
+  {
+    "id": "g026",
+    "name": "Dead or Alive 2",
+    "provider": "Hacksaw",
+    "section": "Popularly",
+    "badge": null,
+    "jackpot": null
+  },
+  {
+    "id": "g027",
+    "name": "Money Train 4",
+    "provider": "Evolution",
+    "section": "Popularly",
+    "badge": null,
+    "jackpot": null
+  },
+  {
+    "id": "g028",
+    "name": "Razor Shark",
+    "provider": "Hacksaw",
+    "section": "Popularly",
+    "badge": null,
+    "jackpot": null
+  },
+  {
+    "id": "g029",
+    "name": "Bonanza Megaways",
+    "provider": "Novomatic",
+    "section": "Popularly",
+    "badge": null,
+    "jackpot": null
+  }
+]

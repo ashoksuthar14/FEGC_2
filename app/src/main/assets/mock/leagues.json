@@ -1,0 +1,142 @@
+[
+  {
+    "id": "hr1",
+    "sportId": "football",
+    "country": "Croatia",
+    "name": "Croatia 1",
+    "flag": "hr"
+  },
+  {
+    "id": "hr3",
+    "sportId": "football",
+    "country": "Croatia",
+    "name": "3.Croatia",
+    "flag": "hr"
+  },
+  {
+    "id": "en1",
+    "sportId": "football",
+    "country": "England",
+    "name": "England 1",
+    "flag": "gb"
+  },
+  {
+    "id": "fr1",
+    "sportId": "football",
+    "country": "France",
+    "name": "France 1",
+    "flag": "fr"
+  },
+  {
+    "id": "it1",
+    "sportId": "football",
+    "country": "Italy",
+    "name": "Italy 1",
+    "flag": "it"
+  },
+  {
+    "id": "de1",
+    "sportId": "football",
+    "country": "Germany",
+    "name": "Germany 1",
+    "flag": "de"
+  },
+  {
+    "id": "es1",
+    "sportId": "football",
+    "country": "Spain",
+    "name": "Spain 1",
+    "flag": "es"
+  },
+  {
+    "id": "pt1",
+    "sportId": "football",
+    "country": "Portugal",
+    "name": "Portugal 1",
+    "flag": "pt"
+  },
+  {
+    "id": "be1",
+    "sportId": "football",
+    "country": "Belgium",
+    "name": "Belgium 1",
+    "flag": "be"
+  },
+  {
+    "id": "tr1",
+    "sportId": "football",
+    "country": "Turkey",
+    "name": "Turkey 1",
+    "flag": "tr"
+  },
+  {
+    "id": "dk1",
+    "sportId": "football",
+    "country": "Denmark",
+    "name": "Denmark 1",
+    "flag": "dk"
+  },
+  {
+    "id": "no1",
+    "sportId": "football",
+    "country": "Norway",
+    "name": "Norway 1",
+    "flag": "no"
+  },
+  {
+    "id": "az1",
+    "sportId": "football",
+    "country": "Azerbaijan",
+    "name": "1. Azerbaijan",
+    "flag": "az"
+  },
+  {
+    "id": "cz3",
+    "sportId": "football",
+    "country": "Czech Republic",
+    "name": "3.Czech Rep. CFL",
+    "flag": "cz"
+  },
+  {
+    "id": "ee2",
+    "sportId": "football",
+    "country": "Estonia",
+    "name": "2.Estonia",
+    "flag": "ee"
+  },
+  {
+    "id": "fi2",
+    "sportId": "football",
+    "country": "Finland",
+    "name": "2.Finland",
+    "flag": "fi"
+  },
+  {
+    "id": "caf",
+    "sportId": "football",
+    "country": "Africa",
+    "name": "CAF Confederation Cup",
+    "flag": "caf"
+  },
+  {
+    "id": "iq1",
+    "sportId": "football",
+    "country": "Iraq",
+    "name": "1. Iraq",
+    "flag": "iq"
+  },
+  {
+    "id": "jo1",
+    "sportId": "football",
+    "country": "Jordan",
+    "name": "1. Jordan",
+    "flag": "jo"
+  },
+  {
+    "id": "xk1",
+    "sportId": "football",
+    "country": "Kosovo",
+    "name": "1. Kosovo",
+    "flag": "xk"
+  }
+]

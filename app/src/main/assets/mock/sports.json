@@ -1,0 +1,72 @@
+[
+  {
+    "id": "football",
+    "name": "Football",
+    "icon": "football",
+    "liveCount": 50,
+    "totalCount": 314
+  },
+  {
+    "id": "basketball",
+    "name": "Basketball",
+    "icon": "basketball",
+    "liveCount": 13,
+    "totalCount": 22
+  },
+  {
+    "id": "tennis",
+    "name": "Tennis",
+    "icon": "tennis",
+    "liveCount": 31,
+    "totalCount": 88
+  },
+  {
+    "id": "handball",
+    "name": "Handball",
+    "icon": "handball",
+    "liveCount": 2,
+    "totalCount": 19
+  },
+  {
+    "id": "hockey",
+    "name": "Hockey",
+    "icon": "hockey",
+    "liveCount": 6,
+    "totalCount": 24
+  },
+  {
+    "id": "efootball",
+    "name": "eFootball",
+    "icon": "efootball",
+    "liveCount": 5,
+    "totalCount": 40
+  },
+  {
+    "id": "ebasketball",
+    "name": "eBasketball",
+    "icon": "ebasketball",
+    "liveCount": 5,
+    "totalCount": 18
+  },
+  {
+    "id": "icehockey",
+    "name": "Ice Hockey",
+    "icon": "icehockey",
+    "liveCount": 12,
+    "totalCount": 31
+  },
+  {
+    "id": "csgo",
+    "name": "Esports Counter Strike",
+    "icon": "esports",
+    "liveCount": 8,
+    "totalCount": 26
+  },
+  {
+    "id": "volleyball",
+    "name": "Volleyball",
+    "icon": "volleyball",
+    "liveCount": 4,
+    "totalCount": 15
+  }
+]

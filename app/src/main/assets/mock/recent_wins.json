@@ -1,0 +1,50 @@
+[
+  {
+    "id": "w0",
+    "player": "Marko K.",
+    "game": "Arabian Nights",
+    "amount": "\u20ac3,028.65"
+  },
+  {
+    "id": "w1",
+    "player": "Ivana P.",
+    "game": "Gates of Olympus",
+    "amount": "\u20ac2,590.80"
+  },
+  {
+    "id": "w2",
+    "player": "Luka S.",
+    "game": "Book of Ra Deluxe",
+    "amount": "\u20ac4,042.92"
+  },
+  {
+    "id": "w3",
+    "player": "Ana M.",
+    "game": "Fire in the Hole 3",
+    "amount": "\u20ac9,302.79"
+  },
+  {
+    "id": "w4",
+    "player": "Petar D.",
+    "game": "Empire Fortune",
+    "amount": "\u20ac833.21"
+  },
+  {
+    "id": "w5",
+    "player": "Nina B.",
+    "game": "Mega Fortune",
+    "amount": "\u20ac8,470.26"
+  },
+  {
+    "id": "w6",
+    "player": "Tomislav R.",
+    "game": "Monopoly Live",
+    "amount": "\u20ac4,392.37"
+  },
+  {
+    "id": "w7",
+    "player": "Maja V.",
+    "game": "Gates of Olympus",
+    "amount": "\u20ac3,412.13"
+  }
+]

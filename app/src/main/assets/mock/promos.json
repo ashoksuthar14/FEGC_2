@@ -1,0 +1,59 @@
+[
+  {
+    "id": "p1",
+    "title": "LOTTO FREE BET",
+    "subtitle": "1 EUR every day",
+    "cta": "Play!",
+    "category": "LOTTO"
+  },
+  {
+    "id": "p2",
+    "title": "WIN THE NEW C4 PLUS HYBRID",
+    "subtitle": "Prize game",
+    "cta": "Prize game",
+    "category": "PRIZE"
+  },
+  {
+    "id": "p3",
+    "title": "TOP OFFER 5+1",
+    "subtitle": "Enhanced courses",
+    "cta": "Enhanced courses",
+    "category": "OFFER"
+  },
+  {
+    "id": "p4",
+    "title": "MATCH MASTER",
+    "subtitle": "Play the quiz, win bonuses",
+    "cta": "Win bonuses",
+    "category": "GAME"
+  },
+  {
+    "id": "p5",
+    "title": "SWIPE & BET",
+    "subtitle": "Build a ticket in two taps",
+    "cta": "Try it",
+    "endsIn": "ENDS IN: 4 HOURS",
+    "category": "NEW"
+  },
+  {
+    "id": "p6",
+    "title": "CHAMPIONS CLUB",
+    "subtitle": "Loyalty rewards all season",
+    "cta": "Join",
+    "category": "CLUB"
+  },
+  {
+    "id": "p7",
+    "title": "MISSIONS",
+    "subtitle": "Complete weekly challenges",
+    "cta": "See missions",
+    "category": "GAME"
+  },
+  {
+    "id": "p8",
+    "title": "AVIATOR",
+    "subtitle": "Cash out before it flies away",
+    "cta": "Play",
+    "category": "CASINO"
+  }
+]
