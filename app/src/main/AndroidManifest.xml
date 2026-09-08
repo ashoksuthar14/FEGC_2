@@ -47,6 +47,18 @@
             android:name=".ambient.surfaces.live.DismissReceiver"
             android:exported="false" />
 
+        <!-- Lets adb drive the surfaces without an Activity stealing focus, which is the only
+             way to test what a locked phone shows. Exported so `am broadcast` can reach it;
+             harmless because every action only re-renders demo data. -->
+        <receiver
+            android:name=".ambient.surfaces.DemoSurfaceReceiver"
+            android:exported="true"
+            android:enabled="true">
+            <intent-filter>
+                <action android:name="eu.feg.ambient.DEMO_SURFACE" />
+            </intent-filter>
+        </receiver>
+
         <!-- Optional: lets a GPU backend load later. Absent on some devices, hence required=false. -->
         <uses-native-library android:name="libvndksupport.so" android:required="false" />
         <uses-native-library android:name="libOpenCL.so" android:required="false" />
