@@ -10,7 +10,7 @@ internal object TemplateLinesHr : TemplateLines {
     override fun lines(f: Facts, tone: Tone): Pair<String, String> = when (f.type) {
         MomentType.GOAL_ON_SLIP -> when (tone) {
             Tone.PLAIN -> f.home + " " + f.score + " · " + f.min to
-                "Tvoj izbor " + f.leg + " još je u igri. Još " + f.remaining + " minuta."
+                f.legPhrase + " još je u igri. Još " + f.remaining + " minuta."
             Tone.WITTY -> "To je to · " + f.score to
                 f.won + " gotovo, još " + f.left + ". " + f.home + " samo mora izdržati."
             Tone.STATS -> f.score + " · " + f.min + " · " + f.legs to

@@ -6,7 +6,17 @@ import eu.feg.ambient.ambient.loyalty.LoyaltyTier
  * The pre-rendered view of [MomentFacts] the line tables read from. Every value is already
  * a string with a sensible stand-in, so a table entry never has to handle a null.
  */
-internal class Facts(private val f: MomentFacts) {
+internal class Facts(
+    private val f: MomentFacts,
+    /**
+     * The language the table will render in.
+     *
+     * Facts used to be language-blind and its stand-ins were all English, so a Croatian line
+     * with a missing value quietly emitted an English one: "Tvoj izbor your pick jos je u
+     * igri". The tables are separate; their fallbacks have to be too.
+     */
+    private val language: NarratorLanguage = NarratorLanguage.EN,
+) {
     val type: MomentType get() = f.type
     val home: String = f.homeTeam ?: "Home"
     val away: String = f.awayTeam ?: "Away"
@@ -19,7 +29,25 @@ internal class Facts(private val f: MomentFacts) {
     val legs: String = won + "/" + total
     val left: String = ((f.legsTotal ?: 0) - (f.legsWon ?: 0) - (f.legsLost ?: 0))
         .coerceAtLeast(0).toString()
-    val leg: String = f.myLegDescription ?: "your pick"
+    /**
+     * The pick, as a standalone noun phrase: "Liverpool win", or a stand-in when the moment
+     * carries no description.
+     */
+    val leg: String = f.myLegDescription
+        ?: if (language == NarratorLanguage.EN) "your pick" else "tvoj izbor"
+
+    /**
+     * The pick with its possessive already attached: "Your Liverpool win pick".
+     *
+     * A SEPARATE VALUE BECAUSE THE SLOT IS DIFFERENT. One line wraps the pick -- "Your ___
+     * pick is still alive" -- and every other use of [leg] is standalone. With one value
+     * doing both, a moment with no description rendered "Your your pick pick is still alive",
+     * which is what a demo notification actually said on a phone. When there is nothing to
+     * name, this collapses to the bare possessive instead of padding it.
+     */
+    val legPhrase: String = f.myLegDescription
+        ?.let { if (language == NarratorLanguage.EN) "Your " + it + " pick" else "Tvoj izbor " + it }
+        ?: if (language == NarratorLanguage.EN) "Your pick" else "Tvoj izbor"
     val remaining: String = (f.minutesRemaining ?: (90 - (f.minute ?: 0)).coerceAtLeast(0)).toString()
     val followed: String = f.followedTeam ?: home
     val kickoff: String = (f.kickoffInMinutes ?: 0).toString()
@@ -87,7 +115,7 @@ class TemplateNarrator : Narrator {
             NarratorLanguage.EN -> TemplateLinesEn
             NarratorLanguage.HR -> TemplateLinesHr
         }
-        val (headline, detail) = table.lines(Facts(facts), tone)
+        val (headline, detail) = table.lines(Facts(facts, language), tone)
         val spoken = SpokenLines.compose(facts, tone, language)
         return NarratedText(
             headline = clamp(headline, NarratorGuard.MAX_HEADLINE),

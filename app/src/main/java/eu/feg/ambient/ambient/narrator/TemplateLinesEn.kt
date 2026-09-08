@@ -11,7 +11,7 @@ internal object TemplateLinesEn : TemplateLines {
     override fun lines(f: Facts, tone: Tone): Pair<String, String> = when (f.type) {
         MomentType.GOAL_ON_SLIP -> when (tone) {
             Tone.PLAIN -> f.home + " " + f.score + " · " + f.min to
-                "Your " + f.leg + " pick is still alive. " + f.remaining + " minutes left."
+                f.legPhrase + " is still alive. " + f.remaining + " minutes left."
             Tone.WITTY -> "That'll do · " + f.score to
                 f.won + " down, " + f.left + " to go. " + f.home + " just needs to hold on."
             Tone.STATS -> f.score + " · " + f.min + " · " + f.legs + " legs" to

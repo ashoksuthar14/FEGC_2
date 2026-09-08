@@ -2,13 +2,21 @@ package eu.feg.ambient.ambient.surfaces
 
 import android.util.Log
 import eu.feg.ambient.ambient.identity.ClubThemes
+import eu.feg.ambient.ambient.engine.Surface
+import eu.feg.ambient.ambient.engine.TimeBucket
+import eu.feg.ambient.ambient.engine.ledger.LedgerEntry
+import eu.feg.ambient.ambient.engine.router.Arms
+import eu.feg.ambient.ambient.engine.router.Timing
 import eu.feg.ambient.ambient.narrator.MomentFacts
 import eu.feg.ambient.ambient.narrator.MomentType
 import eu.feg.ambient.ambient.narrator.NarratorLanguage
 import eu.feg.ambient.ambient.narrator.Tone
 import eu.feg.ambient.core.AppContainer
+import eu.feg.ambient.data.model.BetStatus
 import eu.feg.ambient.data.model.Match
 import eu.feg.ambient.data.model.MatchState
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import java.util.concurrent.atomic.AtomicInteger
 
 /**
@@ -55,15 +63,28 @@ object DemoNotifier {
         // A followed club first, and among those the ones in play, because a score is a better
         // demo than a fixture list. Falls through to any live match on a device with no club
         // picked, so the button never does nothing.
-        val mine = matches.filter { it.home.name in followed || it.away.name in followed }
-        val live = (mine.filter { it.state == MatchState.LIVE }
-            .ifEmpty { mine.filter { it.state == MatchState.PREMATCH } })
-            .ifEmpty { matches.filter { it.state == MatchState.LIVE } }
-        if (live.isEmpty()) return null
+        // ONLY CLAIM A PICK WHERE THERE IS ONE. GOAL_ON_SLIP's copy says "Your ... pick is
+        // still alive", which is a statement about the customer's account, not about the
+        // match -- and on a fixture they hold nothing on it is simply false. So a match with
+        // an open leg is preferred and carries that leg's own words; a followed club with no
+        // leg gets its kick-off instead, which is true whatever they have staked.
+        val legs = openLegs(container)
+        val onSlip = matches.filter { it.state == MatchState.LIVE && legs.containsKey(it.id) }
+        val followedPre = matches.filter {
+            it.state == MatchState.PREMATCH && (it.home.name in followed || it.away.name in followed)
+        }
 
-        val match = live[n % live.size]
+        val match = when {
+            onSlip.isNotEmpty() -> onSlip[n % onSlip.size]
+            followedPre.isNotEmpty() -> followedPre[n % followedPre.size]
+            else -> return null
+        }
         val club = listOf(match.home.name, match.away.name).firstOrNull { it in followed }
-        val facts = if (match.state == MatchState.LIVE) factsForLive(match, club) else factsForKickoff(match, club)
+        val facts = if (legs.containsKey(match.id)) {
+            factsForLive(match, club, legs[match.id])
+        } else {
+            factsForKickoff(match, club)
+        }
         return post(container, facts, tones[n % tones.size], "live")
     }
 
@@ -114,13 +135,66 @@ object DemoNotifier {
             container.narrator.narrate(facts, tone, NarratorLanguage.EN)
         }.getOrNull() ?: return null
 
+        // A LEDGER ROW FIRST, and the alert carries its id.
+        //
+        // Without this the demo's own notifications taught the router nothing: no id means no
+        // delete intent, so swiping one away was invisible -- and "swipe it and watch it
+        // learn" is the whole demo. The row is honest about what it is. Nobody's arm chose
+        // this; a person pressed a button, and the reason says so. But the tone is real and a
+        // gesture on it is real, so the arm for this surface and voice is the right one to
+        // credit or debit.
+        val entryId = recordDemoDecision(container, facts.type, tone)
+
         container.surfaceController.resetAlertBudget()
-        val sent = container.surfaceController.postAlert(text.headline, text.detail, deepLink)
-        Log.i(TAG, "demo alert (" + facts.type + "/" + tone + ") sent=" + sent + ": " + text.headline)
+        val sent = container.surfaceController.postAlert(text.headline, text.detail, deepLink, entryId)
+        Log.i(TAG, "demo alert (" + facts.type + "/" + tone + ") id=" + entryId +
+            " sent=" + sent + ": " + text.headline)
         return if (sent) text.headline else null
     }
 
-    private fun factsForLive(match: Match, club: String?) = MomentFacts(
+    /**
+     * Writes the row the alert is, so a tap or a swipe on it has something to be about.
+     *
+     * The arm and the context bucket are computed exactly as the router would compute them,
+     * because the point is that the gesture lands on the SAME counters a real decision would
+     * move. A demo that rewarded a private set of numbers would be a demo of nothing.
+     */
+    private fun recordDemoDecision(
+        container: AppContainer,
+        type: MomentType,
+        tone: Tone,
+    ): String {
+        val now = container.clock.now()
+        val hour = now.toLocalDateTime(TimeZone.currentSystemDefault()).hour
+        val id = "led-" + now.toEpochMilliseconds() + "-demo:" + type.name
+        container.ledger.record(
+            LedgerEntry(
+                id = id,
+                momentId = "demo:" + type.name + "@" + now.toEpochMilliseconds(),
+                momentType = type.name,
+                contextBucket = Arms.contextBucket(type, TimeBucket.of(hour)),
+                protection = ProtectionState.NORMAL.name,
+                score = 0.0,
+                surface = Surface.ALERT.name,
+                tone = tone.name,
+                armId = Arms.idOf(Surface.ALERT, tone, Timing.IMMEDIATE),
+                sampled = 0.0,
+                reason = "Sent from the demo bubble, not chosen by the router.",
+                shownAt = now.toEpochMilliseconds(),
+                createdAt = now.toEpochMilliseconds(),
+            ),
+        )
+        return id
+    }
+
+    /** Match id to the description of the customer's own leg on it, for open slips only. */
+    private fun openLegs(container: AppContainer): Map<String, String> =
+        container.betRepository.placedBets.value
+            .filter { it.status == BetStatus.OPEN }
+            .flatMap { it.legs }
+            .associate { it.matchId to it.description }
+
+    private fun factsForLive(match: Match, club: String?, leg: String?) = MomentFacts(
         type = MomentType.GOAL_ON_SLIP,
         homeTeam = match.home.name,
         awayTeam = match.away.name,
@@ -130,6 +204,7 @@ object DemoNotifier {
         period = match.period,
         minutesRemaining = ((FULL_TIME - (match.minute ?: 0)).coerceAtLeast(0)),
         followedTeam = club,
+        myLegDescription = leg,
     )
 
     private fun factsForKickoff(match: Match, club: String?) = MomentFacts(

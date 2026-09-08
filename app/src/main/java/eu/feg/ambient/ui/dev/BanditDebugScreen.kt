@@ -85,7 +85,7 @@ fun BanditDebugScreen(viewModel: EngineLabViewModel, modifier: Modifier = Modifi
                 } else {
                     feedback.forEach { row ->
                         DevRow(
-                            label = row.gesture + " · " + humanArm(row.tone),
+                            label = row.label,
                             value = (if (row.reward > 0) "+" else "") + format(row.reward),
                         )
                     }

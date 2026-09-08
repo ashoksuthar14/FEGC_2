@@ -69,7 +69,19 @@ data class FeedbackRow(
     val gesture: String,
     val reward: Double,
     val at: Long,
-)
+    /** How many identical answers in a row this stands for. See the grouping in the model. */
+    val count: Int = 1,
+) {
+    /**
+     * "Swiped away · PLAIN", or just "Stayed quiet..." when there is no voice to name.
+     *
+     * Silence rows carry the tone "-", and printing it put a stray dash at the end of nine
+     * consecutive lines.
+     */
+    val label: String =
+        gesture + (if (tone.isBlank() || tone == "-") "" else " · " + tone) +
+            (if (count > 1) "  ×" + count else "")
+}
 
 data class BanditState(
     val context: String = EngineLabViewModel.DEFAULT_CONTEXT,
@@ -188,8 +200,20 @@ class EngineLabViewModel(private val container: AppContainer) : ViewModel() {
                     )
                 }
                 .sortedByDescending { it.at }
-                .take(FEEDBACK_ROWS)
                 .toList()
+                // Runs of the same answer collapse to one line with a count. Rewarding nine
+                // silences at once is one thing that happened, and printing it nine times
+                // buries the swipe that is the only interesting row on the screen.
+                .fold(mutableListOf<FeedbackRow>()) { acc, row ->
+                    val last = acc.lastOrNull()
+                    if (last != null && last.gesture == row.gesture && last.tone == row.tone) {
+                        acc[acc.lastIndex] = last.copy(count = last.count + 1)
+                    } else {
+                        acc.add(row)
+                    }
+                    acc
+                }
+                .take(FEEDBACK_ROWS)
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT), emptyList())
 
