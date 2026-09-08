@@ -124,18 +124,31 @@ class LiveUpdateRenderer(
             .setProgressPoints(goalPoints(state, total))
             .setProgress(progress)
 
-        val title = state.narrated?.headline ?: fallbackHeadline(state)
-        val detail = state.narrated?.detail ?: fallbackDetail(state)
+        // HIERARCHY: the score is the title, not the narration.
+        //
+        // It used to be the other way round -- title "Two down, Liverpool to go.", body a
+        // full sentence -- which put the system's largest, boldest line at the service of the
+        // least glanceable content. Someone looking at a locked phone wants the number. So
+        // the score takes the title, the narrator's headline becomes the body (already
+        // written short, at most 60 characters), and the long detail sentence leaves this
+        // surface: it survives as the spoken variant behind Listen and as the screen-reader
+        // description, where a whole sentence is the right unit.
+        val title = fallbackHeadline(state)
+        val detail = state.narrated?.headline ?: fallbackDetail(state)
 
         return base(Channels.LIVE_SLIP)
             .setContentTitle(title)
             .setContentText(detail)
+            // The small line above the title: progress and minute, where a figure that
+            // changes on every tick can update without moving the title.
+            .setSubText(subText(state))
             .setStyle(style)
             .setOngoing(true)
             .setRequestPromotedOngoing(true)
             // The chip is glanceable shorthand for the status bar; it is not what a screen
-            // reader announces. TalkBack reads contentTitle then contentText, so the detail
-            // line is always a full sentence and carries the meaning on its own.
+            // reader announces. TalkBack reads contentTitle then contentText, which now read
+            // as a pair -- "Liverpool 1-0 Ipswich", "Two down, Liverpool to go." The full
+            // sentence still exists behind Listen and as the card's spoken variant.
             .setShortCriticalText(chipText(state))
             .setContentIntent(openSlipIntent(state.slipId))
             .setDeleteIntent(dismissIntent(state.slipId))
@@ -206,6 +219,9 @@ class LiveUpdateRenderer(
         return base(Channels.LIVE_SLIP)
             .setContentTitle(title)
             .setContentText(detail)
+            // No progress and no leg count in Calm Mode, so the sub-text carries the minute
+            // and nothing that counts towards a result.
+            .setSubText(minute.toString() + "'")
             .setStyle(style)
             .setOngoing(true)
             .setRequestPromotedOngoing(true)
@@ -270,7 +286,30 @@ class LiveUpdateRenderer(
         val theme = clubTheme()
         val isMyClub = theme.clubId.isNotEmpty() &&
             (theme.name.equals(state.homeTeam, true) || theme.name.equals(state.awayTeam, true))
-        return if (isMyClub) theme.short + " " + state.chipText else state.chipText
+        // The status-bar chip is the smallest surface we own -- a few characters beside the
+        // clock. "2/3 tick 61 apostrophe" was three facts fighting for that space and
+        // arriving as none of them. The score alone is what a glance is for; the legs and the
+        // minute are one pull-down away in the sub-text.
+        val core = scoreOnly(state) ?: (state.legsWon.toString() + "/" + state.legsTotal)
+        return if (isMyClub) theme.short + " " + core else core
+    }
+
+    /** "2/3 · 61'", the line above the title. */
+    private fun subText(state: SlipSurfaceState): String {
+        val progress = state.legsWon.toString() + "/" + state.legsTotal
+        val minute = state.minute
+        return when {
+            state.settled -> progress + " · Full time"
+            minute != null -> progress + " · " + minute + "'"
+            else -> progress
+        }
+    }
+
+    /** "1–0" with no team names; the title already carries those. */
+    private fun scoreOnly(state: SlipSurfaceState): String? {
+        val home = state.homeScore ?: return null
+        val away = state.awayScore ?: return null
+        return home.toString() + "–" + away
     }
 
     private fun scoreLine(state: SlipSurfaceState): String? {
@@ -279,11 +318,16 @@ class LiveUpdateRenderer(
         return home + " " + (state.homeScore ?: 0) + "–" + (state.awayScore ?: 0) + " " + away
     }
 
+    /**
+     * The title: teams and score, and nothing else.
+     *
+     * The minute used to be appended here, which made the title change on every tick and
+     * pushed the team names into an ellipsis on a narrow lock screen. It lives in the
+     * sub-text now, so the title holds still and the score sits where the eye lands.
+     */
     private fun fallbackHeadline(state: SlipSurfaceState): String {
         val score = scoreLine(state)
-        val minute = state.minute
         return when {
-            score != null && minute != null && !state.settled -> score + " · " + minute + "'"
             score != null -> score
             state.settled -> "Your slip is settled"
             else -> "Your slip is running"

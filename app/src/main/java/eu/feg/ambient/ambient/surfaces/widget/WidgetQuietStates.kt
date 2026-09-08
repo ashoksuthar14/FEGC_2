@@ -5,8 +5,12 @@ import androidx.compose.ui.unit.dp
 import androidx.glance.GlanceModifier
 import androidx.glance.action.actionStartActivity
 import androidx.glance.appwidget.action.actionRunCallback
+import androidx.glance.layout.Alignment
+import androidx.glance.layout.Column
+import androidx.glance.layout.Row
 import androidx.glance.layout.Spacer
 import androidx.glance.layout.height
+import androidx.glance.layout.width
 import androidx.glance.text.Text
 import eu.feg.ambient.MainActivity
 import eu.feg.ambient.ambient.surfaces.ProtectionState
@@ -28,13 +32,14 @@ internal fun DigestCard(state: WidgetState.Digest, feedback: FeedbackMark? = nul
         description = "While you were away. " + state.headline + ". " + state.detail,
         onClick = openRoute(ROUTE_MY_BETS),
     ) {
-        Text(text = "While you were away", style = WidgetText.meta, maxLines = 1)
+        Text(text = "WHILE YOU WERE AWAY", style = WidgetText.label, maxLines = 1)
         Spacer(GlanceModifier.height(6.dp))
         Text(text = state.headline, style = WidgetText.title, maxLines = 2)
         Spacer(GlanceModifier.height(4.dp))
-        Text(text = state.detail, style = WidgetText.body, maxLines = 3)
+        // Two lines, not three: a digest that needs a paragraph has stopped being a digest.
+        Text(text = state.detail, style = WidgetText.meta, maxLines = 2)
         Spacer(GlanceModifier.defaultWeight())
-        FeedbackRow(muteMatch = null, given = feedback)
+        ActionRow(muteMatch = null, given = feedback)
     }
 }
 
@@ -53,16 +58,31 @@ internal fun IdleCard(state: WidgetState.Idle) {
         onClick = openRoute(ROUTE_LIVE),
     ) {
         if (fixture != null) {
-            Text(text = "Next up", style = WidgetText.meta, maxLines = 1)
-            Spacer(GlanceModifier.height(6.dp))
-            Text(text = fixture, style = WidgetText.title, maxLines = 2)
-            state.kickoff?.let {
-                Spacer(GlanceModifier.height(4.dp))
-                Text(text = untilLabel(it), style = WidgetText.meta, maxLines = 1)
+            // The quiet day is where N6 earns its place: a big crest and a fixture, which is
+            // a card a fan keeps on a home screen. The old version said "Next up" in 11sp
+            // grey and was indistinguishable from an empty widget at a glance.
+            Text(text = "NEXT UP", style = WidgetText.label, maxLines = 1)
+            Spacer(GlanceModifier.height(8.dp))
+            Row(verticalAlignment = Alignment.Vertical.CenterVertically) {
+                WidgetCrest(size = 44.dp)
+                Spacer(GlanceModifier.width(10.dp))
+                Column {
+                    Text(text = fixture, style = WidgetText.title, maxLines = 2)
+                    state.kickoff?.let {
+                        Text(text = untilLabel(it), style = WidgetText.meta, maxLines = 1)
+                    }
+                }
             }
         } else {
+            Row(verticalAlignment = Alignment.Vertical.CenterVertically) {
+                WidgetCrest(size = 32.dp)
+                Spacer(GlanceModifier.width(8.dp))
+                Text(text = "NO CLUB YET", style = WidgetText.label, maxLines = 1)
+            }
+            Spacer(GlanceModifier.height(8.dp))
             Text(text = FOLLOW_PROMPT, style = WidgetText.body, maxLines = 3)
         }
+        Spacer(GlanceModifier.defaultWeight())
     }
 }
 

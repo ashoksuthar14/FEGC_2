@@ -99,19 +99,31 @@ internal fun WidgetBody(state: WidgetState, feedback: FeedbackMark? = null) {
     }
 }
 
+/**
+ * Countdown as the number, fixture as the caption.
+ *
+ * "Kickoff in 40 min" was a sentence where a number would do. The thing a customer wants off
+ * this card in half a second is how long they have.
+ */
 @Composable
 private fun PreMatchCard(state: WidgetState.PreMatch) {
-    val countdown = kickoffLabel(state.kickoffIn)
+    val minutes = state.kickoffIn.inWholeMinutes
     WidgetCard(
-        description = state.match + ", " + countdown + ". " + legsSpoken(state.legs),
+        description = state.match + ", " + kickoffLabel(state.kickoffIn) + ". " +
+            legsSpoken(state.legs),
         onClick = openRoute(ROUTE_MY_BETS),
     ) {
-        Text(text = state.match, style = WidgetText.title, maxLines = 2)
-        Text(text = countdown, style = WidgetText.meta, maxLines = 1)
+        CardHeader(state.match)
+        Spacer(GlanceModifier.height(6.dp))
+        when {
+            minutes <= 0L -> WidgetHero("Kickoff", "Now")
+            minutes < 60L -> WidgetHero("Kickoff in", minutes.toString(), "min")
+            else -> WidgetHero("Kickoff in", (minutes / 60L).toString(), "h " + (minutes % 60L) + "m")
+        }
         Spacer(GlanceModifier.height(8.dp))
         // Greyed on purpose: nothing has happened yet, and a pre-match leg that looks live is
         // the widget telling a small lie.
-        state.legs.take(MAX_LEG_LINES).forEach { WidgetLegLine(it, dimmed = true) }
+        state.legs.take(MAX_LEG_LINES_COMPACT).forEach { WidgetLegLine(it, dimmed = true) }
         Spacer(GlanceModifier.defaultWeight())
         WidgetActionButton(
             label = "Remind me",
@@ -121,9 +133,18 @@ private fun PreMatchCard(state: WidgetState.PreMatch) {
     }
 }
 
+/**
+ * The score, big, and almost nothing else.
+ *
+ * What used to be here: a 22sp chip reading "2/3 tick 61 minutes", a score line, a segment
+ * bar, up to three lines of narration and three word-buttons — five things at five weights,
+ * none of them dominant. The score is the fact the card exists for, so it is the only thing
+ * set large. The narrator's headline stays, because it is the product's voice, but at one
+ * line instead of three; the minute moves up to the caption, where a figure that changes on
+ * every tick belongs.
+ */
 @Composable
 private fun LiveCard(slip: SlipSurfaceState, feedback: FeedbackMark? = null) {
-    val score = scoreLine(slip)
     val headline = slip.narrated?.headline
     WidgetCard(
         // N1: the narrator's spoken sentence is the screen-reader description, so the card
@@ -131,137 +152,175 @@ private fun LiveCard(slip: SlipSurfaceState, feedback: FeedbackMark? = null) {
         description = SpokenSurface.forSlip(slip) ?: spokenSlip(slip, headline),
         onClick = openRoute(ROUTE_MY_BETS),
     ) {
-        HeaderWithSpeaker(slip.chipText, WidgetText.chip)
-        if (score != null) Text(text = score, style = WidgetText.meta, maxLines = 1)
-        Spacer(GlanceModifier.height(8.dp))
+        CardHeader(matchLabel(slip), trailing = slip.minute?.let { it.toString() + "'" })
+        Spacer(GlanceModifier.height(4.dp))
+        WidgetHero(
+            label = slip.legsWon.toString() + " of " + slip.legsTotal + " home",
+            value = scoreOnly(slip),
+        )
+        Spacer(GlanceModifier.height(10.dp))
         WidgetLegSegments(slip.legs)
         Spacer(GlanceModifier.height(8.dp))
-        if (headline != null) Text(text = headline, style = WidgetText.body, maxLines = 3)
+        Text(
+            text = headline ?: (slip.minutesRemaining?.let { it.toString() + " min left" } ?: ""),
+            style = WidgetText.meta,
+            maxLines = 1,
+        )
         Spacer(GlanceModifier.defaultWeight())
-        FeedbackRow(muteMatch = slip.activeMatch, given = feedback)
+        ActionRow(muteMatch = slip.activeMatch, given = feedback)
     }
 }
 
+/** Settled leads with the count that decided it, not with a two-word summary of it. */
 @Composable
 private fun SettledCard(slip: SlipSurfaceState, feedback: FeedbackMark? = null) {
-    val result = slip.legsWon.toString() + " won · " + slip.legsLost + " lost"
     WidgetCard(
         description = SpokenSurface.forSlip(slip) ?: spokenSlip(slip, slip.narrated?.headline),
         onClick = openRoute(ROUTE_MY_BETS),
     ) {
-        HeaderWithSpeaker(result, WidgetText.title)
-        scoreLine(slip)?.let { Text(text = it, style = WidgetText.meta, maxLines = 1) }
+        CardHeader(matchLabel(slip), trailing = "FT")
+        Spacer(GlanceModifier.height(4.dp))
+        WidgetHero(
+            label = if (slip.legsLost > 0) slip.legsLost.toString() + " lost" else "Settled",
+            value = slip.legsWon.toString() + "/" + slip.legsTotal,
+        )
+        Spacer(GlanceModifier.height(10.dp))
+        WidgetLegSegments(slip.legs)
         Spacer(GlanceModifier.height(8.dp))
-        slip.legs.take(MAX_LEG_LINES).forEach { WidgetLegLine(it) }
+        Text(text = scoreLine(slip) ?: "", style = WidgetText.meta, maxLines = 1)
         Spacer(GlanceModifier.defaultWeight())
-        FeedbackRow(muteMatch = null, given = feedback)
+        ActionRow(muteMatch = null, given = feedback)
     }
 }
 
 /**
  * Calm Mode's version of a slip in flight: the score, and nothing that celebrates it.
  *
- * No narration, no leg colours, no thumbs — the surface stops being a companion and becomes
- * a fact, plus the way out. This is the demo moment, so it has to be visibly different at a
- * glance and not merely quieter.
+ * It keeps the same hierarchy as [LiveCard] rather than inventing a quieter one — the point
+ * of Calm Mode is that less is said, not that it is said in a way that looks broken. No
+ * legs, no narration, no thumbs: the surface stops being a companion and becomes a fact,
+ * plus the way out.
  */
 @Composable
 private fun CalmSlipCard(slip: SlipSurfaceState) {
-    val score = scoreLine(slip) ?: slip.activeMatch ?: "Match in progress"
-    WidgetCard(description = score + ". Protection active.") {
-        Text(text = score, style = WidgetText.title, maxLines = 2)
+    WidgetCard(description = (scoreLine(slip) ?: "Match in progress") + ". Protection active.") {
+        CardHeader(matchLabel(slip), trailing = slip.minute?.let { it.toString() + "'" })
+        Spacer(GlanceModifier.height(4.dp))
+        WidgetHero(label = "Protection active", value = scoreOnly(slip))
+        Spacer(GlanceModifier.height(6.dp))
         slip.period?.let { Text(text = it, style = WidgetText.meta, maxLines = 1) }
-        Spacer(GlanceModifier.height(8.dp))
-        Text(text = "Protection active", style = WidgetText.meta, maxLines = 1)
         Spacer(GlanceModifier.defaultWeight())
-        WidgetActionButton(
-            label = "Take a break",
-            description = "Open protection tools and take a break",
-            action = actionRunCallback<PanicAction>(),
-            fill = WidgetTokens.surfaceRaised,
-        )
-    }
-}
-
-/**
- * The card's first line, with the speaker sitting at the end of it.
- *
- * It lives on the header rather than in [FeedbackRow] because the feedback row is replaced
- * once a thumb has been given, and losing the way to hear the card as a side effect of
- * rating it would be a bad trade for the customer who needs it most.
- */
-@Composable
-private fun HeaderWithSpeaker(text: String, style: androidx.glance.text.TextStyle) {
-    Row(
-        modifier = GlanceModifier.fillMaxWidth(),
-        verticalAlignment = androidx.glance.layout.Alignment.Vertical.CenterVertically,
-    ) {
-        WidgetCrest(size = 22.dp)
-        Spacer(GlanceModifier.width(6.dp))
-        Text(
-            text = text,
-            style = style,
-            maxLines = 1,
-            modifier = GlanceModifier.defaultWeight(),
-        )
-        WidgetActionButton(
-            label = "🔊",
-            description = "Read this moment out loud",
-            action = actionRunCallback<SpeakWidgetAction>(),
-            modifier = GlanceModifier.width(48.dp),
-            fill = WidgetTokens.surfaceRaised,
-        )
-    }
-}
-
-/**
- * Thumbs, and mute when there is something to mute.
- *
- * The thumbs are the whole learning signal, so they live on the surface that prompted the
- * feeling rather than behind a tap into the app.
- */
-@Composable
-internal fun FeedbackRow(muteMatch: String?, given: FeedbackMark? = null) {
-    // Once answered, the buttons are replaced rather than merely disabled. A control that is
-    // still there after it has been used invites a second tap that would teach the router
-    // nothing, and leaving it looking live is how the widget reads as broken.
-    if (given != null) {
-        Text(text = acknowledgement(given), style = WidgetText.meta, maxLines = 1)
-        return
-    }
-    Row(modifier = GlanceModifier.fillMaxWidth()) {
-        WidgetActionButton(
-            label = "👍",
-            description = "This was worth telling me",
-            action = actionRunCallback<ThumbsUpAction>(),
-            modifier = GlanceModifier.defaultWeight(),
-            fill = WidgetTokens.surfaceRaised,
-        )
-        Spacer(GlanceModifier.width(6.dp))
-        WidgetActionButton(
-            label = "👎",
-            description = "This was not worth telling me",
-            action = actionRunCallback<ThumbsDownAction>(),
-            modifier = GlanceModifier.defaultWeight(),
-            fill = WidgetTokens.surfaceRaised,
-        )
-        if (muteMatch != null) {
+        Row(modifier = GlanceModifier.fillMaxWidth()) {
+            WidgetIconButton(
+                glyph = "\uD83D\uDD0A",
+                description = "Read this moment out loud",
+                action = actionRunCallback<SpeakWidgetAction>(),
+            )
             Spacer(GlanceModifier.width(6.dp))
             WidgetActionButton(
-                label = "Mute",
-                description = "Mute updates for " + muteMatch,
-                action = actionRunCallback<MuteMatchAction>(),
+                label = "Take a break",
+                description = "Open protection tools and take a break",
+                action = actionRunCallback<PanicAction>(),
                 modifier = GlanceModifier.defaultWeight(),
                 fill = WidgetTokens.surfaceRaised,
+                onFill = WidgetTokens.textPrimary,
             )
         }
     }
 }
 
+/**
+ * Crest, caption, and one trailing figure. Every card opens with this line, so the six states
+ * read as one family rather than six designs.
+ */
+@Composable
+private fun CardHeader(label: String, trailing: String? = null) {
+    Row(
+        modifier = GlanceModifier.fillMaxWidth(),
+        verticalAlignment = androidx.glance.layout.Alignment.Vertical.CenterVertically,
+    ) {
+        WidgetCrest(size = 18.dp)
+        Spacer(GlanceModifier.width(6.dp))
+        Text(
+            text = label.uppercase(),
+            style = WidgetText.label,
+            maxLines = 1,
+            modifier = GlanceModifier.defaultWeight(),
+        )
+        if (trailing != null) Text(text = trailing, style = WidgetText.label, maxLines = 1)
+    }
+}
+
+/** "1-0" with the team names taken out, because the header line already named them. */
+private fun scoreOnly(slip: SlipSurfaceState): String {
+    val home = slip.homeScore ?: return slip.legsWon.toString() + "/" + slip.legsTotal
+    val away = slip.awayScore ?: return slip.legsWon.toString() + "/" + slip.legsTotal
+    return home.toString() + "\u2013" + away
+}
+
+/** "Liverpool - Ipswich", or whatever the slip knows, for the caption line. */
+private fun matchLabel(slip: SlipSurfaceState): String {
+    val home = slip.homeTeam
+    val away = slip.awayTeam
+    if (home == null || away == null) return slip.activeMatch ?: "Your slip"
+    return home + " \u2013 " + away
+}
+
+/**
+ * Speak, then the two thumbs, then mute — as glyphs rather than words.
+ *
+ * Three filled pills with labels on them took a third of a 2x2 and left the numbers fighting
+ * the buttons for the same space. The label still exists for the only reader that needed the
+ * word: it is the control's contentDescription.
+ *
+ * The speaker is always present and never replaced. The thumbs give way to an
+ * acknowledgement once one is given, because a control that looks unchanged after a tap
+ * reads as broken — but losing the way to hear the card as a side effect of rating it would
+ * be the wrong trade for the customer who most needs it.
+ */
+@Composable
+internal fun ActionRow(muteMatch: String?, given: FeedbackMark? = null) {
+    Row(
+        modifier = GlanceModifier.fillMaxWidth(),
+        verticalAlignment = androidx.glance.layout.Alignment.Vertical.CenterVertically,
+    ) {
+        WidgetIconButton(
+            glyph = "\uD83D\uDD0A",
+            description = "Read this moment out loud",
+            action = actionRunCallback<SpeakWidgetAction>(),
+        )
+        Spacer(GlanceModifier.width(6.dp))
+
+        if (given != null) {
+            Text(text = acknowledgement(given), style = WidgetText.label, maxLines = 1)
+        } else {
+            WidgetIconButton(
+                glyph = "\uD83D\uDC4D",
+                description = "This was worth telling me",
+                action = actionRunCallback<ThumbsUpAction>(),
+            )
+            Spacer(GlanceModifier.width(6.dp))
+            WidgetIconButton(
+                glyph = "\uD83D\uDC4E",
+                description = "This was not worth telling me",
+                action = actionRunCallback<ThumbsDownAction>(),
+            )
+            if (muteMatch != null) {
+                Spacer(GlanceModifier.width(6.dp))
+                WidgetIconButton(
+                    glyph = "\uD83D\uDD15",
+                    description = "Mute updates for " + muteMatch,
+                    action = actionRunCallback<MuteMatchAction>(),
+                )
+            }
+        }
+    }
+}
+
 private fun acknowledgement(mark: FeedbackMark): String = when (mark) {
-    FeedbackMark.UP -> "Thanks — more like this"
-    FeedbackMark.DOWN -> "Thanks — fewer like this"
-    FeedbackMark.MUTED -> "Muted for this match"
+    FeedbackMark.UP -> "More like this"
+    FeedbackMark.DOWN -> "Fewer like this"
+    FeedbackMark.MUTED -> "Muted"
 }
 
 /** One sentence for TalkBack, built from the narration when there is one. */
@@ -274,8 +333,8 @@ private fun spokenSlip(slip: SlipSurfaceState, headline: String?): String {
     return progress + minute + score + tail
 }
 
-/** Three lines is what a 2x2 holds before the actions are pushed off the card. */
-private const val MAX_LEG_LINES = 3
+/** Two lines, now that a hero number takes the top third of the card. */
+private const val MAX_LEG_LINES_COMPACT = 2
 
 /**
  * Where a tap on the widget should land. MainActivity reads the "route" extra, so a bare

@@ -69,14 +69,83 @@ internal object WidgetTokens {
  * inside a card that wraps its content rather than clipping it.
  */
 internal object WidgetText {
-    val chip = TextStyle(WidgetTokens.textPrimary, 22.sp, FontWeight.Bold)
+    /**
+     * The one number the card exists to show — a score, a count, a countdown.
+     *
+     * Everything else on the card is deliberately quieter than this. A widget is read at
+     * arm's length in about half a second, and a card where four things compete at 12sp
+     * communicates nothing in that time; one number at 34sp and a caption communicates the
+     * whole state. 34 rather than 40 so that a 200% font scale still lands inside a 2x2.
+     */
+    val hero = TextStyle(WidgetTokens.textPrimary, 34.sp, FontWeight.Bold)
+
+    /** The unit that trails a hero number — "min", "left" — set small and aligned to its base. */
+    val heroUnit = TextStyle(WidgetTokens.textSecondary, 13.sp, FontWeight.Medium)
+
+    /** The caption above the number. Written upper-case at the call site; there is no tracking
+     * in Glance's TextStyle, so case is what carries the label voice. */
+    val label = TextStyle(WidgetTokens.textSecondary, 10.sp, FontWeight.Medium)
+
     val title = TextStyle(WidgetTokens.textPrimary, 14.sp, FontWeight.Medium)
     val body = TextStyle(WidgetTokens.textPrimary, 12.sp)
     val meta = TextStyle(WidgetTokens.textSecondary, 11.sp)
-    val button = TextStyle(WidgetTokens.textPrimary, 12.sp, FontWeight.Medium)
     val legWon = TextStyle(WidgetTokens.positive, 12.sp)
     val legLost = TextStyle(WidgetTokens.negative, 12.sp)
     val legPending = TextStyle(WidgetTokens.textSecondary, 12.sp)
+}
+
+/**
+ * Caption, then number. The two-line shape every card is built from.
+ *
+ * [unit] sits on the number's baseline rather than after it in the same string, so "40 min"
+ * reads as a big 40 with a small unit instead of two words at the same weight.
+ */
+@Composable
+internal fun WidgetHero(
+    label: String,
+    value: String,
+    unit: String? = null,
+) {
+    Text(text = label.uppercase(), style = WidgetText.label, maxLines = 1)
+    Row(verticalAlignment = Alignment.Vertical.Bottom) {
+        Text(text = value, style = WidgetText.hero, maxLines = 1)
+        if (unit != null) {
+            Spacer(GlanceModifier.width(4.dp))
+            // Nudged up off the baseline so the unit optically centres against the digits.
+            Box(modifier = GlanceModifier.padding(bottom = 5.dp)) {
+                Text(text = unit, style = WidgetText.heroUnit, maxLines = 1)
+            }
+        }
+    }
+}
+
+/**
+ * A square, glyph-only control.
+ *
+ * The card used to carry three filled pills with words on them, which on a 2x2 left the
+ * numbers fighting the buttons for the same space. Icon buttons give the same five actions
+ * back a fifth of the room — and the label still exists for a screen reader, which is the
+ * only reader that needed the word in the first place.
+ */
+@Composable
+internal fun WidgetIconButton(
+    glyph: String,
+    description: String,
+    action: Action,
+    modifier: GlanceModifier = GlanceModifier,
+    fill: ColorProvider = WidgetTokens.surfaceRaised,
+) {
+    Box(
+        modifier = modifier
+            .size(34.dp)
+            .background(fill)
+            .cornerRadius(10.dp)
+            .clickable(action)
+            .semantics { contentDescription = description },
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(text = glyph, style = TextStyle(WidgetTokens.textPrimary, 15.sp), maxLines = 1)
+    }
 }
 
 /**
