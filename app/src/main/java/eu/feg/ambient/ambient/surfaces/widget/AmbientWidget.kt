@@ -1,6 +1,9 @@
 package eu.feg.ambient.ambient.surfaces.widget
 
 import android.content.Context
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.unit.dp
@@ -49,24 +52,42 @@ class AmbientWidget : GlanceAppWidget() {
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val store = WidgetStateStore(context)
-        // THE DIGEST IS A WIDGET DECISION. The launcher redraws this whether or not our
-        // process is alive, and a customer who has been away for two hours is precisely the
-        // one whose process is not. Asking here — rather than waiting for an unlock broadcast
-        // a frozen app never receives — is what makes the catch-up work at all.
-        val digest = (context.applicationContext as? AmbientApp)?.container?.digestForWidget()
-        val state = digest
-            ?.let { WidgetState.Digest(it.headline, it.detail, it.generatedAt) }
-            ?: store.load()
-        val feedback = store.feedback()
-        // The club is read from the widget's own store, saved beside the state, so a redraw
-        // after a reboot finds it without waking anything else of ours.
-        val club = store.club()
+        val app = context.applicationContext as? AmbientApp
         provideContent {
-            CompositionLocalProvider(LocalClubTheme provides club) {
-                WidgetBody(state, feedback)
+            // Everything is read INSIDE the composition, keyed on the store's version. Glance
+            // keeps this composition alive across updates and only recomposes it; a value
+            // read before provideContent would be frozen at whatever the store held the
+            // first time. See WidgetStoreVersion.
+            val version by WidgetStoreVersion.flow.collectAsState()
+            val frame by produceState<WidgetFrame?>(initialValue = null, key1 = version) {
+                // THE DIGEST IS A WIDGET DECISION. The launcher redraws this whether or not
+                // our process is alive, and a customer who has been away for two hours is
+                // precisely the one whose process is not. Asking here is what makes the
+                // catch-up work at all.
+                val digest = app?.container?.digestForWidget()
+                val state = digest
+                    ?.let { WidgetState.Digest(it.headline, it.detail, it.generatedAt) }
+                    ?: store.load()
+                android.util.Log.i(
+                    "AmbientWidget",
+                    "compose " + id + " v" + version + " -> " + state.javaClass.simpleName +
+                        (if (digest != null) " (digest)" else " (store)"),
+                )
+                value = WidgetFrame(state, store.feedback(), store.club())
+            }
+            val f = frame ?: return@provideContent
+            CompositionLocalProvider(LocalClubTheme provides f.club) {
+                WidgetBody(f.state, f.feedback)
             }
         }
     }
+
+    /** One coherent read of the store: state, feedback and club from the same version. */
+    private data class WidgetFrame(
+        val state: WidgetState,
+        val feedback: FeedbackMark?,
+        val club: eu.feg.ambient.ambient.identity.ClubTheme,
+    )
 }
 
 /**

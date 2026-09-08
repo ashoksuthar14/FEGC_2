@@ -12,6 +12,7 @@ import eu.feg.ambient.ambient.surfaces.LegStatus
 import eu.feg.ambient.ambient.surfaces.ProtectionState
 import eu.feg.ambient.ambient.surfaces.SlipSurfaceState
 import eu.feg.ambient.ambient.surfaces.WidgetState
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.Serializable
@@ -42,6 +43,23 @@ import kotlin.time.Duration.Companion.seconds
  * COMPLIANCE — the mirror has no field for stake, odds, returns or balance because the types
  * it mirrors have none. Do not add one here either; this file would be an easy back door.
  */
+/**
+ * Bumped on every write to the widget store, and observed from inside the widget's
+ * composition.
+ *
+ * WHY: Glance 1.1 keeps a widget's composition alive between updates. A second
+ * updateAll() does not call provideGlance again -- it recomposes the composition that is
+ * already running. So anything read into a plain val before provideContent is frozen for
+ * the life of that session, and the home screen keeps showing whatever the store held the
+ * first time. Reading the store keyed on this version is what makes an update actually
+ * change the pixels. (This is the bug behind "the widget is not updated" -- it only ever
+ * worked when the session had expired or the process had restarted.)
+ */
+internal object WidgetStoreVersion {
+    val flow = MutableStateFlow(0L)
+    fun bump() { flow.value = flow.value + 1 }
+}
+
 class WidgetStateStore(private val prefs: SharedPreferences?) {
 
     constructor(context: Context) : this(
@@ -60,6 +78,7 @@ class WidgetStateStore(private val prefs: SharedPreferences?) {
         prefs?.edit()?.putString(KEY, json)?.also { e ->
             if (changed) e.remove(KEY_FEEDBACK)
         }?.apply()
+        WidgetStoreVersion.bump()
     }
 
     /** Which gesture, if any, the customer has already given on the card now showing. */
@@ -68,11 +87,13 @@ class WidgetStateStore(private val prefs: SharedPreferences?) {
 
     internal fun setFeedback(mark: FeedbackMark) {
         prefs?.edit()?.putString(KEY_FEEDBACK, mark.name)?.apply()
+        WidgetStoreVersion.bump()
     }
 
     /** N6. Stored as the id and resolved on load, so a palette edit reaches stored widgets. */
     fun saveClub(clubId: String) {
         prefs?.edit()?.putString(KEY_CLUB, clubId)?.apply()
+        WidgetStoreVersion.bump()
     }
 
     fun club(): ClubTheme = ClubThemes.byId(prefs?.getString(KEY_CLUB, null))
@@ -89,6 +110,7 @@ class WidgetStateStore(private val prefs: SharedPreferences?) {
 
     fun clear() {
         prefs?.edit()?.remove(KEY)?.remove(KEY_FEEDBACK)?.apply()
+        WidgetStoreVersion.bump()
     }
 
     private companion object {

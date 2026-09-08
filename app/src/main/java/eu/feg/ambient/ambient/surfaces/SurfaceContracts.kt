@@ -70,6 +70,12 @@ data class SlipSurfaceState(
 }
 
 sealed interface WidgetState {
+    /**
+     * N5. Shown when nothing is live, a recap exists for the period and it has not been seen.
+     * Club-themed like every other card; unchanged in Calm Mode because it holds no money.
+     */
+    data class Recap(val recap: eu.feg.ambient.ambient.recap.Recap) : WidgetState
+
     data class PreMatch(
         val match: String,
         val kickoffIn: Duration,

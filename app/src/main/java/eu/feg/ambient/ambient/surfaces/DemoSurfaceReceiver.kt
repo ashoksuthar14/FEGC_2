@@ -9,6 +9,7 @@ import eu.feg.ambient.ambient.engine.protection.DefaultProtectionEvaluator
 import eu.feg.ambient.ambient.narrator.MomentFacts
 import eu.feg.ambient.ambient.narrator.MomentType
 import eu.feg.ambient.ambient.narrator.NarratorLanguage
+import eu.feg.ambient.ambient.narrator.TemplateNarrator
 import eu.feg.ambient.ambient.narrator.Tone
 import kotlin.time.Duration.Companion.days
 import eu.feg.ambient.ambient.surfaces.widget.applyMute
@@ -213,8 +214,12 @@ class DemoSurfaceReceiver : BroadcastReceiver() {
         slip: SlipSurfaceState,
         type: MomentType,
     ): SlipSurfaceState = runCatching {
+        // The template rung directly, not the ladder. The demo is driven from adb between
+        // other steps, and waiting twelve seconds for the on-device model to time out and
+        // fall through to this same template -- which is what it did -- makes every step
+        // look broken on stage. The model's own latency is demonstrated in the Narrator Lab.
         slip.copy(
-            narrated = app.container.narrator.narrate(
+            narrated = demoNarrator.narrate(
                 MomentFacts(
                     type = type,
                     homeTeam = slip.homeTeam,
@@ -238,6 +243,7 @@ class DemoSurfaceReceiver : BroadcastReceiver() {
 
     private companion object {
         const val TAG = "DemoSurface"
+        val demoNarrator = TemplateNarrator()
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
         /** Mutable across broadcasts so a sequence of actions builds on the last one. */
