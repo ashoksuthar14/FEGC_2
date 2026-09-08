@@ -6,6 +6,7 @@ import android.util.Log
 import eu.feg.ambient.ambient.identity.ClubTheme
 import eu.feg.ambient.ambient.identity.ClubThemes
 import eu.feg.ambient.ambient.narrator.NarratedText
+import eu.feg.ambient.ambient.recap.Recap
 import eu.feg.ambient.ambient.narrator.NarratorEngine
 import eu.feg.ambient.ambient.surfaces.LegState
 import eu.feg.ambient.ambient.surfaces.LegStatus
@@ -55,6 +56,9 @@ import kotlin.time.Duration.Companion.seconds
  * change the pixels. (This is the bug behind "the widget is not updated" -- it only ever
  * worked when the session had expired or the process had restarted.)
  */
+/** Shared by the store and the snapshot's own encoding of the recap. */
+internal val SNAPSHOT_JSON = Json { ignoreUnknownKeys = true; encodeDefaults = true }
+
 internal object WidgetStoreVersion {
     val flow = MutableStateFlow(0L)
     fun bump() { flow.value = flow.value + 1 }
@@ -133,7 +137,7 @@ class WidgetStateStore(private val prefs: SharedPreferences?) {
         const val KEY_FEEDBACK = "widget_feedback"
         const val KEY_CLUB = "widget_club"
         val EMPTY: WidgetState = WidgetState.Idle(nextFixture = null, kickoff = null)
-        val JSON = Json { ignoreUnknownKeys = true; encodeDefaults = true }
+        val JSON = SNAPSHOT_JSON
     }
 }
 
@@ -197,6 +201,12 @@ internal data class WidgetSnapshot(
     val nextFixture: String? = null,
     // Protected.
     val lastRegisterCheckMillis: Long? = null,
+    /**
+     * Recap. Stored whole, because the card draws the counts, not a sentence: a recap that
+     * came back as headline-and-detail was being drawn as a digest -- "while you were away"
+     * over "your month with PSK" -- which is the wrong card wearing the right words.
+     */
+    val recapJson: String? = null,
 ) {
 
     fun toWidgetState(): WidgetState = when (kind) {
@@ -215,14 +225,16 @@ internal data class WidgetSnapshot(
             since = sinceMillis?.let { Instant.fromEpochMilliseconds(it) } ?: Clock.System.now(),
         )
 
-        // A stored recap comes back as its headline and detail: the counts behind it are
-        // recomputed by the builder on the next draw, and a card that showed stale counts
-        // for a month would be worse than one that showed the sentence.
-        SnapshotKind.RECAP -> WidgetState.Digest(
-            headline = headline.orEmpty(),
-            detail = detail.orEmpty(),
-            since = sinceMillis?.let { Instant.fromEpochMilliseconds(it) } ?: Clock.System.now(),
-        )
+        // The recap as itself. If the stored JSON cannot be read (an older snapshot, a schema
+        // change) the sentence still shows as a digest rather than the card going blank.
+        SnapshotKind.RECAP -> recapJson
+            ?.let { runCatching { SNAPSHOT_JSON.decodeFromString<Recap>(it) }.getOrNull() }
+            ?.let { WidgetState.Recap(it) }
+            ?: WidgetState.Digest(
+                headline = headline.orEmpty(),
+                detail = detail.orEmpty(),
+                since = sinceMillis?.let { Instant.fromEpochMilliseconds(it) } ?: Clock.System.now(),
+            )
 
         SnapshotKind.IDLE -> WidgetState.Idle(
             nextFixture = nextFixture,
@@ -292,6 +304,7 @@ internal data class WidgetSnapshot(
                 // The recap's own spoken sentence, so the card's speaker has something to say.
                 narratedSpoken = state.recap.spokenText,
                 sinceMillis = state.recap.to.toEpochMilliseconds(),
+                recapJson = runCatching { SNAPSHOT_JSON.encodeToString(state.recap) }.getOrNull(),
             )
 
             is WidgetState.Idle -> WidgetSnapshot(

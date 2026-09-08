@@ -1,7 +1,9 @@
 package eu.feg.ambient.ambient.recap
 
 import kotlinx.datetime.Instant
+import kotlinx.serialization.Serializable
 
+@Serializable
 enum class RecapPeriod { MONTH, SEASON }
 
 /**
@@ -15,6 +17,7 @@ enum class RecapPeriod { MONTH, SEASON }
  * unchanged in Calm Mode), and it is why it is shareable: nobody shares their P&L. A test
  * enforces the rule on this class's field names, so adding such a field fails the build.
  */
+@Serializable
 data class Recap(
     val period: RecapPeriod,
     val from: Instant,
