@@ -2,6 +2,7 @@ package eu.feg.ambient.ambient.surfaces
 
 import android.util.Log
 import eu.feg.ambient.ambient.engine.MatchEvent
+import eu.feg.ambient.ambient.identity.ClubThemes
 import eu.feg.ambient.ambient.narrator.MomentType
 import eu.feg.ambient.core.AppContainer
 import eu.feg.ambient.data.model.BetStatus
@@ -62,20 +63,30 @@ object DemoStage {
             return false
         }
 
-        // Furthest into the match first: the card has the most to say about a fixture at 86'
-        // and the least about one at 15', and the score is the reason this surface exists.
-        val live = container.matchRepository.matches.value
-            .filter { it.state == MatchState.LIVE }
-            .sortedByDescending { it.minute ?: 0 }
-        if (live.size < LEGS) {
-            Log.w(TAG, "not arming: only " + live.size + " live fixtures, need " + LEGS)
+        // A CLUB THE CARD CAN DRESS BEATS A FIXTURE THAT IS MERELY FURTHER ALONG.
+        //
+        // LiveMatchCard puts a crest either side of the score and names the competition in
+        // its header, and ClubThemes knows eight clubs. For anyone else forTeam falls back to
+        // neutral(): both crests become the same flat block with initials on them and the
+        // header reads "1. AZERBAIJAN". The card is unchanged and every word on it is true,
+        // and it looks like a wireframe. So a themed fixture is taken first, and only then
+        // the deepest into its match -- the score is what the surface is for, and a fixture
+        // at 86' has more to say than one at 15'.
+        val live = container.matchRepository.matches.value.filter { it.state == MatchState.LIVE }
+        val (themed, plain) = live.partition {
+            ClubThemes.byName(it.home.name) != null || ClubThemes.byName(it.away.name) != null
+        }
+        val deepestFirst = compareByDescending<Match> { it.minute ?: 0 }
+        val ordered = themed.sortedWith(deepestFirst) + plain.sortedWith(deepestFirst)
+        if (ordered.size < LEGS) {
+            Log.w(TAG, "not arming: only " + ordered.size + " live fixtures, need " + LEGS)
             return false
         }
 
         val now = container.clock.now()
-        val active = live[0]
-        val landed = live[1]
-        val running = live[2]
+        val active = ordered[0]
+        val landed = ordered[1]
+        val running = ordered[2]
 
         val bet = PlacedBet(
             id = BET_ID,
