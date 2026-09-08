@@ -241,11 +241,13 @@ fun AppNavHost(
                 val vm: BetSlipViewModel = viewModel(
                     factory = PskViewModelFactory(container) { BetSlipViewModel(it) },
                 )
+                // No verticalScroll here: BetSlipScreen scrolls its own Column, and nesting
+                // two vertical scrollers hands the inner one an infinite height constraint,
+                // which Compose throws on rather than silently mis-measuring.
                 Box(
                     Modifier
                         .fillMaxSize()
-                        .background(psk.background)
-                        .verticalScroll(rememberScrollState()),
+                        .background(psk.background),
                 ) {
                     BetSlipScreen(
                         viewModel = vm,

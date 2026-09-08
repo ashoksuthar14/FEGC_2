@@ -5,6 +5,8 @@ import android.content.Context
 import android.content.Intent
 import android.util.Log
 import eu.feg.ambient.AmbientApp
+import eu.feg.ambient.ambient.surfaces.widget.applyMute
+import eu.feg.ambient.ambient.surfaces.widget.applyThumbs
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -25,6 +27,7 @@ import kotlinx.coroutines.launch
  *   adb shell am broadcast -a eu.feg.ambient.DEMO_SURFACE --es action settle
  *   adb shell am broadcast -a eu.feg.ambient.DEMO_SURFACE --es action end
  *   adb shell am broadcast -a eu.feg.ambient.DEMO_SURFACE --es action widget --es state Live
+ *   adb shell am broadcast -a eu.feg.ambient.DEMO_SURFACE --es action thumbs --es value up
  *
  * Debug builds only — it is registered behind a manifest flag and does nothing in release.
  */
@@ -121,6 +124,15 @@ class DemoSurfaceReceiver : BroadcastReceiver() {
                         else -> WidgetState.Live(slip)
                     }
                     controller.refreshWidget(state)
+                }
+
+                // The widget's own feedback buttons, reachable without a finger on the glass.
+                // Learning is the claim hardest to demonstrate, and it should not depend on
+                // someone tapping a 2x2 card accurately while the phone is being filmed.
+                "thumbs" -> when (intent.getStringExtra("value")) {
+                    "down" -> applyThumbs(context, positive = false)
+                    "mute" -> applyMute(context)
+                    else -> applyThumbs(context, positive = true)
                 }
 
                 else -> Log.w(TAG, "unknown demo action: " + action)

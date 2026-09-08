@@ -63,10 +63,33 @@ class SurfaceCoordinator(
     private var lastSignature: String? = null
 
     fun start() {
+        resumeOpenSlip()
         observePlacements()
         observeTicks()
         observeProtection()
         observeMatchEvents()
+    }
+
+    /**
+     * Picks an open slip back up after a restart.
+     *
+     * The live slip id lives in memory, so without this a process death — or simply swiping
+     * the app away — silently ended a Live Update the user could still see a match for. The
+     * bet is the durable thing; the card should follow it rather than the process.
+     */
+    private fun resumeOpenSlip() {
+        scope.launch {
+            val open = betRepository.placedBets.value.firstOrNull {
+                it.status == BetStatus.OPEN && hasLiveLeg(it)
+            } ?: return@launch
+
+            val state = surfaceState(open) ?: return@launch
+            if (!state.protection.allowsLiveUpdate()) return@launch
+
+            _liveSlipId.value = open.id
+            controller.startLiveUpdate(state)
+            controller.refreshWidget(WidgetState.Live(state))
+        }
     }
 
     /**
@@ -220,10 +243,16 @@ class SurfaceCoordinator(
     /** Domain to surface. The surface type has no money field, so nothing about price crosses. */
     private suspend fun surfaceState(bet: PlacedBet): SlipSurfaceState? {
         val protection = protection()
-        val active: Match? = bet.legs
-            .asSequence()
-            .mapNotNull { matchRepository.match(it.matchId) }
-            .firstOrNull { it.state == MatchState.LIVE }
+        // Prefer a live match, but fall back to any match on the slip. Insisting on LIVE
+        // meant that the moment a match reached full time every field went null and the
+        // surfaces were rewritten with an empty card — the score and teams are still the
+        // truth after the whistle, and a settled slip should show them, not nothing.
+        val matches = bet.legs.mapNotNull { matchRepository.match(it.matchId) }
+        val active: Match? = matches.firstOrNull { it.state == MatchState.LIVE }
+            ?: matches.firstOrNull()
+
+        // No leg still in play means the slip is done, whatever the bet's stored status says.
+        val anyLive = matches.any { it.state == MatchState.LIVE }
 
         return SlipSurfaceState(
             slipId = bet.id,
@@ -249,7 +278,7 @@ class SurfaceCoordinator(
             minute = active?.minute,
             period = active?.period,
             minutesRemaining = active?.minute?.let { (90 - it).coerceAtLeast(0) },
-            settled = bet.status != BetStatus.OPEN,
+            settled = bet.status != BetStatus.OPEN || !anyLive,
         )
     }
 

@@ -51,7 +51,21 @@ class WidgetStateStore(private val prefs: SharedPreferences?) {
             Log.w(TAG, "could not encode " + state.javaClass.simpleName, it)
             return
         }
-        prefs?.edit()?.putString(KEY, json)?.apply()
+        // A thumb answers one card. When the card changes the question is a new one, so the
+        // mark is dropped and the buttons come back — otherwise a single tap would silence
+        // the learning signal for the rest of the session.
+        val changed = prefs?.getString(KEY, null) != json
+        prefs?.edit()?.putString(KEY, json)?.also { e ->
+            if (changed) e.remove(KEY_FEEDBACK)
+        }?.apply()
+    }
+
+    /** Which gesture, if any, the customer has already given on the card now showing. */
+    internal fun feedback(): FeedbackMark? = prefs?.getString(KEY_FEEDBACK, null)
+        ?.let { name -> FeedbackMark.entries.firstOrNull { it.name == name } }
+
+    internal fun setFeedback(mark: FeedbackMark) {
+        prefs?.edit()?.putString(KEY_FEEDBACK, mark.name)?.apply()
     }
 
     /** Idle with nothing to show is the honest answer when there is no stored state. */
@@ -65,17 +79,27 @@ class WidgetStateStore(private val prefs: SharedPreferences?) {
     }
 
     fun clear() {
-        prefs?.edit()?.remove(KEY)?.apply()
+        prefs?.edit()?.remove(KEY)?.remove(KEY_FEEDBACK)?.apply()
     }
 
     private companion object {
         const val TAG = "WidgetStateStore"
         const val PREFS = "ambient_widget"
         const val KEY = "widget_state"
+        const val KEY_FEEDBACK = "widget_feedback"
         val EMPTY: WidgetState = WidgetState.Idle(nextFixture = null, kickoff = null)
         val JSON = Json { ignoreUnknownKeys = true; encodeDefaults = true }
     }
 }
+
+/**
+ * What the customer already told us about the card currently on screen.
+ *
+ * It is stored beside the snapshot rather than inside it because it is not part of what the
+ * engine asked us to draw — it is the answer to it, and it has to survive the redraw that
+ * follows the tap.
+ */
+internal enum class FeedbackMark { UP, DOWN, MUTED }
 
 @Serializable
 internal enum class SnapshotKind { PRE_MATCH, LIVE, SETTLED, DIGEST, IDLE, PROTECTED }

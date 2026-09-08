@@ -5,10 +5,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
-import androidx.glance.action.actionStartActivity
+import android.content.Intent
+import androidx.glance.LocalContext
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.action.actionRunCallback
+import androidx.glance.appwidget.action.actionStartActivity
 import androidx.glance.appwidget.provideContent
 import androidx.glance.layout.Row
 import androidx.glance.layout.Spacer
@@ -41,8 +43,10 @@ class AmbientWidget : GlanceAppWidget() {
     override val sizeMode: SizeMode = SizeMode.Single
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        val state = WidgetStateStore(context).load()
-        provideContent { WidgetBody(state) }
+        val store = WidgetStateStore(context)
+        val state = store.load()
+        val feedback = store.feedback()
+        provideContent { WidgetBody(state, feedback) }
     }
 }
 
@@ -55,7 +59,7 @@ class AmbientWidget : GlanceAppWidget() {
  * decision that was supposed to suppress it.
  */
 @Composable
-internal fun WidgetBody(state: WidgetState) {
+internal fun WidgetBody(state: WidgetState, feedback: FeedbackMark? = null) {
     val protection = when (state) {
         is WidgetState.Live -> state.slip.protection
         is WidgetState.Settled -> state.slip.protection
@@ -70,11 +74,11 @@ internal fun WidgetBody(state: WidgetState) {
         is WidgetState.PreMatch -> PreMatchCard(state)
         is WidgetState.Live ->
             if (protection == ProtectionState.CALM) CalmSlipCard(state.slip)
-            else LiveCard(state.slip)
+            else LiveCard(state.slip, feedback)
         is WidgetState.Settled ->
             if (protection == ProtectionState.CALM) CalmSlipCard(state.slip)
-            else SettledCard(state.slip)
-        is WidgetState.Digest -> DigestCard(state)
+            else SettledCard(state.slip, feedback)
+        is WidgetState.Digest -> DigestCard(state, feedback)
         is WidgetState.Idle -> IdleCard(state)
         is WidgetState.Protected -> ProtectedCard(state.protection, state.lastRegisterCheck)
     }
@@ -85,7 +89,7 @@ private fun PreMatchCard(state: WidgetState.PreMatch) {
     val countdown = kickoffLabel(state.kickoffIn)
     WidgetCard(
         description = state.match + ", " + countdown + ". " + legsSpoken(state.legs),
-        onClick = actionStartActivity<MainActivity>(),
+        onClick = openRoute(ROUTE_MY_BETS),
     ) {
         Text(text = state.match, style = WidgetText.title, maxLines = 2)
         Text(text = countdown, style = WidgetText.meta, maxLines = 1)
@@ -103,12 +107,12 @@ private fun PreMatchCard(state: WidgetState.PreMatch) {
 }
 
 @Composable
-private fun LiveCard(slip: SlipSurfaceState) {
+private fun LiveCard(slip: SlipSurfaceState, feedback: FeedbackMark? = null) {
     val score = scoreLine(slip)
     val headline = slip.narrated?.headline
     WidgetCard(
         description = spokenSlip(slip, headline),
-        onClick = actionStartActivity<MainActivity>(),
+        onClick = openRoute(ROUTE_MY_BETS),
     ) {
         Text(text = slip.chipText, style = WidgetText.chip, maxLines = 1)
         if (score != null) Text(text = score, style = WidgetText.meta, maxLines = 1)
@@ -117,24 +121,23 @@ private fun LiveCard(slip: SlipSurfaceState) {
         Spacer(GlanceModifier.height(8.dp))
         if (headline != null) Text(text = headline, style = WidgetText.body, maxLines = 3)
         Spacer(GlanceModifier.defaultWeight())
-        FeedbackRow(muteMatch = slip.activeMatch)
+        FeedbackRow(muteMatch = slip.activeMatch, given = feedback)
     }
 }
 
 @Composable
-private fun SettledCard(slip: SlipSurfaceState) {
+private fun SettledCard(slip: SlipSurfaceState, feedback: FeedbackMark? = null) {
     val result = slip.legsWon.toString() + " won · " + slip.legsLost + " lost"
     WidgetCard(
         description = spokenSlip(slip, slip.narrated?.headline),
-        // TODO(step 14E): deep link to My Bets rather than the app's start destination.
-        onClick = actionStartActivity<MainActivity>(),
+        onClick = openRoute(ROUTE_MY_BETS),
     ) {
         Text(text = result, style = WidgetText.title, maxLines = 1)
         scoreLine(slip)?.let { Text(text = it, style = WidgetText.meta, maxLines = 1) }
         Spacer(GlanceModifier.height(8.dp))
         slip.legs.take(MAX_LEG_LINES).forEach { WidgetLegLine(it) }
         Spacer(GlanceModifier.defaultWeight())
-        FeedbackRow(muteMatch = null)
+        FeedbackRow(muteMatch = null, given = feedback)
     }
 }
 
@@ -170,7 +173,14 @@ private fun CalmSlipCard(slip: SlipSurfaceState) {
  * feeling rather than behind a tap into the app.
  */
 @Composable
-internal fun FeedbackRow(muteMatch: String?) {
+internal fun FeedbackRow(muteMatch: String?, given: FeedbackMark? = null) {
+    // Once answered, the buttons are replaced rather than merely disabled. A control that is
+    // still there after it has been used invites a second tap that would teach the router
+    // nothing, and leaving it looking live is how the widget reads as broken.
+    if (given != null) {
+        Text(text = acknowledgement(given), style = WidgetText.meta, maxLines = 1)
+        return
+    }
     Row(modifier = GlanceModifier.fillMaxWidth()) {
         WidgetActionButton(
             label = "👍",
@@ -200,6 +210,12 @@ internal fun FeedbackRow(muteMatch: String?) {
     }
 }
 
+private fun acknowledgement(mark: FeedbackMark): String = when (mark) {
+    FeedbackMark.UP -> "Thanks — more like this"
+    FeedbackMark.DOWN -> "Thanks — fewer like this"
+    FeedbackMark.MUTED -> "Muted for this match"
+}
+
 /** One sentence for TalkBack, built from the narration when there is one. */
 private fun spokenSlip(slip: SlipSurfaceState, headline: String?): String {
     val progress = slip.legsWon.toString() + " of " + slip.legsTotal + " legs won"
@@ -212,3 +228,18 @@ private fun spokenSlip(slip: SlipSurfaceState, headline: String?): String {
 
 /** Three lines is what a 2x2 holds before the actions are pushed off the card. */
 private const val MAX_LEG_LINES = 3
+
+/**
+ * Where a tap on the widget should land. MainActivity reads the "route" extra, so a bare
+ * actionStartActivity<MainActivity>() drops the user on the start destination — which is what
+ * made every widget tap feel broken.
+ */
+@Composable
+internal fun openRoute(route: String) = actionStartActivity(
+    Intent(LocalContext.current, MainActivity::class.java)
+        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        .putExtra("route", route),
+)
+
+internal const val ROUTE_MY_BETS = "mybets"
+internal const val ROUTE_LIVE = "live"

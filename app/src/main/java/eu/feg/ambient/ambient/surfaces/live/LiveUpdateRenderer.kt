@@ -257,14 +257,22 @@ class LiveUpdateRenderer(
 
     // ---- intents -------------------------------------------------------------------------
 
+    /**
+     * Tapping the card opens My Bets, not the app's start destination. MainActivity reads the
+     * "route" extra; the older EXTRA_DEEP_LINK was written but never read, which is why every
+     * tap landed on the home screen.
+     */
     private fun openSlipIntent(slipId: String): PendingIntent =
-        // TODO(step 16): deep-link to this slip in My Bets, rather than the app's home screen.
-        openAppIntent(slipId.hashCode(), null)
+        openAppIntent(slipId.hashCode(), ROUTE_MY_BETS)
 
     private fun openAppIntent(requestCode: Int, deepLink: String?): PendingIntent {
         val intent = Intent(context, MainActivity::class.java)
             .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-        if (deepLink != null) intent.putExtra(EXTRA_DEEP_LINK, deepLink)
+        if (deepLink != null) {
+            intent.putExtra(EXTRA_DEEP_LINK, deepLink)
+            // The extra MainActivity actually navigates on.
+            intent.putExtra("route", deepLink)
+        }
         return PendingIntent.getActivity(context, requestCode, intent, PENDING_FLAGS)
     }
 
@@ -276,6 +284,9 @@ class LiveUpdateRenderer(
     }
 
     companion object {
+        /** MainActivity navigates on the "route" extra; this is where a tap belongs. */
+        const val ROUTE_MY_BETS = "mybets"
+
         const val ALERT_NOTIFICATION_ID = 4302
         const val EXTRA_DEEP_LINK = "ambient.deepLink"
 

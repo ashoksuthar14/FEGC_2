@@ -23,11 +23,10 @@ import kotlinx.datetime.Instant
 
 /** "While you were away" — the catch-up, not a nudge to bet. */
 @Composable
-internal fun DigestCard(state: WidgetState.Digest) {
+internal fun DigestCard(state: WidgetState.Digest, feedback: FeedbackMark? = null) {
     WidgetCard(
         description = "While you were away. " + state.headline + ". " + state.detail,
-        // TODO(step 13B): deep link to the Moments inbox rather than the start destination.
-        onClick = actionStartActivity<MainActivity>(),
+        onClick = openRoute(ROUTE_MY_BETS),
     ) {
         Text(text = "While you were away", style = WidgetText.meta, maxLines = 1)
         Spacer(GlanceModifier.height(6.dp))
@@ -35,7 +34,7 @@ internal fun DigestCard(state: WidgetState.Digest) {
         Spacer(GlanceModifier.height(4.dp))
         Text(text = state.detail, style = WidgetText.body, maxLines = 3)
         Spacer(GlanceModifier.defaultWeight())
-        FeedbackRow(muteMatch = null)
+        FeedbackRow(muteMatch = null, given = feedback)
     }
 }
 
@@ -51,7 +50,7 @@ internal fun IdleCard(state: WidgetState.Idle) {
     val fixture = state.nextFixture
     WidgetCard(
         description = if (fixture != null) "Next up, " + fixture else FOLLOW_PROMPT,
-        onClick = actionStartActivity<MainActivity>(),
+        onClick = openRoute(ROUTE_LIVE),
     ) {
         if (fixture != null) {
             Text(text = "Next up", style = WidgetText.meta, maxLines = 1)
@@ -138,4 +137,10 @@ internal fun ProtectedCard(protection: ProtectionState, lastRegisterCheck: Insta
     }
 }
 
-internal const val FOLLOW_PROMPT = "Follow a team to see it here"
+/**
+ * Deliberately not "Follow a team to see it here": following is step 16's work and there is no
+ * button for it yet. Copy that sends someone hunting for a control the app does not have reads
+ * as a broken app, not a forthcoming feature. Placing a bet is the thing that actually makes
+ * this widget come alive today, so that is what it says.
+ */
+internal const val FOLLOW_PROMPT = "Place a bet and it will show up here"
