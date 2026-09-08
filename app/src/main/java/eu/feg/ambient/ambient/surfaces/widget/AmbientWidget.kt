@@ -65,9 +65,15 @@ class AmbientWidget : GlanceAppWidget() {
                 // precisely the one whose process is not. Asking here is what makes the
                 // catch-up work at all.
                 val digest = app?.container?.digestForWidget()
+                val stored = store.load()
+                // N5: with nothing live and no catch-up due, an unseen recap takes the card.
+                // A live slip always wins -- the recap is for the quiet days.
+                val quiet = stored is WidgetState.Idle || stored is WidgetState.Protected
+                val recap = if (digest == null && quiet) app?.container?.recapForWidget() else null
                 val state = digest
                     ?.let { WidgetState.Digest(it.headline, it.detail, it.generatedAt) }
-                    ?: store.load()
+                    ?: recap?.let { WidgetState.Recap(it) }
+                    ?: stored
                 android.util.Log.i(
                     "AmbientWidget",
                     "compose " + id + " v" + version + " -> " + state.javaClass.simpleName +
@@ -124,12 +130,8 @@ internal fun WidgetBody(state: WidgetState, feedback: FeedbackMark? = null) {
             if (protection == ProtectionState.CALM) CalmSlipCard(state.slip)
             else SettledCard(state.slip, feedback)
         is WidgetState.Digest -> DigestCard(state, feedback)
-        // N5. Rendered by the recap package's own card once it lands (17B assembly); until
-        // then the digest card is an honest stand-in -- same shape, counts only, no money.
-        is WidgetState.Recap -> DigestCard(
-            WidgetState.Digest(state.recap.headline, state.recap.detail, state.recap.to),
-            feedback,
-        )
+        // N5. Counts only, club-themed, unchanged in Calm Mode: there is no money in it.
+        is WidgetState.Recap -> eu.feg.ambient.ambient.recap.RecapCard(state.recap)
         is WidgetState.Idle -> IdleCard(state)
         is WidgetState.Protected -> ProtectedCard(state.protection, state.lastRegisterCheck)
     }

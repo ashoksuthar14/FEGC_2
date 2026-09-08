@@ -23,6 +23,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import eu.feg.ambient.ui.components.IconTouchTarget
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -87,6 +89,7 @@ private fun ArenaTipRow(tip: ArenaTip, onCopy: () -> Unit) {
         ) {
             Box(
                 Modifier
+                    .clearAndSetSemantics { }
                     .size(34.dp)
                     .clip(CircleShape)
                     .background(psk.brandBlue),
@@ -121,14 +124,14 @@ private fun ArenaTipRow(tip: ArenaTip, onCopy: () -> Unit) {
                 tint = psk.textSecondary,
                 modifier = Modifier.size(20.dp),
             )
-            Icon(
-                imageVector = Icons.Filled.ContentCopy,
-                contentDescription = "Copy this slip",
-                tint = psk.brandBlue,
-                modifier = Modifier
-                    .size(20.dp)
-                    .clickable(onClick = onCopy),
-            )
+            IconTouchTarget(contentDescription = "Copy this slip", onClick = onCopy, visualSize = 20.dp) {
+                Icon(
+                    imageVector = Icons.Filled.ContentCopy,
+                    contentDescription = null,
+                    tint = psk.brandBlue,
+                    modifier = Modifier.size(20.dp),
+                )
+            }
         }
 
         Row(

@@ -1,8 +1,12 @@
 package eu.feg.ambient.ui.components
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.snap
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
@@ -10,11 +14,18 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -40,23 +51,37 @@ fun PskChip(
     onClick: () -> Unit = {},
 ) {
     val psk = LocalPskColors.current
+    val interaction = remember { MutableInteractionSource() }
     val fill by animateColorAsState(
         targetValue = if (selected) selectedFill ?: psk.brandBlue else psk.surfaceVariant,
+        animationSpec = if (reducedMotion()) snap<Color>() else spring<Color>(),
         label = "chipFill",
     )
     val onFill = if (selected) selectedContent ?: psk.textPrimary else psk.textSecondary
     Row(
         modifier = modifier
+            // The pill stays 34 dp tall as in the screenshots; the extra height is empty,
+            // tappable padding around it.
+            .minimumInteractiveComponentSize()
+            .semantics { this.selected = selected }
             .clip(PskShapes.chip)
             .background(fill)
-            .clickable(onClick = onClick)
+            .clickable(
+                interactionSource = interaction,
+                indication = LocalIndication.current,
+                role = Role.Button,
+                onClick = onClick,
+            )
+            .focusRing(interaction, PskShapes.chip)
             .padding(horizontal = 12.dp, vertical = 7.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         leadingDotColor?.let {
+            // A country marker the label already names; nothing to read.
             androidx.compose.foundation.layout.Box(
                 Modifier
+                    .clearAndSetSemantics { }
                     .size(10.dp)
                     .clip(CircleShape)
                     .background(it),

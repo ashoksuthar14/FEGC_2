@@ -32,13 +32,8 @@ import eu.feg.ambient.ui.theme.PskTheme
 @Composable
 fun ShimmerRow(modifier: Modifier = Modifier) {
     val psk = LocalPskColors.current
-    val transition = rememberInfiniteTransition(label = "shimmer")
-    val alpha by transition.animateFloat(
-        initialValue = 0.35f,
-        targetValue = 0.75f,
-        animationSpec = infiniteRepeatable(tween(700), RepeatMode.Reverse),
-        label = "shimmerAlpha",
-    )
+    // A skeleton that does not shimmer is still a skeleton; the shape is the message.
+    val alpha = if (reducedMotion()) 0.55f else shimmerAlpha()
 
     Column(
         modifier = modifier
@@ -61,7 +56,8 @@ fun ShimmerRow(modifier: Modifier = Modifier) {
                 Box(
                     Modifier
                         .width(50.dp)
-                        .height(44.dp)
+                        // Matches OddsButton's 48 dp minimum so the list does not jump.
+                        .height(48.dp)
                         .clip(PskShapes.oddsButton)
                         .alpha(alpha)
                         .background(psk.oddsCell),
@@ -69,6 +65,18 @@ fun ShimmerRow(modifier: Modifier = Modifier) {
             }
         }
     }
+}
+
+@Composable
+private fun shimmerAlpha(): Float {
+    val transition = rememberInfiniteTransition(label = "shimmer")
+    val alpha by transition.animateFloat(
+        initialValue = 0.35f,
+        targetValue = 0.75f,
+        animationSpec = infiniteRepeatable(tween(700), RepeatMode.Reverse),
+        label = "shimmerAlpha",
+    )
+    return alpha
 }
 
 @Composable

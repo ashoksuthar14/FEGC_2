@@ -28,6 +28,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -92,7 +93,7 @@ fun ResponsibleGamingScreen(
                     .clip(PskShapes.card)
                     .background(psk.surface)
                     .border(2.dp, psk.negative, PskShapes.card)
-                    .clickable { confirmPanic = true }
+                    .clickable(role = Role.Button) { confirmPanic = true }
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {

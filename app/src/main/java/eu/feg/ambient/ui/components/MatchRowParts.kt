@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -49,6 +50,8 @@ fun TeamCrest(name: String, modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
             .size(20.dp)
+            // The team name follows the crest; reading "L Liverpool" helps nobody.
+            .clearAndSetSemantics { }
             .clip(CircleShape)
             .background(fill),
         contentAlignment = Alignment.Center,
@@ -87,17 +90,15 @@ fun KickoffChip(text: String, modifier: Modifier = Modifier) {
  *
  * The dot is green, not the red the PRD asks for: psk.hr renders it green on both the live
  * minute chip and the "Pauza" chip, and matching the real product wins here.
+ *
+ * The dot is never the only signal: the period text beside it says the match is live in
+ * words, so a reader who cannot see green — or the pulse, which "Remove animations" turns
+ * into a solid dot — loses nothing.
  */
 @Composable
 fun LiveMinuteChip(text: String, modifier: Modifier = Modifier) {
     val psk = LocalPskColors.current
-    val transition = rememberInfiniteTransition(label = "livePulse")
-    val dotAlpha by transition.animateFloat(
-        initialValue = 1f,
-        targetValue = 0.25f,
-        animationSpec = infiniteRepeatable(tween(750), RepeatMode.Reverse),
-        label = "dotAlpha",
-    )
+    val dotAlpha = if (reducedMotion()) 1f else livePulseAlpha()
     Row(
         modifier = modifier
             .clip(PskShapes.oddsButton)
@@ -120,6 +121,19 @@ fun LiveMinuteChip(text: String, modifier: Modifier = Modifier) {
                 .background(psk.positive),
         )
     }
+}
+
+/** The 750 ms breathe shared by every live dot in the app. */
+@Composable
+internal fun livePulseAlpha(): Float {
+    val transition = rememberInfiniteTransition(label = "livePulse")
+    val alpha by transition.animateFloat(
+        initialValue = 1f,
+        targetValue = 0.25f,
+        animationSpec = infiniteRepeatable(tween(750), RepeatMode.Reverse),
+        label = "dotAlpha",
+    )
+    return alpha
 }
 
 /** BB, 90+, stream and stats markers. Colour is per-badge; the rest are plain meta text. */

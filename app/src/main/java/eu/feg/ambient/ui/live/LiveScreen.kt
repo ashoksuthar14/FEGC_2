@@ -23,6 +23,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
+import eu.feg.ambient.ui.components.MinTouchTarget
+import eu.feg.ambient.ui.components.reducedMotion
+import androidx.compose.animation.core.snap
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.text.font.FontWeight
@@ -128,14 +136,18 @@ private fun SportAccordionHeader(
     val psk = LocalPskColors.current
     val rotation by animateFloatAsState(
         targetValue = if (expanded) 0f else -90f,
+        animationSpec = if (reducedMotion()) snap<Float>() else spring<Float>(),
         label = "sportChevron",
     )
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .heightIn(min = MinTouchTarget)
             .clip(PskShapes.card)
             .background(psk.surfaceVariant)
-            .clickable(onClick = onToggle)
+            // The row is the control and says its state; the chevron is decoration.
+            .semantics { stateDescription = if (expanded) "Expanded" else "Collapsed" }
+            .clickable(role = Role.Button, onClick = onToggle)
             .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -154,7 +166,7 @@ private fun SportAccordionHeader(
         Box(Modifier.weight(1f))
         Icon(
             imageVector = Icons.Filled.KeyboardArrowDown,
-            contentDescription = if (expanded) "Collapse" else "Expand",
+            contentDescription = null,
             tint = psk.textSecondary,
             modifier = Modifier
                 .size(20.dp)

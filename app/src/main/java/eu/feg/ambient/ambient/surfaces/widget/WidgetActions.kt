@@ -103,16 +103,23 @@ class SpeakWidgetAction : ActionCallback {
         parameters: ActionParameters,
     ) {
         val container = app(context)?.container ?: return
-        val slip = when (val state = WidgetStateStore(context).load()) {
+        val store = WidgetStateStore(context)
+        val slip = when (val state = store.load()) {
             is WidgetState.Live -> state.slip
             is WidgetState.Settled -> state.slip
             else -> null
         }
-        if (slip == null) {
-            Log.i(TAG_SPEAK, "speak tapped with nothing to say")
-            return
+        // A digest or a recap holds no slip; it speaks its own stored sentence instead.
+        val result = if (slip != null) {
+            container.spokenMoments.speakSlip(slip, Surface.WIDGET)
+        } else {
+            val text = store.storedSpoken()
+            if (text == null) {
+                Log.i(TAG_SPEAK, "speak tapped with nothing to say")
+                return
+            }
+            container.spokenMoments.speak(text, Surface.WIDGET, "RECAP")
         }
-        val result = container.spokenMoments.speakSlip(slip, Surface.WIDGET)
         Log.i(TAG_SPEAK, "speak tapped: " + result)
 
         // Silence needs an answer, or the button looks broken rather than respectful.

@@ -22,6 +22,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -57,13 +60,15 @@ fun BottomBar(
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .clickable { onSelect(tab) }
+                    .semantics { this.selected = selected }
+                    .clickable(role = Role.Tab) { onSelect(tab) }
                     .padding(vertical = 4.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Icon(
                     imageVector = tab.icon,
-                    contentDescription = tab.label,
+                    // The label beneath is read; a description here would say it twice.
+                    contentDescription = null,
                     tint = if (selected) psk.brandBlue else psk.textSecondary,
                     modifier = Modifier.size(23.dp),
                 )

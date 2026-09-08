@@ -21,6 +21,11 @@ import eu.feg.ambient.ambient.digest.DefaultDigestBuilder
 import eu.feg.ambient.ambient.digest.Digest
 import eu.feg.ambient.ambient.digest.DigestBuilder
 import eu.feg.ambient.ambient.digest.UnlockWatcher
+import eu.feg.ambient.ambient.recap.DefaultRecapBuilder
+import eu.feg.ambient.ambient.recap.Recap
+import eu.feg.ambient.ambient.recap.RecapBuilder
+import eu.feg.ambient.ambient.recap.RecapPeriod
+import eu.feg.ambient.ambient.recap.RecapSeen
 import eu.feg.ambient.ambient.surfaces.AndroidSurfaceController
 import eu.feg.ambient.ambient.surfaces.WidgetState
 import eu.feg.ambient.ambient.surfaces.shortcuts.AmbientShortcuts
@@ -289,6 +294,37 @@ class AppContainer(context: Context) {
         if (digest == null) return null
         awayTracker.markDigestShown()
         return digest
+    }
+
+    // --- recap (N5, step 17B) ------------------------------------------------------------
+
+    val recapSeen = RecapSeen(context)
+
+    val recapBuilder: RecapBuilder = DefaultRecapBuilder(
+        ledger = ledger,
+        narrator = narrator,
+        protection = { protectionEvaluator.evaluate() },
+        myClubId = { userStateRepository.state.value.myClubId },
+    )
+
+    /**
+     * The recap for the widget to draw when nothing is live, or null.
+     *
+     * Same shape as the digest and for the same reason: the widget is redrawn by the
+     * launcher whether or not we are alive, so this is where "is there a recap to show"
+     * gets decided. Marked seen on draw -- a recap is a gift, and a gift handed over twice
+     * is a nag. The month is tried before the season because it is the fresher story.
+     */
+    suspend fun recapForWidget(): Recap? {
+        val now = clock.now()
+        for (period in listOf(RecapPeriod.MONTH, RecapPeriod.SEASON)) {
+            val recap = recapBuilder.build(period, now) ?: continue
+            if (recapSeen.hasSeen(period, recap.to)) continue
+            recapSeen.markSeen(period, recap.to)
+            Log.i("Recap", "recap drawn: " + recap.headline + " / " + recap.detail)
+            return recap
+        }
+        return null
     }
 
     /**

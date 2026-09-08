@@ -98,6 +98,7 @@ class LiveUpdateRenderer(
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentTitle(headline)
             .setContentText(detail)
+            .setTicker(headline + " " + detail)
             .setStyle(NotificationCompat.BigTextStyle().bigText(detail))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_STATUS)
@@ -139,6 +140,11 @@ class LiveUpdateRenderer(
         return base(Channels.LIVE_SLIP)
             .setContentTitle(title)
             .setContentText(detail)
+            // N1: the ticker is the one field Android hands to accessibility services, so
+            // the spoken variant goes here — "Two of your three legs have won…" — and
+            // TalkBack reads that instead of "2/3 · 61'". setOnlyAlertOnce keeps it to the
+            // first post, so a running card does not talk on every tick.
+            .setTicker(SpokenSurface.forSlip(state))
             // The small line above the title: progress and minute, where a figure that
             // changes on every tick can update without moving the title.
             .setSubText(subText(state))
@@ -214,11 +220,15 @@ class LiveUpdateRenderer(
             .setProgress(minute)
 
         val title = scoreLine(state) ?: "Utakmica u tijeku"
-        val detail = state.period?.let { it + " · " + minute + "'" } ?: (minute.toString() + "'")
+        // A sentence, not "1. poluvrijeme · 61'": a screen reader gets the body as-is, and
+        // "sixty-one apostrophe" is the soup N1 exists to replace. The chip and the
+        // sub-text keep the short form, where the eye wants it.
+        val detail = (state.period?.let { it + ", " } ?: "") + minute + " minutes played."
 
         return base(Channels.LIVE_SLIP)
             .setContentTitle(title)
             .setContentText(detail)
+            .setTicker(SpokenSurface.forSlip(state))
             // No progress and no leg count in Calm Mode, so the sub-text carries the minute
             // and nothing that counts towards a result.
             .setSubText(minute.toString() + "'")

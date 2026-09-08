@@ -77,7 +77,11 @@ object DigestRanker {
             // no stake in. Summarising it as "a goal on your slip" would tell them they hold
             // a bet they do not -- a false statement about their own account. Not theirs then
             // means not theirs now, so it never enters the catch-up at all.
-            !entry.reason.startsWith(NOT_YOURS)
+            !entry.reason.startsWith(NOT_YOURS) &&
+            // Rows written by the demo seeder exist to give the recap a month of history.
+            // They are not moments the customer lived through, so they never become a
+            // catch-up.
+            !entry.reason.startsWith(DEMO_SEED)
 
     /**
      * The grouping key is the match, and the match is recovered from the ids we already write.
@@ -171,6 +175,7 @@ object DigestRanker {
 
     /** AmbientEngine's wording for an ownership rejection; matched on prefix, not equality. */
     private const val NOT_YOURS = "Not yours"
+    private const val DEMO_SEED = "Demo seed"
 
     private const val TIER_SETTLED = 0
     private const val TIER_LEG_DECIDED = 1

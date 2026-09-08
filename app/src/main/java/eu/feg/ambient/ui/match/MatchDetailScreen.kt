@@ -1,7 +1,6 @@
 package eu.feg.ambient.ui.match
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -16,9 +15,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -28,10 +24,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
+import eu.feg.ambient.ui.components.SpokenRow
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import eu.feg.ambient.core.formatKickoff
@@ -42,7 +38,6 @@ import eu.feg.ambient.ui.components.OddsButton
 import eu.feg.ambient.ui.components.OddsState
 import eu.feg.ambient.ui.components.PskChip
 import eu.feg.ambient.ui.components.SetAsMyClubChip
-import eu.feg.ambient.ui.components.TeamCrest
 import eu.feg.ambient.ui.theme.LocalPskColors
 import eu.feg.ambient.ui.theme.PskShapes
 
@@ -162,6 +157,9 @@ fun MatchDetailScreen(
                                         else -> OddsState.DEFAULT
                                     },
                                     isTop = outcome.isTop,
+                                    selectionLabel = SpokenRow.selectionLabel(
+                                        outcome.label, match.home.name, match.away.name,
+                                    ),
                                     onClick = { viewModel.toggleSelection(market.id, outcome.id) },
                                 )
                             }
@@ -182,7 +180,7 @@ fun MatchDetailScreen(
                     .padding(12.dp)
                     .clip(PskShapes.card)
                     .background(psk.brandBlue)
-                    .clickable(onClick = onOpenSlip)
+                    .clickable(role = Role.Button, onClick = onOpenSlip)
                     .padding(horizontal = 16.dp, vertical = 14.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -199,85 +197,6 @@ fun MatchDetailScreen(
                     fontWeight = FontWeight.Bold,
                 )
             }
-        }
-    }
-}
-
-@Composable
-private fun TeamScoreLine(name: String, score: Int?) {
-    val psk = LocalPskColors.current
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        TeamCrest(name)
-        Text(
-            text = name,
-            style = MaterialTheme.typography.titleMedium,
-            color = psk.textPrimary,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f),
-        )
-        score?.let {
-            Text(
-                text = it.toString(),
-                style = MaterialTheme.typography.titleMedium,
-                color = psk.textPrimary,
-                fontWeight = FontWeight.Bold,
-            )
-        }
-    }
-}
-
-@Composable
-private fun MarketAccordion(
-    name: String,
-    outcomeCount: Int,
-    content: @Composable () -> Unit,
-) {
-    val psk = LocalPskColors.current
-    var expanded by remember { mutableStateOf(true) }
-    val rotation by animateFloatAsState(if (expanded) 0f else -90f, label = "marketChevron")
-
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .clip(PskShapes.card)
-            .background(psk.surface),
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(psk.surfaceVariant)
-                .clickable { expanded = !expanded }
-                .padding(horizontal = 12.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Text(
-                text = name,
-                style = MaterialTheme.typography.labelMedium,
-                color = psk.textPrimary,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.weight(1f),
-            )
-            Text(
-                text = outcomeCount.toString(),
-                style = MaterialTheme.typography.labelSmall,
-                color = psk.textSecondary,
-            )
-            Icon(
-                imageVector = Icons.Filled.KeyboardArrowDown,
-                contentDescription = if (expanded) "Collapse" else "Expand",
-                tint = psk.textSecondary,
-                modifier = Modifier
-                    .size(20.dp)
-                    .rotate(rotation),
-            )
-        }
-        AnimatedVisibility(visible = expanded) {
-            Box(Modifier.padding(8.dp)) { content() }
         }
     }
 }

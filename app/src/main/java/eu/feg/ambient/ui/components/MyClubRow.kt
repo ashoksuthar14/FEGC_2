@@ -15,6 +15,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -62,6 +63,7 @@ fun MyClubRow(
                     style = MaterialTheme.typography.labelMedium,
                     color = psk.textSecondary,
                     modifier = Modifier
+                        .minimumInteractiveComponentSize()
                         .clip(PskShapes.chip)
                         .clickable(onClickLabel = "Stop following a club") { onSelect(null) }
                         .padding(horizontal = 10.dp, vertical = 6.dp),
@@ -88,6 +90,8 @@ private fun ClubPill(club: ClubTheme, isSelected: Boolean, onClick: () -> Unit) 
     val psk = LocalPskColors.current
     Row(
         modifier = Modifier
+            // The pill keeps its 34 dp look; the tappable area around it grows to 48 dp.
+            .minimumInteractiveComponentSize()
             .clip(PskShapes.chip)
             .background(if (isSelected) club.primary else psk.surfaceVariant)
             // A white club on a dark card needs an edge, or the pill has no visible bounds.
@@ -126,6 +130,7 @@ fun SetAsMyClubChip(
     val psk = LocalPskColors.current
     Row(
         modifier = modifier
+            .minimumInteractiveComponentSize()
             .clip(PskShapes.chip)
             .background(if (isMine) club.primary else psk.surfaceVariant)
             .clickable(

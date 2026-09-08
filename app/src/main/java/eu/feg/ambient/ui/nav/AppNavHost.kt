@@ -35,6 +35,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import eu.feg.ambient.ui.components.IconTouchTarget
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -144,24 +145,30 @@ fun AppNavHost(
                         },
                         modifier = Modifier.padding(horizontal = 8.dp),
                     ) {
-                        Icon(
-                            imageVector = Icons.Filled.ReceiptLong,
+                        IconTouchTarget(
                             contentDescription = "Bet slip",
+                            onClick = { navController.navigate(Routes.BET_SLIP) },
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.ReceiptLong,
+                                contentDescription = null,
+                                tint = psk.textPrimary,
+                                modifier = Modifier.size(24.dp),
+                            )
+                        }
+                    }
+                    IconTouchTarget(
+                        contentDescription = "Account and more",
+                        onClick = { showMore = true },
+                        modifier = Modifier.padding(horizontal = 8.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.AccountCircle,
+                            contentDescription = null,
                             tint = psk.textPrimary,
-                            modifier = Modifier
-                                .size(24.dp)
-                                .clickable { navController.navigate(Routes.BET_SLIP) },
+                            modifier = Modifier.size(24.dp),
                         )
                     }
-                    Icon(
-                        imageVector = Icons.Filled.AccountCircle,
-                        contentDescription = "More",
-                        tint = psk.textPrimary,
-                        modifier = Modifier
-                            .padding(horizontal = 8.dp)
-                            .size(24.dp)
-                            .clickable { showMore = true },
-                    )
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = psk.brandBlue,

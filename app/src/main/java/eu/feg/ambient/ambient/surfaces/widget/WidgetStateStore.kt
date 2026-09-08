@@ -98,6 +98,19 @@ class WidgetStateStore(private val prefs: SharedPreferences?) {
 
     fun club(): ClubTheme = ClubThemes.byId(prefs?.getString(KEY_CLUB, null))
 
+    /**
+     * What the stored card would say out loud: the spoken variant when it has one, else the
+     * headline and detail as a sentence. For the cards that hold no slip -- digest, recap --
+     * which the slip-based speaker cannot read.
+     */
+    fun storedSpoken(): String? {
+        val json = prefs?.getString(KEY, null) ?: return null
+        val snap = runCatching { JSON.decodeFromString<WidgetSnapshot>(json) }.getOrNull() ?: return null
+        snap.narratedSpoken?.takeIf { it.isNotBlank() }?.let { return it }
+        val head = snap.headline ?: return null
+        return head + ". " + snap.detail.orEmpty()
+    }
+
     /** Idle with nothing to show is the honest answer when there is no stored state. */
     fun load(): WidgetState {
         val json = prefs?.getString(KEY, null) ?: return EMPTY
@@ -276,6 +289,8 @@ internal data class WidgetSnapshot(
                 kind = SnapshotKind.RECAP,
                 headline = state.recap.headline,
                 detail = state.recap.detail,
+                // The recap's own spoken sentence, so the card's speaker has something to say.
+                narratedSpoken = state.recap.spokenText,
                 sinceMillis = state.recap.to.toEpochMilliseconds(),
             )
 

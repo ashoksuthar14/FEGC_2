@@ -41,6 +41,7 @@ import eu.feg.ambient.ambient.narrator.Tone
 import eu.feg.ambient.ambient.surfaces.ProtectionState
 import eu.feg.ambient.ambient.surfaces.notifications.NotificationPermission
 import eu.feg.ambient.ui.components.PskChip
+import eu.feg.ambient.ambient.recap.RecapPeriod
 import eu.feg.ambient.ui.components.MyClubRow
 import eu.feg.ambient.ui.theme.LocalPskColors
 import eu.feg.ambient.ui.theme.PskShapes
@@ -236,6 +237,23 @@ fun SurfaceLabScreen(viewModel: SurfaceLabViewModel, modifier: Modifier = Modifi
                 Text(
                     text = state.digestNotice
                         ?: "The widget is the trigger — it redraws with no process of ours alive.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = psk.textSecondary,
+                )
+            }
+        }
+
+        item(key = "recap") {
+            LabCard("Season recap (N5)") {
+                ActionGrid(
+                    listOf(
+                        "Generate recap (month)" to { viewModel.generateRecap(RecapPeriod.MONTH) },
+                        "Generate recap (season)" to { viewModel.generateRecap(RecapPeriod.SEASON) },
+                    ),
+                    perRow = 2,
+                )
+                Text(
+                    text = state.recapNotice ?: "Counts only. No money on it, in any state.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = psk.textSecondary,
                 )

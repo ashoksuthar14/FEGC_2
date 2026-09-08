@@ -14,6 +14,7 @@ import eu.feg.ambient.ambient.surfaces.ProtectionState
 import eu.feg.ambient.ambient.engine.Surface
 import eu.feg.ambient.ambient.identity.ClubTheme
 import eu.feg.ambient.ambient.identity.ClubThemes
+import eu.feg.ambient.ambient.recap.RecapPeriod
 import eu.feg.ambient.ambient.surfaces.SlipSurfaceState
 import eu.feg.ambient.ambient.surfaces.SpeakResult
 import eu.feg.ambient.ambient.surfaces.SpokenSurface
@@ -61,6 +62,8 @@ data class SurfaceLabUiState(
     val speakNotice: String? = null,
     /** Step 16: the digest the Lab last built, in words. */
     val digestNotice: String? = null,
+    /** 17B: the recap the Lab last generated, with its raw counts. */
+    val recapNotice: String? = null,
     val running: Boolean = false,
 )
 
@@ -299,6 +302,29 @@ class SurfaceLabViewModel(private val container: AppContainer) : ViewModel() {
                         digest.items.joinToString(" · ") { it.text }
                 },
                 lastAction = "Build digest now",
+            )
+        }
+    }
+
+    /** N5 on demand. Does not mark the recap seen -- the Lab is for looking. */
+    fun generateRecap(period: RecapPeriod) {
+        viewModelScope.launch {
+            val recap = container.recapBuilder.build(period, container.clock.now())
+            _state.value = _state.value.copy(
+                recapNotice = if (recap == null) {
+                    "Null, correctly: fewer than 3 matches followed this " +
+                        period.name.lowercase() + ". Seed a month first (Surface demo: seed)."
+                } else {
+                    recap.headline + " \u2014 " + recap.detail +
+                        "\n\u201c" + recap.spokenText + "\u201d" +
+                        "\nmatches " + recap.matchesFollowed +
+                        " \u00b7 teams " + recap.teamsFollowed.size +
+                        " \u00b7 top " + (recap.topTeam ?: "-") + " \u00d7" + recap.topTeamCount +
+                        " \u00b7 predictions " + recap.predictionsRight + "/" + recap.predictionsTotal +
+                        " \u00b7 check-ins " + recap.checkIns +
+                        " \u00b7 streak " + recap.longestStreak
+                },
+                lastAction = "Generate recap (" + period.name.lowercase() + ")",
             )
         }
     }

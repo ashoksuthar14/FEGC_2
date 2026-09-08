@@ -24,6 +24,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -149,6 +151,8 @@ private fun BetCard(row: BetRow, liveOnLockScreen: Boolean = false) {
                 style = MaterialTheme.typography.labelMedium,
                 color = psk.positive,
                 fontWeight = FontWeight.SemiBold,
+                // "2/3 · 61'" is read as "two slash three sixty-one apostrophe"; say it.
+                modifier = Modifier.semantics { contentDescription = spokenProgress(it) },
             )
         }
 
@@ -189,6 +193,7 @@ private fun LegStatusIcon(status: LegStatus) {
     when (status) {
         LegStatus.PENDING -> Box(
             Modifier
+                .semantics { contentDescription = "Pending" }
                 .size(14.dp)
                 .clip(CircleShape)
                 .background(psk.textSecondary),
@@ -207,11 +212,19 @@ private fun LegStatusIcon(status: LegStatus) {
         )
         LegStatus.VOID -> Box(
             Modifier
+                .semantics { contentDescription = "Void" }
                 .size(14.dp)
                 .clip(CircleShape)
                 .background(psk.surfaceVariant),
         )
     }
+}
+
+/** "2/3 · 61'" → "2 of 3 legs settled, 61 minutes played". */
+private fun spokenProgress(progress: String): String {
+    val match = Regex("""(\d+)/(\d+) · (\d+)'""").find(progress) ?: return progress
+    val (settled, total, minute) = match.destructured
+    return settled + " of " + total + " legs settled, " + minute + " minutes played"
 }
 
 /** Phase 1 stub — ML Kit barcode scanning arrives in Phase 2. */

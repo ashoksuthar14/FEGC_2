@@ -1,7 +1,9 @@
 package eu.feg.ambient.ui.components
 
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,9 +22,15 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -58,6 +66,13 @@ data class MatchRowUi(
     val marketLabel: String? = null,
     val odds: List<RowOdd> = emptyList(),
     val isFavourite: Boolean = false,
+    /**
+     * Spoken only, never drawn: "two of your three legs won" at the end of the row's
+     * screen-reader sentence when the match carries one of the user's open legs. Phase 2's
+     * My Bets mapping fills these in; until then they stay null and the sentence omits them.
+     */
+    val legsWon: Int? = null,
+    val legsTotal: Int? = null,
 )
 
 /**
@@ -75,13 +90,25 @@ fun MatchRow(
     onOddClick: (Int) -> Unit = {},
 ) {
     val psk = LocalPskColors.current
+    val interaction = remember { MutableInteractionSource() }
 
     Column(
         modifier = modifier
             .fillMaxWidth()
+            // One sentence for the whole row. The star and the odds cells stay their own
+            // focusable nodes; merging only absorbs the plain text and the crest initials.
+            .semantics(mergeDescendants = true) {
+                contentDescription = SpokenRow.sentence(match)
+            }
             .clip(PskShapes.card)
             .background(psk.surfaceRaised)
-            .clickable(onClick = onClick)
+            .clickable(
+                interactionSource = interaction,
+                indication = LocalIndication.current,
+                role = Role.Button,
+                onClick = onClick,
+            )
+            .focusRing(interaction, PskShapes.card, psk.brandBlue)
             .padding(horizontal = 8.dp, vertical = 6.dp),
     ) {
         Row(
@@ -95,14 +122,17 @@ fun MatchRow(
             }
             match.badges.forEach { BadgeChip(it) }
             Box(Modifier.weight(1f))
-            Icon(
-                imageVector = if (match.isFavourite) Icons.Filled.Star else Icons.Outlined.StarBorder,
+            IconTouchTarget(
                 contentDescription = if (match.isFavourite) "Remove from favourites" else "Add to favourites",
-                tint = if (match.isFavourite) psk.jackpotYellow else psk.textSecondary,
-                modifier = Modifier
-                    .size(24.dp)
-                    .clickable(onClick = onToggleFavourite),
-            )
+                onClick = onToggleFavourite,
+            ) {
+                Icon(
+                    imageVector = if (match.isFavourite) Icons.Filled.Star else Icons.Outlined.StarBorder,
+                    contentDescription = null,
+                    tint = if (match.isFavourite) psk.jackpotYellow else psk.textSecondary,
+                    modifier = Modifier.size(24.dp),
+                )
+            }
         }
 
         Row(
@@ -121,13 +151,24 @@ fun MatchRow(
                 TeamLine(match.awayName)
             }
 
-            if (match.isLive && match.homeScore != null && match.awayScore != null) {
+            // Locals so the null checks carry into the semantics lambda below.
+            val homeScore = match.homeScore
+            val awayScore = match.awayScore
+            if (match.isLive && homeScore != null && awayScore != null) {
                 Column(
                     horizontalAlignment = Alignment.End,
                     verticalArrangement = Arrangement.spacedBy(4.dp),
+                    // The score is the one thing on the row worth interrupting for, so it is
+                    // its own polite live region; the minute chip is not, or every tick would
+                    // talk. mergeDescendants keeps this node out of the row's sentence, so a
+                    // goal announces "Score one nil" and nothing else changes what is said.
+                    modifier = Modifier.semantics(mergeDescendants = true) {
+                        liveRegion = LiveRegionMode.Polite
+                        contentDescription = SpokenRow.scoreAnnouncement(homeScore, awayScore)
+                    },
                 ) {
-                    ScoreLine(match.homeScore)
-                    ScoreLine(match.awayScore)
+                    ScoreLine(homeScore)
+                    ScoreLine(awayScore)
                 }
             }
 
@@ -152,6 +193,9 @@ fun MatchRow(
                                 state = odd.state,
                                 isTop = odd.isTop,
                                 flash = odd.flash,
+                                selectionLabel = SpokenRow.selectionLabel(
+                                    odd.label, match.homeName, match.awayName,
+                                ),
                                 onClick = { onOddClick(index) },
                             )
                         }

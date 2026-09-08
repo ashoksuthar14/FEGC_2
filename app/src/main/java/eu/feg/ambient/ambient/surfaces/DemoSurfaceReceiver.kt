@@ -10,6 +10,7 @@ import eu.feg.ambient.ambient.narrator.MomentFacts
 import eu.feg.ambient.ambient.narrator.MomentType
 import eu.feg.ambient.ambient.narrator.NarratorLanguage
 import eu.feg.ambient.ambient.narrator.TemplateNarrator
+import eu.feg.ambient.ambient.recap.RecapPeriod
 import eu.feg.ambient.ambient.narrator.Tone
 import kotlin.time.Duration.Companion.days
 import eu.feg.ambient.ambient.surfaces.widget.applyMute
@@ -39,6 +40,8 @@ import kotlinx.coroutines.launch
  *   adb shell am broadcast -a eu.feg.ambient.DEMO_SURFACE --es action club --es id hajduk_split
  *   adb shell am broadcast -a eu.feg.ambient.DEMO_SURFACE --es action exclude --es on true
  *   adb shell am broadcast -a eu.feg.ambient.DEMO_SURFACE --es action away --ei minutes 90
+ *   adb shell am broadcast -a eu.feg.ambient.DEMO_SURFACE --es action seed --ei days 30
+ *   adb shell am broadcast -a eu.feg.ambient.DEMO_SURFACE --es action recap --es period month
  *
  * Debug builds only — it is registered behind a manifest flag and does nothing in release.
  */
@@ -142,6 +145,22 @@ class DemoSurfaceReceiver : BroadcastReceiver() {
                         else -> WidgetState.Live(slip)
                     }
                     controller.refreshWidget(state)
+                }
+
+                // 17B: a month of history for the recap. Rows are labelled "Demo seed" and
+                // the digest ranker refuses them, so seeding the recap can never put a
+                // fabricated moment into a customer's catch-up. Do this before the demo.
+                "seed" -> {
+                    val days = intent.getIntExtra("days", 30)
+                    val n = DemoLedgerSeed.seed(app.container.ledger, app.container.clock.now(), days)
+                    Log.i(TAG, "seeded " + n + " ledger rows over " + days + " days")
+                }
+
+                "recap" -> {
+                    val period = if (intent.getStringExtra("period") == "season") RecapPeriod.SEASON else RecapPeriod.MONTH
+                    val recap = app.container.recapBuilder.build(period, app.container.clock.now())
+                    Log.i(TAG, "recap " + period + " -> " + (recap?.headline ?: "null") + " / " + (recap?.detail ?: "-"))
+                    if (recap != null) controller.refreshWidget(WidgetState.Recap(recap))
                 }
 
                 // Step 16: pretend the customer has been away, then poke the widget. The
