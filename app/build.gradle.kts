@@ -16,9 +16,26 @@ android {
         versionCode = 1
         versionName = "1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        /**
+         * The Pixel is arm64. LiteRT ships a 25.6 MB x86_64 JNI library alongside the 21.5 MB
+         * arm64 one, and on a device build the x86_64 half is a third of the APK that can
+         * never execute — it was being compiled, packaged, pushed over wireless adb and
+         * written to the phone's storage on every single install.
+         *
+         * Debug only, so a release build stays universal.
+         */
+        ndk {
+            abiFilters += "arm64-v8a"
+        }
     }
 
     buildTypes {
+        debug {
+            // Nothing here is shipped, and each of these costs seconds on every build.
+            isCrunchPngs = false
+            isPseudoLocalesEnabled = false
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")

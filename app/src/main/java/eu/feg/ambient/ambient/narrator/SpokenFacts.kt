@@ -187,6 +187,28 @@ internal interface SpokenLines {
          * — chiefly a model narrator whose output arrived without a SPOKEN line.
          */
         fun compose(facts: MomentFacts, tone: Tone, language: NarratorLanguage): String =
-            of(language).line(SpokenFacts(facts, language), tone)
+            sentenceCase(of(language).line(SpokenFacts(facts, language), tone))
+
+        /**
+         * Capitalises the start of every sentence.
+         *
+         * The lines are assembled from parts, and a part that begins with a spelled-out
+         * number begins lower-case: "sixty-one minutes played. two of your three legs have
+         * won." Capitalising inside the templates would mean a separate cased copy of every
+         * number word, so it is done once, here, over the finished sentence.
+         */
+        fun sentenceCase(text: String): String {
+            val out = StringBuilder(text.length)
+            var startOfSentence = true
+            text.forEach { ch ->
+                out.append(if (startOfSentence && ch.isLetter()) ch.uppercaseChar() else ch)
+                startOfSentence = when {
+                    ch == '.' || ch == '!' || ch == '?' -> true
+                    ch == ' ' -> startOfSentence
+                    else -> false
+                }
+            }
+            return out.toString()
+        }
     }
 }

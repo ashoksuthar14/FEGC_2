@@ -130,6 +130,14 @@ interface SurfaceController {
     suspend fun refreshShortcuts(protection: ProtectionState)
 
     /**
+     * What the widget is currently showing, or null if this process has not drawn it yet.
+     *
+     * A caller that wants to restyle the widget must repaint what is there rather than pick
+     * a state again from scratch.
+     */
+    fun currentWidgetState(): WidgetState?
+
+    /**
      * Re-reads permission and promotion state from the system. On the contract rather than
      * the implementation so the Lab never has to downcast — a downcast in `ui/` would be the
      * first crack in "the Moment Engine is a drop-in replacement".

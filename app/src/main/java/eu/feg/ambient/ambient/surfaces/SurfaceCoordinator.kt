@@ -47,6 +47,16 @@ class SurfaceCoordinator(
     private val onMatchEvent: suspend (MatchEvent) -> Unit,
     /** N6: the customer's club, already combined with protection by the container. */
     private val clubTheme: StateFlow<ClubTheme>,
+    /**
+     * The evaluator's own state.
+     *
+     * The coordinator used to watch UserState for protection changes, which quietly meant it
+     * only saw the half of protection the app itself writes. A block that arrives from the
+     * exclusion register — the case the whole compliance argument rests on, and the one the
+     * demo performs on stage — changes no UserState field, so it reached no surface. Both
+     * inputs are watched now.
+     */
+    private val protectionState: StateFlow<ProtectionState>,
 ) {
 
     /**
@@ -93,7 +103,11 @@ class SurfaceCoordinator(
 
                 val slipId = _liveSlipId.value
                 if (slipId == null) {
-                    controller.refreshWidget(quietWidgetState(protection))
+                    // Repaint what is on the home screen; do not decide again what ought to
+                    // be there. Deciding again is how picking a club replaced a live card
+                    // with an idle one — the coordinator does not own every surface that can
+                    // be showing, and a restyle must never be able to take content away.
+                    controller.refreshWidget(repaintTarget(protection))
                     return@collect
                 }
                 val bet = betRepository.placedBets.value.firstOrNull { it.id == slipId } ?: return@collect
@@ -249,26 +263,59 @@ class SurfaceCoordinator(
      * is the Calm Mode moment in the demo and a second of lag would undercut the whole claim.
      */
     private fun observeProtection() {
-        scope.launch {
-            userStateRepository.state.collect { user ->
-                val protection = protection()
-                controller.refreshShortcuts(protection)
+        // Two sources, one handler: the register can move protection without UserState
+        // moving, and UserState (panic, limits) can move it without the register moving.
+        scope.launch { protectionState.collect { applyProtection() } }
+        scope.launch { userStateRepository.state.collect { applyProtection() } }
+    }
 
-                val slipId = _liveSlipId.value
-                if (slipId == null) {
-                    controller.refreshWidget(quietWidgetState(protection))
-                    return@collect
-                }
+    private suspend fun applyProtection() {
+        val protection = protection()
+        controller.refreshShortcuts(protection)
 
-                val bet = betRepository.placedBets.value.firstOrNull { it.id == slipId } ?: return@collect
-                val state = surfaceState(bet) ?: return@collect
-                if (!protection.allowsLiveUpdate()) {
-                    controller.endLiveUpdate(slipId, settled = false)
-                    _liveSlipId.value = null
-                }
-                controller.updateLiveUpdate(state)
-                controller.refreshWidget(WidgetState.Live(state))
-            }
+        // UNCONDITIONAL, and before anything else.
+        //
+        // The renderer already refuses to POST under UNVERIFIED or BLOCKED, but nothing was
+        // taking down a card that had already been posted, and this used to run only when
+        // the coordinator happened to know which slip was on screen. A card put up by the
+        // Surface Lab, by a demo broadcast, or by any future caller therefore survived the
+        // account being excluded — an excluded customer left looking at a live betting card
+        // on their lock screen. The cancel is tied to the protection state, not to our
+        // bookkeeping.
+        if (!protection.allowsLiveUpdate()) {
+            controller.endLiveUpdate(_liveSlipId.value ?: ANY_SLIP, settled = false)
+            _liveSlipId.value = null
+        }
+
+        val slipId = _liveSlipId.value
+        if (slipId == null) {
+            controller.refreshWidget(repaintTarget(protection))
+            return
+        }
+
+        val bet = betRepository.placedBets.value.firstOrNull { it.id == slipId } ?: return
+        val state = surfaceState(bet) ?: return
+        controller.updateLiveUpdate(state)
+        controller.refreshWidget(WidgetState.Live(state))
+    }
+
+    /**
+     * The state to redraw when only the styling changed.
+     *
+     * Whatever the widget already holds, unless that is a card whose content depends on the
+     * club — Idle names a fixture, so a club change has to recompute it rather than repaint
+     * the old club's match in the new club's colours.
+     */
+    private fun repaintTarget(protection: ProtectionState): WidgetState {
+        // Protection outranks everything, including "leave what is there alone". A card that
+        // was live a second ago must not be repainted as live once the account is blocked.
+        if (protection != ProtectionState.NORMAL && protection != ProtectionState.CALM) {
+            return quietWidgetState(protection)
+        }
+        val current = controller.currentWidgetState()
+        return when (current) {
+            null, is WidgetState.Idle, is WidgetState.Protected -> quietWidgetState(protection)
+            else -> current
         }
     }
 
@@ -374,5 +421,12 @@ class SurfaceCoordinator(
         /** One push per 20s unless something actually changed. */
         const val THROTTLE_MS = 20_000L
         const val DEEP_LINK_MY_BETS = "mybets"
+
+        /**
+         * Stands in for "whatever is showing" when protection has to take a card down and we
+         * do not know whose it was. An unsettled end cancels by notification id, so the id
+         * only has to be non-null.
+         */
+        const val ANY_SLIP = "*"
     }
 }

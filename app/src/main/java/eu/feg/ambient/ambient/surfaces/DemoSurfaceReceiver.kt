@@ -5,6 +5,12 @@ import android.content.Context
 import android.content.Intent
 import android.util.Log
 import eu.feg.ambient.AmbientApp
+import eu.feg.ambient.ambient.engine.protection.DefaultProtectionEvaluator
+import eu.feg.ambient.ambient.narrator.MomentFacts
+import eu.feg.ambient.ambient.narrator.MomentType
+import eu.feg.ambient.ambient.narrator.NarratorLanguage
+import eu.feg.ambient.ambient.narrator.Tone
+import kotlin.time.Duration.Companion.days
 import eu.feg.ambient.ambient.surfaces.widget.applyMute
 import eu.feg.ambient.ambient.surfaces.widget.applyThumbs
 import kotlinx.coroutines.CoroutineScope
@@ -29,6 +35,8 @@ import kotlinx.coroutines.launch
  *   adb shell am broadcast -a eu.feg.ambient.DEMO_SURFACE --es action widget --es state Live
  *   adb shell am broadcast -a eu.feg.ambient.DEMO_SURFACE --es action thumbs --es value up
  *   adb shell am broadcast -a eu.feg.ambient.DEMO_SURFACE --es action speak
+ *   adb shell am broadcast -a eu.feg.ambient.DEMO_SURFACE --es action club --es id hajduk_split
+ *   adb shell am broadcast -a eu.feg.ambient.DEMO_SURFACE --es action exclude --es on true
  *
  * Debug builds only — it is registered behind a manifest flag and does nothing in release.
  */
@@ -44,7 +52,10 @@ class DemoSurfaceReceiver : BroadcastReceiver() {
         scope.launch {
             when (action) {
                 "start" -> {
-                    slip = DemoSurfaceData.threeLegLive()
+                    // Narrated, like the real path. Without this the demo card carries no
+                    // spoken variant and Listen falls back to the plain sentence, which is
+                    // not what a customer would actually hear.
+                    slip = narrated(app, DemoSurfaceData.threeLegLive(), MomentType.GOAL_ON_SLIP)
                     controller.startLiveUpdate(slip)
                     controller.refreshWidget(WidgetState.Live(slip))
                 }
@@ -59,7 +70,11 @@ class DemoSurfaceReceiver : BroadcastReceiver() {
                 }
 
                 "goal" -> {
-                    slip = slip.copy(homeScore = (slip.homeScore ?: 0) + 1)
+                    slip = narrated(
+                        app,
+                        slip.copy(homeScore = (slip.homeScore ?: 0) + 1),
+                        MomentType.GOAL_ON_SLIP,
+                    )
                     controller.updateLiveUpdate(slip)
                     controller.refreshWidget(WidgetState.Live(slip))
                 }
@@ -127,6 +142,33 @@ class DemoSurfaceReceiver : BroadcastReceiver() {
                     controller.refreshWidget(state)
                 }
 
+                // The real protection flip: the demo player goes on or off the exclusion
+                // register, and the evaluator's own cache is dropped so the change lands now
+                // rather than at the end of its fifteen-minute window. This is the same
+                // register the panel writes to -- not a shortcut past it.
+                "exclude" -> {
+                    val on = intent.getStringExtra("on")?.toBooleanStrictOrNull() ?: true
+                    val register = app.container.exclusionRegister
+                    val ref = DefaultProtectionEvaluator.DEMO_PLAYER
+                    if (on) {
+                        register.add(ref, app.container.clock.now().plus(1.days))
+                    } else {
+                        register.remove(ref)
+                    }
+                    app.container.protectionEvaluator.checkNow()
+                    Log.i(TAG, "exclude " + on + " -> " + app.container.protectionEvaluator.evaluate())
+                }
+
+                // N6 from the wire. It writes through the same repository the Home strip
+                // and the Surface Lab picker write to, so the surfaces repaint by the one
+                // path -- this is a remote control for the control, not a second control.
+                "club" -> {
+                    app.container.userStateRepository.setMyClub(
+                        intent.getStringExtra("id")?.takeIf { it.isNotBlank() },
+                    )
+                    Log.i(TAG, "club set to " + intent.getStringExtra("id"))
+                }
+
                 // N1 read aloud, driven the same way. Still never automatic: this is a
                 // broadcast someone typed, which is a tap by another name.
                 "speak" -> {
@@ -151,6 +193,35 @@ class DemoSurfaceReceiver : BroadcastReceiver() {
             Log.i(TAG, "after " + action + ": chip=" + slip.chipText + " protection=" + slip.protection)
         }
     }
+
+    /** Runs the real narrator over a demo slip, so the demo surfaces carry real text. */
+    private suspend fun narrated(
+        app: AmbientApp,
+        slip: SlipSurfaceState,
+        type: MomentType,
+    ): SlipSurfaceState = runCatching {
+        slip.copy(
+            narrated = app.container.narrator.narrate(
+                MomentFacts(
+                    type = type,
+                    homeTeam = slip.homeTeam,
+                    awayTeam = slip.awayTeam,
+                    homeScore = slip.homeScore,
+                    awayScore = slip.awayScore,
+                    minute = slip.minute,
+                    period = slip.period,
+                    legsTotal = slip.legsTotal,
+                    legsWon = slip.legsWon,
+                    legsLost = slip.legsLost,
+                    myLegDescription = slip.legs.firstOrNull { it.status == LegStatus.PENDING }
+                        ?.description,
+                    minutesRemaining = slip.minutesRemaining,
+                ),
+                Tone.PLAIN,
+                NarratorLanguage.EN,
+            ),
+        )
+    }.getOrDefault(slip)
 
     private companion object {
         const val TAG = "DemoSurface"

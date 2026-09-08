@@ -59,6 +59,7 @@ class EnginePipelineTest {
         }
         override suspend fun refreshShortcuts(protection: ProtectionState) = Unit
         override fun refreshDiagnostics() = Unit
+        override fun currentWidgetState(): WidgetState? = widgets.lastOrNull()
         override fun resetAlertBudget() = Unit
         override val diagnostics: StateFlow<SurfaceDiagnostics> = MutableStateFlow(SurfaceDiagnostics())
     }

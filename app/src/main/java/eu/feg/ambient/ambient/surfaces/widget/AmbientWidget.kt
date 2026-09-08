@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import android.content.Intent
@@ -23,6 +24,7 @@ import eu.feg.ambient.MainActivity
 import eu.feg.ambient.ambient.surfaces.LegStatus
 import eu.feg.ambient.ambient.surfaces.ProtectionState
 import eu.feg.ambient.ambient.surfaces.SlipSurfaceState
+import eu.feg.ambient.AmbientApp
 import eu.feg.ambient.ambient.identity.ClubThemes
 import eu.feg.ambient.ambient.surfaces.SpokenSurface
 import eu.feg.ambient.ambient.surfaces.WidgetState
@@ -47,7 +49,14 @@ class AmbientWidget : GlanceAppWidget() {
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val store = WidgetStateStore(context)
-        val state = store.load()
+        // THE DIGEST IS A WIDGET DECISION. The launcher redraws this whether or not our
+        // process is alive, and a customer who has been away for two hours is precisely the
+        // one whose process is not. Asking here — rather than waiting for an unlock broadcast
+        // a frozen app never receives — is what makes the catch-up work at all.
+        val digest = (context.applicationContext as? AmbientApp)?.container?.digestForWidget()
+        val state = digest
+            ?.let { WidgetState.Digest(it.headline, it.detail, it.generatedAt) }
+            ?: store.load()
         val feedback = store.feedback()
         // The club is read from the widget's own store, saved beside the state, so a redraw
         // after a reboot finds it without waking anything else of ours.
@@ -113,8 +122,8 @@ private fun PreMatchCard(state: WidgetState.PreMatch) {
             legsSpoken(state.legs),
         onClick = openRoute(ROUTE_MY_BETS),
     ) {
-        CardHeader(state.match)
-        Spacer(GlanceModifier.height(6.dp))
+        ClubBand()
+        Spacer(GlanceModifier.height(8.dp))
         when {
             minutes <= 0L -> WidgetHero("Kickoff", "Now")
             minutes < 60L -> WidgetHero("Kickoff in", minutes.toString(), "min")
@@ -152,15 +161,12 @@ private fun LiveCard(slip: SlipSurfaceState, feedback: FeedbackMark? = null) {
         description = SpokenSurface.forSlip(slip) ?: spokenSlip(slip, headline),
         onClick = openRoute(ROUTE_MY_BETS),
     ) {
-        CardHeader(matchLabel(slip), trailing = slip.minute?.let { it.toString() + "'" })
-        Spacer(GlanceModifier.height(4.dp))
-        WidgetHero(
-            label = slip.legsWon.toString() + " of " + slip.legsTotal + " home",
-            value = scoreOnly(slip),
-        )
-        Spacer(GlanceModifier.height(10.dp))
-        WidgetLegSegments(slip.legs)
+        ClubBand(trailing = slip.minute?.let { it.toString() + "'" })
+        Spacer(GlanceModifier.height(6.dp))
+        WidgetHero(label = matchLabel(slip), value = scoreOnly(slip))
         Spacer(GlanceModifier.height(8.dp))
+        WidgetLegDots(slip.legs, slip.legsWon, slip.legsTotal)
+        Spacer(GlanceModifier.height(6.dp))
         Text(
             text = headline ?: (slip.minutesRemaining?.let { it.toString() + " min left" } ?: ""),
             style = WidgetText.meta,
@@ -178,15 +184,15 @@ private fun SettledCard(slip: SlipSurfaceState, feedback: FeedbackMark? = null) 
         description = SpokenSurface.forSlip(slip) ?: spokenSlip(slip, slip.narrated?.headline),
         onClick = openRoute(ROUTE_MY_BETS),
     ) {
-        CardHeader(matchLabel(slip), trailing = "FT")
-        Spacer(GlanceModifier.height(4.dp))
+        ClubBand(trailing = "FULL TIME")
+        Spacer(GlanceModifier.height(6.dp))
         WidgetHero(
-            label = if (slip.legsLost > 0) slip.legsLost.toString() + " lost" else "Settled",
+            label = matchLabel(slip),
             value = slip.legsWon.toString() + "/" + slip.legsTotal,
         )
-        Spacer(GlanceModifier.height(10.dp))
-        WidgetLegSegments(slip.legs)
         Spacer(GlanceModifier.height(8.dp))
+        WidgetLegDots(slip.legs, slip.legsWon, slip.legsTotal)
+        Spacer(GlanceModifier.height(6.dp))
         Text(text = scoreLine(slip) ?: "", style = WidgetText.meta, maxLines = 1)
         Spacer(GlanceModifier.defaultWeight())
         ActionRow(muteMatch = null, given = feedback)
@@ -204,9 +210,9 @@ private fun SettledCard(slip: SlipSurfaceState, feedback: FeedbackMark? = null) 
 @Composable
 private fun CalmSlipCard(slip: SlipSurfaceState) {
     WidgetCard(description = (scoreLine(slip) ?: "Match in progress") + ". Protection active.") {
-        CardHeader(matchLabel(slip), trailing = slip.minute?.let { it.toString() + "'" })
-        Spacer(GlanceModifier.height(4.dp))
-        WidgetHero(label = "Protection active", value = scoreOnly(slip))
+        ClubBand(trailing = slip.minute?.let { it.toString() + "'" })
+        Spacer(GlanceModifier.height(6.dp))
+        WidgetHero(label = matchLabel(slip), value = scoreOnly(slip))
         Spacer(GlanceModifier.height(6.dp))
         slip.period?.let { Text(text = it, style = WidgetText.meta, maxLines = 1) }
         Spacer(GlanceModifier.defaultWeight())
@@ -230,24 +236,36 @@ private fun CalmSlipCard(slip: SlipSurfaceState) {
 }
 
 /**
- * Crest, caption, and one trailing figure. Every card opens with this line, so the six states
- * read as one family rather than six designs.
+ * The club band: badge, club name in the club's own colour, and one trailing figure.
+ *
+ * This is where the personalisation actually lands. A 22 dp badge plus the club's name set in
+ * ClubTheme.accentOnDark -- the club colour lightened until it is readable as ink on our dark
+ * ground -- is recognisable across a room, which a small tinted circle was not. The match and
+ * the numbers sit below it in neutral colours, because the card still has to be read as
+ * information rather than as a poster.
  */
 @Composable
-private fun CardHeader(label: String, trailing: String? = null) {
+private fun ClubBand(trailing: String? = null) {
+    val theme = LocalClubTheme.current
     Row(
         modifier = GlanceModifier.fillMaxWidth(),
         verticalAlignment = androidx.glance.layout.Alignment.Vertical.CenterVertically,
     ) {
-        WidgetCrest(size = 18.dp)
-        Spacer(GlanceModifier.width(6.dp))
+        WidgetCrest(size = 22.dp)
+        Spacer(GlanceModifier.width(7.dp))
         Text(
-            text = label.uppercase(),
-            style = WidgetText.label,
+            text = theme.name.uppercase(),
+            style = androidx.glance.text.TextStyle(
+                androidx.glance.unit.ColorProvider(theme.accentOnDark),
+                11.sp,
+                androidx.glance.text.FontWeight.Bold,
+            ),
             maxLines = 1,
             modifier = GlanceModifier.defaultWeight(),
         )
-        if (trailing != null) Text(text = trailing, style = WidgetText.label, maxLines = 1)
+        if (trailing != null) {
+            Text(text = trailing, style = WidgetText.label, maxLines = 1)
+        }
     }
 }
 

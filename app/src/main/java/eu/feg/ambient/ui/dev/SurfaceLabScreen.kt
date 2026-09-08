@@ -224,6 +224,24 @@ fun SurfaceLabScreen(viewModel: SurfaceLabViewModel, modifier: Modifier = Modifi
             }
         }
 
+        item(key = "digest") {
+            LabCard("While you were away (step 16)") {
+                ActionGrid(
+                    listOf(
+                        "Simulate 90 min away" to { viewModel.simulateAway(90) },
+                        "Build digest now" to viewModel::buildDigestNow,
+                    ),
+                    perRow = 2,
+                )
+                Text(
+                    text = state.digestNotice
+                        ?: "The widget is the trigger — it redraws with no process of ours alive.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = psk.textSecondary,
+                )
+            }
+        }
+
         item(key = "club") {
             LabCard("My club (N6)") {
                 val club by viewModel.myClubTheme.collectAsStateWithLifecycle()
@@ -256,7 +274,13 @@ fun SurfaceLabScreen(viewModel: SurfaceLabViewModel, modifier: Modifier = Modifi
 
         item(key = "shortcuts") {
             LabCard("Shortcuts") {
-                ActionGrid(listOf("Refresh shortcuts" to viewModel::refreshShortcuts), perRow = 2)
+                ActionGrid(
+                    listOf(
+                        "Refresh shortcuts" to viewModel::refreshShortcuts,
+                        "Rebuild shortcuts" to viewModel::rebuildShortcuts,
+                    ),
+                    perRow = 2,
+                )
                 state.shortcutNotice?.let {
                     Text(it, style = MaterialTheme.typography.labelSmall, color = psk.textSecondary)
                 }

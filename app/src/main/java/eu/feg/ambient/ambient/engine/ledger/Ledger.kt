@@ -40,6 +40,23 @@ data class LedgerEntry(
     /** Plain words. This is what "Why this?" renders. */
     val reason: String,
     val shownAt: Long?,
+    /**
+     * The match this row was about, and its score at the time.
+     *
+     * Added for the digest. Without it a catch-up can only say "a slip settled", because the
+     * ledger recorded that a decision happened but not what it was about — and a card that
+     * vague is a card nobody opens. All five default to null so the JSON already on a device
+     * still parses; a row written before this existed simply has no match to name.
+     *
+     * COMPLIANCE — teams and scores are match facts, which every surface here already carries.
+     * There is deliberately no field for a price or an amount, for the same reason MomentFacts
+     * has none: the guarantee is that there is nothing to leak, not that we remember not to.
+     */
+    val matchId: String? = null,
+    val homeTeam: String? = null,
+    val awayTeam: String? = null,
+    val homeScore: Int? = null,
+    val awayScore: Int? = null,
     val tappedAt: Long? = null,
     val dismissedAt: Long? = null,
     val reward: Double? = null,

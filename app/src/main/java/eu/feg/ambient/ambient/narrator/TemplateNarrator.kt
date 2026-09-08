@@ -52,7 +52,7 @@ class TemplateNarrator : Narrator {
             NarratorLanguage.HR -> TemplateLinesHr
         }
         val (headline, detail) = table.lines(Facts(facts), tone)
-        val spoken = SpokenLines.of(language).line(SpokenFacts(facts, language), tone)
+        val spoken = SpokenLines.compose(facts, tone, language)
         return NarratedText(
             headline = clamp(headline, NarratorGuard.MAX_HEADLINE),
             detail = clamp(detail, NarratorGuard.MAX_DETAIL),

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The static fallback, and only that.
+
+  Every useful shortcut is dynamic, because every useful shortcut depends on state the manifest
+  cannot know: which slip is running, which club is followed, whether the account is protected.
+  What is static is the one shortcut that must exist even if our process never starts and no
+  dynamic set is ever published — help. A static shortcut is published by the system from the
+  APK itself, so it survives a cleared app, a crash on launch and a first install.
+-->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="help_static"
+        android:enabled="true"
+        android:icon="@drawable/ic_launcher_foreground"
+        android:shortcutShortLabel="@string/shortcut_help_short"
+        android:shortcutLongLabel="@string/shortcut_help_long">
+        <!-- MainActivity navigates on the "route" extra. Without it this lands on the
+             betting home screen, which would make the one door guaranteed to exist on a
+             crashed or freshly installed app open the wrong room. -->
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="eu.feg.ambient"
+            android:targetClass="eu.feg.ambient.MainActivity">
+            <extra android:name="route" android:value="rg" />
+        </intent>
+        <categories android:name="android.shortcut.conversation" />
+    </shortcut>
+</shortcuts>

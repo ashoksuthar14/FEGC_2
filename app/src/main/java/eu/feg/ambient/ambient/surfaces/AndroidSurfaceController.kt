@@ -32,6 +32,19 @@ class AndroidSurfaceController(
 
     var shortcutRenderer: ShortcutRendering? = null
 
+    /**
+     * The last state the widget was actually drawn from.
+     *
+     * Needed because a repaint — a club change, say — must redraw what is on the home screen
+     * rather than decide afresh what ought to be there. Deciding afresh is how a live card
+     * got replaced by an idle one the moment somebody picked a club. Null after a process
+     * restart, where the caller falls back to computing a state.
+     */
+    @Volatile
+    private var lastWidgetState: WidgetState? = null
+
+    override fun currentWidgetState(): WidgetState? = lastWidgetState
+
     init {
         Channels.ensure(context)
         refreshDiagnostics()
@@ -71,6 +84,7 @@ class AndroidSurfaceController(
 
     override suspend fun refreshWidget(state: WidgetState) {
         Log.i(TAG, "refreshWidget " + state.javaClass.simpleName)
+        lastWidgetState = state
         widgetRenderer?.render(state)
         _diagnostics.value = _diagnostics.value.copy(lastWidgetUpdate = Clock.System.now())
     }

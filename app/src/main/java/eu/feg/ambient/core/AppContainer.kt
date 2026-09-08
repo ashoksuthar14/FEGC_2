@@ -14,10 +14,16 @@ import eu.feg.ambient.ambient.narrator.NanoNarrator
 import eu.feg.ambient.ambient.narrator.NanoState
 import eu.feg.ambient.ambient.narrator.Narrator
 import eu.feg.ambient.ambient.narrator.TemplateNarrator
-import eu.feg.ambient.ambient.identity.ClubShortcuts
 import eu.feg.ambient.ambient.identity.ClubTheme
 import eu.feg.ambient.ambient.identity.ClubThemes
+import eu.feg.ambient.ambient.digest.AwayTracker
+import eu.feg.ambient.ambient.digest.DefaultDigestBuilder
+import eu.feg.ambient.ambient.digest.Digest
+import eu.feg.ambient.ambient.digest.DigestBuilder
+import eu.feg.ambient.ambient.digest.UnlockWatcher
 import eu.feg.ambient.ambient.surfaces.AndroidSurfaceController
+import eu.feg.ambient.ambient.surfaces.WidgetState
+import eu.feg.ambient.ambient.surfaces.shortcuts.AmbientShortcuts
 import eu.feg.ambient.ambient.surfaces.DemoSurfaceData
 import eu.feg.ambient.ambient.surfaces.SurfaceController
 import eu.feg.ambient.ambient.engine.AmbientEngine
@@ -175,7 +181,12 @@ class AppContainer(context: Context) {
     val surfaceController: SurfaceController = AndroidSurfaceController(context, AlertBudget(context)).apply {
         liveUpdateRenderer = LiveUpdateRenderer(context) { _myClubTheme.value }
         widgetRenderer = WidgetRenderer(context, clubTheme = { _myClubTheme.value })
-        shortcutRenderer = ClubShortcuts(context, matchRepository) { _myClubTheme.value }
+        shortcutRenderer = AmbientShortcuts(
+            context = context,
+            matchRepository = matchRepository,
+            betRepository = betRepository,
+            clubTheme = { _myClubTheme.value },
+        )
     }
 
     /** Ready-made slips so the surfaces have something real to show before the engine exists. */
@@ -248,6 +259,50 @@ class AppContainer(context: Context) {
         protection = { protectionEvaluator.evaluate() },
     )
 
+    // --- digest (step 16) ---------------------------------------------------------------
+
+    /** How long the customer has been away, and whether that is worth a catch-up. */
+    val awayTracker = AwayTracker(context)
+
+    val digestBuilder: DigestBuilder = DefaultDigestBuilder(
+        ledger = ledger,
+        narrator = narrator,
+        protection = { protectionEvaluator.evaluate() },
+    )
+
+    /**
+     * The digest for the widget to draw, or null.
+     *
+     * Called from provideGlance, which is the primary trigger: the launcher redraws a widget
+     * whether or not our process is alive, and "alive" is exactly what a customer who has been
+     * away for two hours is not. Marking it shown here rather than at some later confirmation
+     * is deliberate — if we drew it, it has been offered, and offering it twice is the push
+     * notification we claim to have replaced.
+     */
+    suspend fun digestForWidget(): Digest? {
+        val protection = protectionEvaluator.evaluate()
+        if (!awayTracker.shouldShowDigest(protection)) return null
+        val since = awayTracker.lastInteractionAt() ?: return null
+        val digest = digestBuilder.build(since) ?: return null
+        awayTracker.markDigestShown()
+        return digest
+    }
+
+    /**
+     * The unlock, when the process happens to be alive to hear it. An enhancement on top of
+     * the widget path, never the trigger — see UnlockWatcher for why that distinction is the
+     * whole design of this feature.
+     */
+    val unlockWatcher = UnlockWatcher(context, appScope) {
+        val protection = protectionEvaluator.evaluate()
+        if (awayTracker.shouldShowDigest(protection)) {
+            surfaceController.refreshWidget(
+                digestForWidget()?.let { WidgetState.Digest(it.headline, it.detail, it.generatedAt) }
+                    ?: return@UnlockWatcher,
+            )
+        }
+    }
+
     /**
      * Step 14E: turns ordinary app use into surfaces. Started from the Application so a bet
      * placed anywhere reaches the lock screen without a screen having to remember to ask.
@@ -263,6 +318,7 @@ class AppContainer(context: Context) {
         protection = { protectionEvaluator.evaluate() },
         onMatchEvent = { engine.onEvent(it) },
         clubTheme = myClubTheme,
+        protectionState = protectionEvaluator.state,
     )
 
     /**

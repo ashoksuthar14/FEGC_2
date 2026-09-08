@@ -4,6 +4,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.glance.Image
+import androidx.glance.ImageProvider
 import androidx.glance.GlanceModifier
 import androidx.glance.action.Action
 import androidx.glance.action.clickable
@@ -27,6 +29,7 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
+import eu.feg.ambient.ambient.identity.CrestBitmap
 import eu.feg.ambient.ambient.identity.ClubThemes
 import eu.feg.ambient.ambient.surfaces.LegState
 import eu.feg.ambient.ambient.surfaces.LegStatus
@@ -163,7 +166,11 @@ internal fun WidgetCard(
 ) {
     var modifier = GlanceModifier
         .fillMaxSize()
-        .background(WidgetTokens.background)
+        // N6: the ground carries a wash of the club colour rather than a flat near-black.
+        // Fourteen per cent, so every contrast ratio computed against the dark background
+        // still holds -- see tintedSurface. A card in the club's full colour would be a fan
+        // app; a card with a trace of it is the customer's corner of the operator's.
+        .background(ColorProvider(LocalClubTheme.current.surfaceTint))
         .cornerRadius(16.dp)
         .padding(12.dp)
         .semantics { contentDescription = description }
@@ -233,25 +240,18 @@ internal fun WidgetActionButton(
  */
 @Composable
 internal fun WidgetCrest(size: androidx.compose.ui.unit.Dp = 24.dp) {
-    val theme = LocalClubTheme.current
-    Box(
-        modifier = GlanceModifier
-            .size(size)
-            .cornerRadius(size / 2)
-            .background(ColorProvider(theme.primary)),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = theme.crestInitials,
-            style = TextStyle(
-                ColorProvider(theme.onPrimary),
-                (size.value * 0.38f).sp,
-                FontWeight.Bold,
-            ),
-            maxLines = 1,
-        )
-    }
+    // The same drawn badge the notification and the shortcuts use, so the mark is identical
+    // wherever the customer meets it. See CrestBitmap for why a real crest cannot ship.
+    Image(
+        provider = ImageProvider(CrestBitmap.of(LocalClubTheme.current, CREST_PX)),
+        // The card's own description names the club; a second announcement here would make
+        // a screen reader say it twice.
+        contentDescription = null,
+        modifier = GlanceModifier.size(size),
+    )
 }
+
+private const val CREST_PX = 144
 
 /**
  * The legs as coloured bars — the "2/3" made visual.
@@ -304,6 +304,40 @@ internal fun WidgetLegLine(leg: LegState, dimmed: Boolean = false) {
         modifier = GlanceModifier.fillMaxWidth(),
     )
 }
+
+/**
+ * The legs as dots, one per leg, with the count spelled out beside them.
+ *
+ * This replaces the full-width bar on the cards. At 6 dp the bar was a green line with no
+ * label -- it said "something is green" and nothing else. Dots are the same information at
+ * the same size but read as a count, and the count is written next to them so nobody has to
+ * decode colours at all.
+ */
+@Composable
+internal fun WidgetLegDots(legs: List<LegState>, won: Int, total: Int) {
+    if (legs.isEmpty()) return
+    Row(
+        modifier = GlanceModifier
+            .fillMaxWidth()
+            .semantics { contentDescription = legsSpoken(legs) },
+        verticalAlignment = Alignment.Vertical.CenterVertically,
+    ) {
+        legs.take(MAX_DOTS).forEachIndexed { index, leg ->
+            if (index > 0) Spacer(GlanceModifier.width(5.dp))
+            Box(
+                modifier = GlanceModifier
+                    .size(9.dp)
+                    .cornerRadius(5.dp)
+                    .background(segmentFill(leg.status)),
+                contentAlignment = Alignment.Center,
+            ) {}
+        }
+        Spacer(GlanceModifier.width(8.dp))
+        Text(text = won.toString() + " of " + total + " home", style = WidgetText.meta, maxLines = 1)
+    }
+}
+
+private const val MAX_DOTS = 6
 
 internal fun statusGlyph(status: LegStatus): String = when (status) {
     LegStatus.WON -> "✓"

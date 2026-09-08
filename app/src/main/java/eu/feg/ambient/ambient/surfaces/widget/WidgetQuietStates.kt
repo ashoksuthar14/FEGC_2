@@ -64,7 +64,7 @@ internal fun IdleCard(state: WidgetState.Idle) {
             Text(text = "NEXT UP", style = WidgetText.label, maxLines = 1)
             Spacer(GlanceModifier.height(8.dp))
             Row(verticalAlignment = Alignment.Vertical.CenterVertically) {
-                WidgetCrest(size = 44.dp)
+                WidgetCrest(size = 48.dp)
                 Spacer(GlanceModifier.width(10.dp))
                 Column {
                     Text(text = fixture, style = WidgetText.title, maxLines = 2)

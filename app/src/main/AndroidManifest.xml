@@ -33,6 +33,11 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <!-- The static fallback set. The dynamic ones are published at runtime by
+                 AmbientShortcuts and replace, rather than add to, whatever is here. -->
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts" />
         </activity>
         <!-- Keeps the Live Update ticking while the app is backgrounded. dataSync covers a
              90-minute match; production would agree the final type with Google. -->

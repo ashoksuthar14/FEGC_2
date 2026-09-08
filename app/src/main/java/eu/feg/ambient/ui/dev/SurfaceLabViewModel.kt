@@ -59,6 +59,8 @@ data class SurfaceLabUiState(
     val shortcutNotice: String? = null,
     /** N1: what the last "Speak current moment" tap actually did. */
     val speakNotice: String? = null,
+    /** Step 16: the digest the Lab last built, in words. */
+    val digestNotice: String? = null,
     val running: Boolean = false,
 )
 
@@ -262,6 +264,59 @@ class SurfaceLabViewModel(private val container: AppContainer) : ViewModel() {
             lastAction = "Club: " + (ClubThemes.byId(clubId).name),
         )
     }
+
+    // --- step 16: the digest, on demand ---------------------------------------------------
+
+    /** Winds the clock back so the away threshold is met without waiting ninety minutes. */
+    fun simulateAway(minutes: Int = 90) {
+        container.awayTracker.simulateAway(minutes)
+        _state.value = _state.value.copy(
+            digestNotice = "Away for " + minutes + " min. Next widget redraw shows the digest.",
+            lastAction = "Simulate " + minutes + " minutes away",
+        )
+        // The widget is the trigger, so poking it is the honest way to demonstrate it.
+        viewModelScope.launch { container.surfaceController.refreshWidget(currentWidget()) }
+    }
+
+    /**
+     * Builds the digest here and now and shows what it would say.
+     *
+     * Deliberately does NOT mark it shown: the Lab is for looking at the thing, and marking
+     * it here would consume the away-period that the demo is about to use on the widget.
+     */
+    fun buildDigestNow() {
+        viewModelScope.launch {
+            val since = container.awayTracker.lastInteractionAt()
+            val digest = since?.let { container.digestBuilder.build(it) }
+            _state.value = _state.value.copy(
+                digestNotice = when {
+                    since == null -> "No interaction recorded yet — open the app first."
+                    digest == null ->
+                        "Null, correctly: nothing worth a card. A digest that says " +
+                            "\"nothing happened\" is the one thing it must never say."
+                    else -> digest.headline + " — " + digest.detail +
+                        "  [" + digest.items.size + " items] " +
+                        digest.items.joinToString(" · ") { it.text }
+                },
+                lastAction = "Build digest now",
+            )
+        }
+    }
+
+    fun rebuildShortcuts() {
+        viewModelScope.launch {
+            val protection = container.protectionEvaluator.evaluate()
+            container.surfaceController.refreshShortcuts(protection)
+            _state.value = _state.value.copy(
+                shortcutNotice = "Published for " + protection.name + ".",
+                lastAction = "Rebuild shortcuts",
+            )
+        }
+    }
+
+    private fun currentWidget() =
+        container.surfaceController.currentWidgetState()
+            ?: WidgetState.Idle(nextFixture = null, kickoff = null)
 
     fun resetAlertBudget() {
         container.surfaceController.resetAlertBudget()

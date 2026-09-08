@@ -153,6 +153,11 @@ class AmbientEngine(
                 sampled = 0.0,
                 reason = reason,
                 shownAt = null,
+                matchId = event.matchId,
+                homeTeam = event.homeTeam,
+                awayTeam = event.awayTeam,
+                homeScore = event.homeScore,
+                awayScore = event.awayScore,
                 createdAt = now.toEpochMilliseconds(),
             ),
         )
@@ -174,6 +179,11 @@ class AmbientEngine(
                 sampled = decision.sampled,
                 reason = decision.reason,
                 shownAt = if (shown) now.toEpochMilliseconds() else null,
+                matchId = moment.matchId,
+                homeTeam = moment.facts.homeTeam,
+                awayTeam = moment.facts.awayTeam,
+                homeScore = moment.facts.homeScore,
+                awayScore = moment.facts.awayScore,
                 createdAt = now.toEpochMilliseconds(),
             ),
         )

@@ -19,6 +19,17 @@ import eu.feg.ambient.ui.theme.PskColors
 import eu.feg.ambient.ui.theme.PskTheme
 
 class MainActivity : ComponentActivity() {
+    /**
+     * Opening the app ends the away-period.
+     *
+     * onResume, not onCreate: a customer returning to an app that was still in memory has
+     * caught up just as surely as one who cold-started it, and only onResume sees both.
+     */
+    override fun onResume() {
+        super.onResume()
+        (application as? AmbientApp)?.container?.awayTracker?.markInteraction()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         val psk = PskColors()
         enableEdgeToEdge(
