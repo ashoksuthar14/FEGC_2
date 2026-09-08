@@ -156,8 +156,11 @@ object ClubThemes {
         crestInitials = crestInitials,
         secondary = secondary,
         pattern = pattern,
-        accentOnDark = legibleOnDark(primary),
+        // Legible against the ground the widget actually paints -- the club-tinted surface --
+        // not the darker app background. Five clubs sat at 4.2-4.5:1 on the tint when the
+        // target was the background; ContrastTest checks this exact pair.
         surfaceTint = tintedSurface(primary),
+        accentOnDark = legibleOnDark(primary, background = tintedSurface(primary)),
     )
 }
 

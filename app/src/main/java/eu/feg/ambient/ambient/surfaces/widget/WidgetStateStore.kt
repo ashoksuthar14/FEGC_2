@@ -134,7 +134,7 @@ class WidgetStateStore(private val prefs: SharedPreferences?) {
 internal enum class FeedbackMark { UP, DOWN, MUTED }
 
 @Serializable
-internal enum class SnapshotKind { PRE_MATCH, LIVE, SETTLED, DIGEST, IDLE, PROTECTED }
+internal enum class SnapshotKind { PRE_MATCH, LIVE, SETTLED, DIGEST, IDLE, PROTECTED, RECAP }
 
 @Serializable
 internal data class LegSnapshot(
@@ -202,6 +202,15 @@ internal data class WidgetSnapshot(
             since = sinceMillis?.let { Instant.fromEpochMilliseconds(it) } ?: Clock.System.now(),
         )
 
+        // A stored recap comes back as its headline and detail: the counts behind it are
+        // recomputed by the builder on the next draw, and a card that showed stale counts
+        // for a month would be worse than one that showed the sentence.
+        SnapshotKind.RECAP -> WidgetState.Digest(
+            headline = headline.orEmpty(),
+            detail = detail.orEmpty(),
+            since = sinceMillis?.let { Instant.fromEpochMilliseconds(it) } ?: Clock.System.now(),
+        )
+
         SnapshotKind.IDLE -> WidgetState.Idle(
             nextFixture = nextFixture,
             kickoff = kickoffAtMillis?.let { Instant.fromEpochMilliseconds(it) },
@@ -261,6 +270,13 @@ internal data class WidgetSnapshot(
                 headline = state.headline,
                 detail = state.detail,
                 sinceMillis = state.since.toEpochMilliseconds(),
+            )
+
+            is WidgetState.Recap -> WidgetSnapshot(
+                kind = SnapshotKind.RECAP,
+                headline = state.recap.headline,
+                detail = state.recap.detail,
+                sinceMillis = state.recap.to.toEpochMilliseconds(),
             )
 
             is WidgetState.Idle -> WidgetSnapshot(

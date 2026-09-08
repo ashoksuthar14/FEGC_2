@@ -79,11 +79,12 @@ class ContrastTest {
         // N6: the initials on every club badge.
         for (club in ClubThemes.all + ClubThemes.Default) {
             val r = contrastRatio(club.onPrimary, club.primary)
-            val rOnDark = contrastRatio(club.accentOnDark, psk.surface)
+            // The widget paints the club name on the club-tinted surface, so that is the pair.
+            val rOnDark = contrastRatio(club.accentOnDark, club.surfaceTint)
             println(String.format("%-22s %-22s %6.2f %5.1f  %-14s %s", "onPrimary", club.name + " badge", r, 4.5, "badge initials", if (r >= 4.5) "PASS" else "FAIL"))
-            println(String.format("%-22s %-22s %6.2f %5.1f  %-14s %s", "accentOnDark", club.name + " on surface", rOnDark, 4.5, "club name", if (rOnDark >= 4.5) "PASS" else "FAIL"))
+            println(String.format("%-22s %-22s %6.2f %5.1f  %-14s %s", "accentOnDark", club.name + " on its tint", rOnDark, 4.5, "club name", if (rOnDark >= 4.5) "PASS" else "FAIL"))
             if (r < 4.5) failures += club.name + " badge initials = " + String.format("%.2f", r)
-            if (rOnDark < 4.5) failures += club.name + " accentOnDark on surface = " + String.format("%.2f", rOnDark)
+            if (rOnDark < 4.5) failures += club.name + " accentOnDark on its tint = " + String.format("%.2f", rOnDark)
         }
         println()
         assertTrue("contrast failures:\n  " + failures.joinToString("\n  "), failures.isEmpty())

@@ -124,6 +124,12 @@ internal fun WidgetBody(state: WidgetState, feedback: FeedbackMark? = null) {
             if (protection == ProtectionState.CALM) CalmSlipCard(state.slip)
             else SettledCard(state.slip, feedback)
         is WidgetState.Digest -> DigestCard(state, feedback)
+        // N5. Rendered by the recap package's own card once it lands (17B assembly); until
+        // then the digest card is an honest stand-in -- same shape, counts only, no money.
+        is WidgetState.Recap -> DigestCard(
+            WidgetState.Digest(state.recap.headline, state.recap.detail, state.recap.to),
+            feedback,
+        )
         is WidgetState.Idle -> IdleCard(state)
         is WidgetState.Protected -> ProtectedCard(state.protection, state.lastRegisterCheck)
     }

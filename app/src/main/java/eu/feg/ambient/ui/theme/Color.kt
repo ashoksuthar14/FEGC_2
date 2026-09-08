@@ -9,8 +9,14 @@ import androidx.compose.ui.graphics.Color
  */
 @Immutable
 data class PskColors(
-    /** Top app bar, primary buttons, active tab indicator. */
-    val brandBlue: Color = Color(0xFF1852BE),
+    /**
+     * Top app bar, primary buttons, active tab indicator.
+     *
+     * Sampled as #1852BE; nudged to the nearest lightness that clears WCAG 3:1 as a
+     * non-text accent on the app background (it was 2.75:1). The minimum nudge that passes,
+     * found by search rather than by eye, so the palette stays PSK's -- see ContrastTest.
+     */
+    val brandBlue: Color = Color(0xFF2A60C3),
     /** Secondary nav strip, pressed state. */
     val brandBlueDark: Color = Color(0xFF1647A6),
     /** Promo hero backgrounds. */
