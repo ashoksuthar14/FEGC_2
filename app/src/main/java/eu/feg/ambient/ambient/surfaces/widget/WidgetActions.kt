@@ -89,6 +89,34 @@ class ThumbsDownAction : ActionCallback {
 }
 
 /**
+ * Live Updates on or off for the slip on the card.
+ *
+ * The brief assumed this callback existed; it did not -- the surfaces had start and end but
+ * no toggle a customer could reach. Off means the lock-screen card comes down and the
+ * service stops; on means it is posted again from the stored slip. The widget itself is
+ * untouched either way: turning off the lock screen must not blank the home screen.
+ */
+class ToggleLiveUpdateAction : ActionCallback {
+    override suspend fun onAction(
+        context: Context,
+        glanceId: GlanceId,
+        parameters: ActionParameters,
+    ) {
+        val container = app(context)?.container ?: return
+        val slip = (WidgetStateStore(context).load() as? WidgetState.Live)?.slip ?: return
+        val controller = container.surfaceController
+        val active = controller.diagnostics.value.activeLiveUpdateSlipId
+        if (active == slip.slipId) {
+            controller.endLiveUpdate(slip.slipId, settled = false)
+            Log.i("WidgetAction.Live", "live updates off for " + slip.slipId)
+        } else {
+            controller.startLiveUpdate(slip)
+            Log.i("WidgetAction.Live", "live updates on for " + slip.slipId)
+        }
+    }
+}
+
+/**
  * Read this card out loud.
  *
  * The slip comes from the stored snapshot, which is what the card was drawn from, so the

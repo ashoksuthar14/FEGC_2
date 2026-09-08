@@ -46,6 +46,12 @@ data class SlipSurfaceState(
     /** "1. poluvrijeme" */
     val period: String? = null,
     val minutesRemaining: Int? = null,
+    /** The competition the live match is in -- the card's header names this, not the club. */
+    val competition: String? = null,
+    /** Region or tier under the competition: "ENG", "HNL". */
+    val region: String? = null,
+    /** Minutes of the goals so far, for the timeline. Empty means unknown; spread evenly. */
+    val goalMinutes: List<Int> = emptyList(),
     /** From step 12's Narrator. */
     val narrated: NarratedText? = null,
     val settled: Boolean = false,

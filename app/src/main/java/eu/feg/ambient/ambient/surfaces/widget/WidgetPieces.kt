@@ -163,25 +163,7 @@ internal fun WidgetCard(
     description: String,
     onClick: Action? = null,
     content: @Composable ColumnScope.() -> Unit,
-) {
-    var modifier = GlanceModifier
-        .fillMaxSize()
-        // N6: the ground carries a wash of the club colour rather than a flat near-black.
-        // Fourteen per cent, so every contrast ratio computed against the dark background
-        // still holds -- see tintedSurface. A card in the club's full colour would be a fan
-        // app; a card with a trace of it is the customer's corner of the operator's.
-        .background(ColorProvider(LocalClubTheme.current.surfaceTint))
-        .cornerRadius(16.dp)
-        .padding(12.dp)
-        .semantics { contentDescription = description }
-    if (onClick != null) modifier = modifier.clickable(onClick)
-    Column(
-        modifier = modifier,
-        verticalAlignment = Alignment.Vertical.Top,
-        horizontalAlignment = Alignment.Horizontal.Start,
-        content = content,
-    )
-}
+) = GlassCard(description = description, onClick = onClick, content = content)
 
 /**
  * N6: whose colours this widget is drawn in.

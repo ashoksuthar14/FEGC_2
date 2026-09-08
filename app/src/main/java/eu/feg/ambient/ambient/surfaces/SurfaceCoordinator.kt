@@ -367,6 +367,7 @@ class SurfaceCoordinator(
 
         // No leg still in play means the slip is done, whatever the bet's stored status says.
         val anyLive = matches.any { it.state == MatchState.LIVE }
+        val league = active?.let { m -> matchRepository.leagues.firstOrNull { it.id == m.leagueId } }
 
         return SlipSurfaceState(
             slipId = bet.id,
@@ -392,6 +393,8 @@ class SurfaceCoordinator(
             minute = active?.minute,
             period = active?.period,
             minutesRemaining = active?.minute?.let { (90 - it).coerceAtLeast(0) },
+            competition = league?.name,
+            region = league?.country,
             settled = bet.status != BetStatus.OPEN || !anyLive,
         )
     }

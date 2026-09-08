@@ -186,6 +186,9 @@ internal data class WidgetSnapshot(
     val minute: Int? = null,
     val period: String? = null,
     val minutesRemaining: Int? = null,
+    val competition: String? = null,
+    val region: String? = null,
+    val goalMinutes: List<Int> = emptyList(),
     val narratedHeadline: String? = null,
     val narratedDetail: String? = null,
     /** N1: the spoken variant travels with the snapshot, or the widget button has nothing to say. */
@@ -265,6 +268,9 @@ internal data class WidgetSnapshot(
         minute = minute,
         period = period,
         minutesRemaining = minutesRemaining,
+        competition = competition,
+        region = region,
+        goalMinutes = goalMinutes,
         narrated = narratedHeadline?.let {
             NarratedText(
                 headline = it,
@@ -333,6 +339,9 @@ internal data class WidgetSnapshot(
             minute = slip.minute,
             period = slip.period,
             minutesRemaining = slip.minutesRemaining,
+            competition = slip.competition,
+            region = slip.region,
+            goalMinutes = slip.goalMinutes,
             narratedHeadline = slip.narrated?.headline,
             narratedDetail = slip.narrated?.detail,
             narratedSpoken = slip.narrated?.spokenText,

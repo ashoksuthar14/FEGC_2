@@ -135,6 +135,22 @@ object ClubThemes {
     fun byId(clubId: String?): ClubTheme =
         all.firstOrNull { it.clubId == clubId } ?: Default
 
+    /**
+     * A crest for any team on the card. One of the eight clubs gets its own theme; anyone
+     * else gets a neutral tile with their initials -- the score row needs two crests whether
+     * or not either side is a club we know.
+     */
+    fun forTeam(name: String): ClubTheme = byName(name) ?: neutral(name)
+
+    private fun neutral(name: String): ClubTheme {
+        val initials = name.split(" ", "-", "\u2013")
+            .filter { it.isNotBlank() }
+            .take(2)
+            .joinToString("") { it.first().uppercaseChar().toString() }
+            .ifBlank { "?" }
+        return club("", name, initials.take(3), psk.surfaceRaised, initials, psk.surfaceVariant, ClubPattern.SOLID)
+    }
+
     /** Team names arrive from the fixtures as text; the narrator's facts carry no ids. */
     fun byName(name: String?): ClubTheme? =
         name?.let { n -> all.firstOrNull { it.name.equals(n, ignoreCase = true) } }

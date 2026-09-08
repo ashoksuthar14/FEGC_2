@@ -167,6 +167,41 @@ object CrestBitmap {
         canvas.drawPath(shield, edge)
     }
 
+    /**
+     * The card's crest: a rounded square in the club colour with the initials on it, with an
+     * optional light border. The shield stays for the notification and the shortcuts; the
+     * match card's header and score row want the tile shape the mockup shows.
+     */
+    @Synchronized
+    fun square(theme: ClubTheme, sizePx: Int, cornerPx: Float, bordered: Boolean): Bitmap {
+        val key = "sq:" + theme.clubId + ":" + theme.crestInitials + "@" + sizePx + ":" + bordered
+        cache[key]?.let { return it }
+        val bitmap = createBitmap(sizePx, sizePx)
+        val canvas = Canvas(bitmap)
+        val rect = RectF(0f, 0f, sizePx.toFloat(), sizePx.toFloat())
+        canvas.drawRoundRect(rect, cornerPx, cornerPx, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = theme.primary.toArgb() })
+        if (bordered) {
+            val inset = sizePx * 0.03f
+            canvas.drawRoundRect(
+                RectF(inset, inset, sizePx - inset, sizePx - inset), cornerPx, cornerPx,
+                Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    style = Paint.Style.STROKE; strokeWidth = inset * 1.5f; color = 0x3DFFFFFF
+                },
+            )
+        }
+        val text = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = theme.onPrimary.toArgb()
+            typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+            textAlign = Paint.Align.CENTER
+            textSize = sizePx * 0.34f
+        }
+        val bounds = Rect()
+        text.getTextBounds(theme.crestInitials, 0, theme.crestInitials.length, bounds)
+        canvas.drawText(theme.crestInitials, sizePx / 2f, sizePx / 2f + bounds.height() / 2f, text)
+        cache[key] = bitmap
+        return bitmap
+    }
+
     private const val DEFAULT_SIZE_PX = 192
     private const val EDGE_COLOR = 0x33000000
 }

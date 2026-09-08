@@ -28,6 +28,9 @@ object DemoSurfaceData {
         minute = 61,
         period = "2. poluvrijeme",
         minutesRemaining = 29,
+        competition = "Premier League",
+        region = "ENG",
+        goalMinutes = listOf(23),
     )
 
     /** One won, one lost, nothing left running. */

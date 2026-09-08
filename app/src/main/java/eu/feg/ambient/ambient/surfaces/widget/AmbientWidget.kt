@@ -123,9 +123,8 @@ internal fun WidgetBody(state: WidgetState, feedback: FeedbackMark? = null) {
     }
     when (state) {
         is WidgetState.PreMatch -> PreMatchCard(state)
-        is WidgetState.Live ->
-            if (protection == ProtectionState.CALM) CalmSlipCard(state.slip)
-            else LiveCard(state.slip, feedback)
+        // The glass match card handles NORMAL and CALM itself; see LiveMatchCard.
+        is WidgetState.Live -> LiveMatchCard(state.slip, feedback)
         is WidgetState.Settled ->
             if (protection == ProtectionState.CALM) CalmSlipCard(state.slip)
             else SettledCard(state.slip, feedback)
