@@ -139,6 +139,8 @@ internal data class WidgetSnapshot(
     val minutesRemaining: Int? = null,
     val narratedHeadline: String? = null,
     val narratedDetail: String? = null,
+    /** N1: the spoken variant travels with the snapshot, or the widget button has nothing to say. */
+    val narratedSpoken: String? = null,
     val narratedEngine: NarratorEngine? = null,
     val narratedLatencyMs: Long = 0L,
     val settled: Boolean = false,
@@ -201,6 +203,7 @@ internal data class WidgetSnapshot(
             NarratedText(
                 headline = it,
                 detail = narratedDetail.orEmpty(),
+                spokenText = narratedSpoken.orEmpty(),
                 engine = narratedEngine ?: NarratorEngine.TEMPLATE,
                 latencyMs = narratedLatencyMs,
             )
@@ -256,6 +259,7 @@ internal data class WidgetSnapshot(
             minutesRemaining = slip.minutesRemaining,
             narratedHeadline = slip.narrated?.headline,
             narratedDetail = slip.narrated?.detail,
+            narratedSpoken = slip.narrated?.spokenText,
             narratedEngine = slip.narrated?.engine,
             narratedLatencyMs = slip.narrated?.latencyMs ?: 0L,
             settled = slip.settled,

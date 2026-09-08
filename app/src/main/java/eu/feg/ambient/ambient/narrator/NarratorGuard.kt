@@ -12,6 +12,13 @@ object NarratorGuard {
     const val MAX_HEADLINE = 60
     const val MAX_DETAIL = 120
 
+    /**
+     * The spoken variant is prose, so it gets more room than the two visual lines — but not
+     * unlimited room. Past roughly this length a spoken moment stops being a glance and
+     * becomes something the customer has to wait out, which is the opposite of the point.
+     */
+    const val MAX_SPOKEN = 240
+
     /** Money words, in both languages the app speaks. */
     private val BLOCKED_WORDS = listOf(
         // English
@@ -57,8 +64,15 @@ object NarratorGuard {
         if (text.detail.length > MAX_DETAIL) {
             return "detail is " + text.detail.length + " chars, max " + MAX_DETAIL
         }
+        // The spoken line is checked exactly like the other two. It reaches the customer as
+        // audio rather than pixels, which makes it more exposed, not less: a price read out
+        // loud in a room is a disclosure the screen never made.
+        if (text.spokenText.isBlank()) return "spokenText is blank"
+        if (text.spokenText.length > MAX_SPOKEN) {
+            return "spokenText is " + text.spokenText.length + " chars, max " + MAX_SPOKEN
+        }
 
-        val body = text.headline + " " + text.detail
+        val body = text.headline + " " + text.detail + " " + text.spokenText
 
         CURRENCY.find(body)?.let { return "currency symbol: " + it.value }
         TWO_DECIMALS.find(body)?.let { return "two-decimal number: " + it.value }

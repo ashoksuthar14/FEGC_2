@@ -10,8 +10,12 @@ import org.junit.Test
 
 class NarratorGuardTest {
 
-    private fun text(headline: String, detail: String) =
-        NarratedText(headline, detail, NarratorEngine.TEMPLATE, 0)
+    private fun text(headline: String, detail: String, spoken: String = CLEAN_SPOKEN) =
+        NarratedText(headline, detail, spoken, NarratorEngine.TEMPLATE, 0)
+
+    /** A spoken line that is not what any of these cases is testing. */
+    private val CLEAN_SPOKEN =
+        "Liverpool are one nil up after sixty-one minutes, with twenty-nine minutes to go."
 
     // --- things that must pass -------------------------------------------------------
 

@@ -26,6 +26,8 @@ import eu.feg.ambient.ambient.engine.protection.DefaultProtectionEvaluator
 import eu.feg.ambient.ambient.engine.protection.PrefsAgeAssurance
 import eu.feg.ambient.ambient.engine.protection.SyntheticExclusionRegister
 import eu.feg.ambient.ambient.engine.router.BanditRouter
+import eu.feg.ambient.ambient.surfaces.MomentSpeaker
+import eu.feg.ambient.ambient.surfaces.SpokenMoments
 import eu.feg.ambient.ambient.surfaces.AlertBudget
 import eu.feg.ambient.ambient.surfaces.SurfaceCoordinator
 import eu.feg.ambient.ambient.surfaces.live.LiveUpdateRenderer
@@ -157,6 +159,12 @@ class AppContainer(context: Context) {
     /** Ready-made slips so the surfaces have something real to show before the engine exists. */
     val demoData = DemoSurfaceData
 
+    /**
+     * N1: the moment read aloud. One TextToSpeech engine for the process, on-device only,
+     * and never started by anything but a tap.
+     */
+    val momentSpeaker = MomentSpeaker(context)
+
     // --- engine (Phase 2, step 13) ------------------------------------------------------
 
     /**
@@ -205,6 +213,17 @@ class AppContainer(context: Context) {
         narrator = narrator,
         surfaceController = surfaceController,
         ledger = ledger,
+    )
+
+    /**
+     * Speaking is an event like any other: it leaves a ledger row and rewards the arm that
+     * produced the moment. Declared after the ledger and the router because it needs both.
+     */
+    val spokenMoments = SpokenMoments(
+        speaker = momentSpeaker,
+        ledger = ledger,
+        router = router,
+        protection = { protectionEvaluator.evaluate() },
     )
 
     /**

@@ -8,9 +8,11 @@ import eu.feg.ambient.ambient.engine.protection.DefaultProtectionEvaluator
 import eu.feg.ambient.ambient.engine.protection.RegisterEntry
 import eu.feg.ambient.ambient.engine.router.Arms
 import eu.feg.ambient.ambient.engine.router.RewardTable
+import eu.feg.ambient.ambient.engine.Surface
 import eu.feg.ambient.ambient.engine.TimeBucket
 import eu.feg.ambient.ambient.narrator.MomentType
 import eu.feg.ambient.ambient.surfaces.ProtectionState
+import eu.feg.ambient.ambient.surfaces.SpeakResult
 import eu.feg.ambient.core.AppContainer
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -69,6 +71,22 @@ data class BanditState(
  * three-state radio button, which let a demo claim a protection it had not actually earned.
  */
 class EngineLabViewModel(private val container: AppContainer) : ViewModel() {
+
+    // --- spoken moments (N1) --------------------------------------------------------------
+
+    /** What the last speaker tap did, so a screen can say "phone is on silent" out loud. */
+    private val _speakResult = MutableStateFlow<SpeakResult?>(null)
+    val speakResult: StateFlow<SpeakResult?> = _speakResult
+
+    /**
+     * Reads one row's sentence aloud. Never called except from a tap — there is no code path
+     * here that speaks on its own, and there must not be one.
+     */
+    fun speak(text: String, surface: Surface = Surface.IN_APP) {
+        viewModelScope.launch {
+            _speakResult.value = container.spokenMoments.speak(text, surface)
+        }
+    }
 
     // --- register panel -------------------------------------------------------------------
 

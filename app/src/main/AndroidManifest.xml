@@ -8,6 +8,15 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
+    <!-- Package visibility, not a permission. Since API 30 an app cannot see the installed
+         speech engine unless it declares that it looks for one, and TextToSpeech simply
+         reports "no engine" without saying why. -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.TTS_SERVICE" />
+        </intent>
+    </queries>
+
     <application
         android:name=".AmbientApp"
         android:allowBackup="true"
@@ -45,6 +54,13 @@
 
         <receiver
             android:name=".ambient.surfaces.live.DismissReceiver"
+            android:exported="false" />
+
+        <!-- "Listen" on the lock-screen card. Not exported: only our own notification
+             action may trigger speech, or any app on the device could make this phone
+             read someone's slip out loud. -->
+        <receiver
+            android:name=".ambient.surfaces.live.SpeakReceiver"
             android:exported="false" />
 
         <!-- Lets adb drive the surfaces without an Activity stealing focus, which is the only

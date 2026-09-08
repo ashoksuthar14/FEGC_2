@@ -1,0 +1,192 @@
+package eu.feg.ambient.ambient.narrator
+
+/**
+ * The same facts, prepared for the ear instead of the eye.
+ *
+ * WHY THIS EXISTS: `"2/3 ✓ · 61'"` is a good headline and a terrible sentence. A screen reader
+ * says "two slash three tick sixty-one apostrophe", which is the exact soup N1 sets out to
+ * remove. So the spoken variant is not the visual line with the symbols stripped out — it is
+ * written separately, from the same facts, with every number expanded and every symbol either
+ * spoken or dropped.
+ *
+ * COMPLIANCE — this reads [MomentFacts] and nothing else, so it cannot name a price or an
+ * amount for the same structural reason the visual lines cannot: there is no field to read.
+ */
+internal class SpokenFacts(private val f: MomentFacts, private val language: NarratorLanguage) {
+
+    private val words: NumberWords = when (language) {
+        NarratorLanguage.EN -> EnglishWords
+        NarratorLanguage.HR -> CroatianWords
+    }
+
+    val type: MomentType get() = f.type
+    val home: String = f.homeTeam ?: if (language == NarratorLanguage.EN) "the home side" else "domaći"
+    val away: String = f.awayTeam ?: if (language == NarratorLanguage.EN) "the away side" else "gosti"
+
+    /** "one nil", "two two" — never "1–0", which reads as "one dash zero". */
+    val score: String = words.score(f.homeScore ?: 0) + " " + words.score(f.awayScore ?: 0)
+
+    private val minuteValue: Int = f.minute ?: 0
+    private val remainingValue: Int =
+        f.minutesRemaining ?: (MATCH_MINUTES - minuteValue).coerceAtLeast(0)
+
+    val minute: String = words.of(minuteValue)
+    val remaining: String = words.of(remainingValue)
+
+    /** "eighteen minutes" / "osamnaest minuta" — the noun agrees with the number in Croatian. */
+    val minutesPlayed: String = minute + " " + words.minutes(minuteValue)
+    val minutesLeft: String = remaining + " " + words.minutes(remainingValue)
+
+    private val totalValue: Int = f.legsTotal ?: 0
+    private val wonValue: Int = f.legsWon ?: 0
+    private val lostValue: Int = f.legsLost ?: 0
+    private val leftValue: Int = (totalValue - wonValue - lostValue).coerceAtLeast(0)
+
+    val total: String = words.of(totalValue)
+    val won: String = words.of(wonValue)
+    val lost: String = words.of(lostValue)
+    val left: String = words.of(leftValue)
+
+    /** "three legs" / "tri izbora" — again agreeing, so a count never sounds machine-made. */
+    val legsLeft: String = left + " " + words.legs(leftValue)
+    val legsTotal: String = total + " " + words.legs(totalValue)
+
+    val leg: String = f.myLegDescription
+        ?: if (language == NarratorLanguage.EN) "your pick" else "tvoj izbor"
+    val followed: String = f.followedTeam ?: home
+    val kickoff: String = words.of(f.kickoffInMinutes ?: 0)
+    val kickoffMinutes: String = kickoff + " " + words.minutes(f.kickoffInMinutes ?: 0)
+    val period: String = f.period ?: ""
+
+    /** Already prose in the fixtures, so it is passed through rather than rewritten. */
+    val digest: String = f.digestItems.takeIf { it.isNotEmpty() }
+        ?.joinToString(", ")
+        ?.let { if (it.endsWith(".")) it else "$it." }
+        ?: if (language == NarratorLanguage.EN) {
+            "Nothing new since you left."
+        } else {
+            "Ništa novo otkad si otišao."
+        }
+
+    private companion object {
+        const val MATCH_MINUTES = 90
+    }
+}
+
+/**
+ * Numbers as words, in the two languages the app speaks.
+ *
+ * Only 0–99 is covered because nothing a moment can carry goes higher: minutes stop at ninety,
+ * legs at a handful, goals at a handful. Anything larger falls back to the digits, which the
+ * TTS engine will read acceptably even if the sentence is a shade less natural.
+ */
+internal interface NumberWords {
+    fun of(n: Int): String
+
+    /** Zero in a score is not "zero". */
+    fun score(n: Int): String
+
+    /** The noun that follows a count of minutes, agreeing with it. */
+    fun minutes(n: Int): String
+
+    /** The noun that follows a count of legs on a slip. */
+    fun legs(n: Int): String
+}
+
+internal object EnglishWords : NumberWords {
+
+    private val ones = listOf(
+        "zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine",
+        "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen",
+        "seventeen", "eighteen", "nineteen",
+    )
+
+    private val tens = listOf(
+        "", "", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety",
+    )
+
+    override fun of(n: Int): String = when {
+        n < 0 || n > 99 -> n.toString()
+        n < 20 -> ones[n]
+        n % 10 == 0 -> tens[n / 10]
+        else -> tens[n / 10] + "-" + ones[n % 10]
+    }
+
+    override fun score(n: Int): String = if (n == 0) "nil" else of(n)
+
+    override fun minutes(n: Int): String = if (n == 1) "minute" else "minutes"
+
+    override fun legs(n: Int): String = if (n == 1) "leg" else "legs"
+}
+
+/**
+ * Croatian numerals plus the case agreement that makes them sound spoken rather than
+ * generated: one minuta, two to four minute, five and above minuta — and the rule resets
+ * above twenty, so twenty-one takes the singular again.
+ */
+internal object CroatianWords : NumberWords {
+
+    private val ones = listOf(
+        "nula", "jedan", "dva", "tri", "četiri", "pet", "šest", "sedam", "osam", "devet",
+        "deset", "jedanaest", "dvanaest", "trinaest", "četrnaest", "petnaest", "šesnaest",
+        "sedamnaest", "osamnaest", "devetnaest",
+    )
+
+    private val tens = listOf(
+        "", "", "dvadeset", "trideset", "četrdeset", "pedeset", "šezdeset", "sedamdeset",
+        "osamdeset", "devedeset",
+    )
+
+    override fun of(n: Int): String = when {
+        n < 0 || n > 99 -> n.toString()
+        n < 20 -> ones[n]
+        n % 10 == 0 -> tens[n / 10]
+        else -> tens[n / 10] + " " + ones[n % 10]
+    }
+
+    override fun score(n: Int): String = of(n)
+
+    override fun minutes(n: Int): String = when (form(n)) {
+        Form.ONE -> "minuta"
+        Form.FEW -> "minute"
+        Form.MANY -> "minuta"
+    }
+
+    override fun legs(n: Int): String = when (form(n)) {
+        Form.ONE -> "izbor"
+        Form.FEW -> "izbora"
+        Form.MANY -> "izbora"
+    }
+
+    private enum class Form { ONE, FEW, MANY }
+
+    private fun form(n: Int): Form {
+        val last = n % 10
+        val lastTwo = n % 100
+        return when {
+            lastTwo in 11..14 -> Form.MANY
+            last == 1 -> Form.ONE
+            last in 2..4 -> Form.FEW
+            else -> Form.MANY
+        }
+    }
+}
+
+/** One spoken sentence per moment and tone. Implemented once per language. */
+internal interface SpokenLines {
+    fun line(f: SpokenFacts, tone: Tone): String
+
+    companion object {
+        fun of(language: NarratorLanguage): SpokenLines = when (language) {
+            NarratorLanguage.EN -> SpokenLinesEn
+            NarratorLanguage.HR -> SpokenLinesHr
+        }
+
+        /**
+         * The spoken variant from facts alone, for the callers that have no narrator to hand
+         * — chiefly a model narrator whose output arrived without a SPOKEN line.
+         */
+        fun compose(facts: MomentFacts, tone: Tone, language: NarratorLanguage): String =
+            of(language).line(SpokenFacts(facts, language), tone)
+    }
+}

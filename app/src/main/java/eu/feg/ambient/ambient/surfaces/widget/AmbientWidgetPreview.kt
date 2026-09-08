@@ -48,6 +48,8 @@ private fun AmbientWidgetLivePreview() {
         narrated = NarratedText(
             headline = "Two down, Liverpool to go.",
             detail = "Betis and Sparta are home. Liverpool lead at 61'.",
+            spokenText = "Betis and Sparta are home. Liverpool are one nil up after " +
+                "sixty-one minutes, with twenty-nine minutes to go.",
             engine = NarratorEngine.TEMPLATE,
             latencyMs = 0,
         ),

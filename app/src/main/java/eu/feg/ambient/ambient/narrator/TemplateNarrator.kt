@@ -52,9 +52,11 @@ class TemplateNarrator : Narrator {
             NarratorLanguage.HR -> TemplateLinesHr
         }
         val (headline, detail) = table.lines(Facts(facts), tone)
+        val spoken = SpokenLines.of(language).line(SpokenFacts(facts, language), tone)
         return NarratedText(
             headline = clamp(headline, NarratorGuard.MAX_HEADLINE),
             detail = clamp(detail, NarratorGuard.MAX_DETAIL),
+            spokenText = clamp(spoken, NarratorGuard.MAX_SPOKEN),
             engine = NarratorEngine.TEMPLATE,
             latencyMs = (System.nanoTime() - started) / 1_000_000,
         )

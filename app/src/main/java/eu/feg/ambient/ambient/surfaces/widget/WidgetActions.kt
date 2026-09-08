@@ -2,13 +2,19 @@ package eu.feg.ambient.ambient.surfaces.widget
 
 import android.content.Context
 import android.util.Log
-import eu.feg.ambient.AmbientApp
-import eu.feg.ambient.ambient.engine.ledger.LedgerEntry
-import eu.feg.ambient.ambient.engine.router.RewardTable
-import androidx.glance.appwidget.updateAll
+import android.widget.Toast
 import androidx.glance.GlanceId
 import androidx.glance.action.ActionParameters
 import androidx.glance.appwidget.action.ActionCallback
+import androidx.glance.appwidget.updateAll
+import eu.feg.ambient.AmbientApp
+import eu.feg.ambient.ambient.engine.Surface
+import eu.feg.ambient.ambient.engine.ledger.LedgerEntry
+import eu.feg.ambient.ambient.engine.router.RewardTable
+import eu.feg.ambient.ambient.surfaces.SpeakResult
+import eu.feg.ambient.ambient.surfaces.WidgetState
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
  * The five things a customer can do from the widget.
@@ -83,6 +89,49 @@ class ThumbsDownAction : ActionCallback {
 }
 
 /**
+ * Read this card out loud.
+ *
+ * The slip comes from the stored snapshot, which is what the card was drawn from, so the
+ * sentence and the pixels cannot disagree. Protection is re-checked inside [SpokenMoments]:
+ * a widget snapshot outlives the decision that produced it, and audio is the surface where
+ * a stale one would matter most.
+ */
+class SpeakWidgetAction : ActionCallback {
+    override suspend fun onAction(
+        context: Context,
+        glanceId: GlanceId,
+        parameters: ActionParameters,
+    ) {
+        val container = app(context)?.container ?: return
+        val slip = when (val state = WidgetStateStore(context).load()) {
+            is WidgetState.Live -> state.slip
+            is WidgetState.Settled -> state.slip
+            else -> null
+        }
+        if (slip == null) {
+            Log.i(TAG_SPEAK, "speak tapped with nothing to say")
+            return
+        }
+        val result = container.spokenMoments.speakSlip(slip, Surface.WIDGET)
+        Log.i(TAG_SPEAK, "speak tapped: " + result)
+
+        // Silence needs an answer, or the button looks broken rather than respectful.
+        val message = when (result) {
+            is SpeakResult.Silenced -> "Phone is on silent"
+            is SpeakResult.Unavailable -> "Cannot read this out right now"
+            is SpeakResult.LanguageFallback ->
+                if (result.usedEnglish) "No Croatian voice — read in English" else null
+            is SpeakResult.Spoken -> null
+        }
+        if (message != null) {
+            withContext(Dispatchers.Main) {
+                Toast.makeText(context.applicationContext, message, Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+}
+
+/**
  * The way out, always reachable while protection is active.
  *
  * TODO(step 13A): open the protection sheet — self-exclusion, limits, the helpline. It is a
@@ -151,3 +200,4 @@ private suspend fun acknowledge(context: Context, mark: FeedbackMark) {
 }
 
 private const val TAG_THUMBS = "WidgetAction.Thumbs"
+private const val TAG_SPEAK = "WidgetAction.Speak"

@@ -1,6 +1,7 @@
 package eu.feg.ambient.ui.dev
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,6 +10,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -110,7 +113,8 @@ fun WhyThisScreen(viewModel: EngineLabViewModel, modifier: Modifier = Modifier) 
 
         items(state.rows.size, key = { state.rows[it].id }) { index ->
             val entry = state.rows[index]
-            DecisionRow(entry = entry, sentence = Explain.why(entry, state.history))
+            val sentence = Explain.why(entry, state.history)
+            DecisionRow(entry = entry, sentence = sentence, onSpeak = { viewModel.speak(sentence) })
         }
 
         item(key = "checks-header") {
@@ -139,7 +143,7 @@ fun WhyThisScreen(viewModel: EngineLabViewModel, modifier: Modifier = Modifier) 
 
 /** Moment, surface, then the sentence. The badges are the machine record; the sentence is why. */
 @Composable
-private fun DecisionRow(entry: LedgerEntry, sentence: String) {
+private fun DecisionRow(entry: LedgerEntry, sentence: String, onSpeak: () -> Unit) {
     val psk = LocalPskColors.current
     Column(
         Modifier
@@ -170,6 +174,17 @@ private fun DecisionRow(entry: LedgerEntry, sentence: String) {
                 color = psk.textSecondary,
                 fontFamily = FontFamily.Monospace,
                 modifier = Modifier.weight(1f),
+            )
+            // 48 dp, because a control a screen-reader user reaches for must be reachable by
+            // someone whose aim is not perfect either.
+            Text(
+                text = "🔊",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(PskShapes.chip)
+                    .clickable(onClickLabel = "Read this decision out loud", onClick = onSpeak)
+                    .wrapContentSize(),
             )
         }
         Text(

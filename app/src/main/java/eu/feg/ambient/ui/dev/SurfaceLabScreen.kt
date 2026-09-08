@@ -223,6 +223,24 @@ fun SurfaceLabScreen(viewModel: SurfaceLabViewModel, modifier: Modifier = Modifi
             }
         }
 
+        item(key = "speak") {
+            LabCard("Spoken moment") {
+                ActionGrid(
+                    listOf("Speak current moment" to viewModel::speakCurrentMoment),
+                    perRow = 2,
+                )
+                Text(
+                    text = state.speakNotice ?: "On-device voice only. Never plays by itself.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (state.speakNotice?.startsWith("Spoken") == true) {
+                        psk.positive
+                    } else {
+                        psk.textSecondary
+                    },
+                )
+            }
+        }
+
         item(key = "shortcuts") {
             LabCard("Shortcuts") {
                 ActionGrid(listOf("Refresh shortcuts" to viewModel::refreshShortcuts), perRow = 2)

@@ -11,7 +11,10 @@ import eu.feg.ambient.ambient.surfaces.AndroidSurfaceController
 import eu.feg.ambient.ambient.surfaces.LegState
 import eu.feg.ambient.ambient.surfaces.LegStatus
 import eu.feg.ambient.ambient.surfaces.ProtectionState
+import eu.feg.ambient.ambient.engine.Surface
 import eu.feg.ambient.ambient.surfaces.SlipSurfaceState
+import eu.feg.ambient.ambient.surfaces.SpeakResult
+import eu.feg.ambient.ambient.surfaces.SpokenSurface
 import eu.feg.ambient.ambient.surfaces.SurfaceDiagnostics
 import eu.feg.ambient.ambient.surfaces.WidgetState
 import eu.feg.ambient.core.AppContainer
@@ -52,6 +55,8 @@ data class SurfaceLabUiState(
     val widgetKind: WidgetKind? = null,
     val alertNotice: String? = null,
     val shortcutNotice: String? = null,
+    /** N1: what the last "Speak current moment" tap actually did. */
+    val speakNotice: String? = null,
     val running: Boolean = false,
 )
 
@@ -209,6 +214,37 @@ class SurfaceLabViewModel(private val container: AppContainer) : ViewModel() {
                 lastAction = "Send settlement alert",
             )
         }
+    }
+
+    /**
+     * Reads the slip currently loaded in the Lab, so the speaker can be demonstrated without
+     * waiting for a live match — and so the silent-phone and missing-voice paths can be shown
+     * on stage rather than described.
+     */
+    fun speakCurrentMoment() {
+        viewModelScope.launch {
+            val slip = _state.value.slip.copy(
+                protection = _state.value.protection,
+                narrated = _state.value.narrated,
+            )
+            val result = container.spokenMoments.speakSlip(slip, Surface.IN_APP)
+            _state.value = _state.value.copy(
+                speakNotice = describe(result, SpokenSurface.forSlip(slip)),
+                lastAction = "Speak current moment",
+            )
+        }
+    }
+
+    private fun describe(result: SpeakResult, spoken: String?): String = when (result) {
+        is SpeakResult.Spoken -> "Spoken: \"" + spoken + "\""
+        is SpeakResult.Silenced -> "Silenced — the phone is on silent or in Do Not Disturb."
+        is SpeakResult.LanguageFallback ->
+            if (result.usedEnglish) {
+                "LanguageFallback — no Croatian voice installed, read in English."
+            } else {
+                "LanguageFallback — read in the device's default voice."
+            }
+        is SpeakResult.Unavailable -> "Unavailable — " + result.reason + "."
     }
 
     fun resetAlertBudget() {

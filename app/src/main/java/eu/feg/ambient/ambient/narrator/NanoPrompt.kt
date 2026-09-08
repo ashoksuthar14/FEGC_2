@@ -94,8 +94,10 @@ object NanoPrompt {
             "Now write the two lines, and nothing else:"
 
     /**
-     * Pulls the two lines out by prefix. Anything else the model volunteers is ignored;
-     * a missing prefix counts as unparseable and sends the caller to the template.
+     * Pulls the two visual lines out by prefix. Anything else the model volunteers is
+     * ignored; a missing prefix counts as unparseable and sends the caller to the template.
+     *
+     * SPOKEN is deliberately not required here — see [parseSpoken].
      */
     fun parse(raw: String): Pair<String, String>? {
         var headline: String? = null
@@ -115,5 +117,30 @@ object NanoPrompt {
         // The example is in the prompt; a model that simply echoes it has told us nothing.
         if (h.startsWith("Arsenal 2–1")) return null
         return h to d
+    }
+
+    /**
+     * The spoken line, when the model produced one.
+     *
+     * Missing SPOKEN is not a parse failure, and that asymmetry is deliberate. Gemma 3 270M
+     * is already at the edge of its ability holding a two-line format; making a third line
+     * mandatory would send generations that were perfectly good to the template over a line
+     * the template can write itself. So the caller composes the spoken variant from the
+     * facts when this returns null, and the customer gets the model's headline with a
+     * dependable sentence underneath it rather than neither.
+     */
+    fun parseSpoken(raw: String): String? {
+        raw.lineSequence().forEach { line ->
+            val trimmed = line.trim()
+            if (trimmed.startsWith("SPOKEN:", ignoreCase = true)) {
+                val spoken = trimmed
+                    .removePrefix("SPOKEN:")
+                    .removePrefix("spoken:")
+                    .trim()
+                    .trim('"')
+                return spoken.takeIf { it.isNotBlank() && !it.startsWith("Arsenal are two one") }
+            }
+        }
+        return null
     }
 }

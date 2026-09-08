@@ -22,6 +22,7 @@ import eu.feg.ambient.MainActivity
 import eu.feg.ambient.ambient.surfaces.LegStatus
 import eu.feg.ambient.ambient.surfaces.ProtectionState
 import eu.feg.ambient.ambient.surfaces.SlipSurfaceState
+import eu.feg.ambient.ambient.surfaces.SpokenSurface
 import eu.feg.ambient.ambient.surfaces.WidgetState
 
 /**
@@ -111,10 +112,12 @@ private fun LiveCard(slip: SlipSurfaceState, feedback: FeedbackMark? = null) {
     val score = scoreLine(slip)
     val headline = slip.narrated?.headline
     WidgetCard(
-        description = spokenSlip(slip, headline),
+        // N1: the narrator's spoken sentence is the screen-reader description, so the card
+        // reads as prose rather than as the chip text spelled out symbol by symbol.
+        description = SpokenSurface.forSlip(slip) ?: spokenSlip(slip, headline),
         onClick = openRoute(ROUTE_MY_BETS),
     ) {
-        Text(text = slip.chipText, style = WidgetText.chip, maxLines = 1)
+        HeaderWithSpeaker(slip.chipText, WidgetText.chip)
         if (score != null) Text(text = score, style = WidgetText.meta, maxLines = 1)
         Spacer(GlanceModifier.height(8.dp))
         WidgetLegSegments(slip.legs)
@@ -129,10 +132,10 @@ private fun LiveCard(slip: SlipSurfaceState, feedback: FeedbackMark? = null) {
 private fun SettledCard(slip: SlipSurfaceState, feedback: FeedbackMark? = null) {
     val result = slip.legsWon.toString() + " won · " + slip.legsLost + " lost"
     WidgetCard(
-        description = spokenSlip(slip, slip.narrated?.headline),
+        description = SpokenSurface.forSlip(slip) ?: spokenSlip(slip, slip.narrated?.headline),
         onClick = openRoute(ROUTE_MY_BETS),
     ) {
-        Text(text = result, style = WidgetText.title, maxLines = 1)
+        HeaderWithSpeaker(result, WidgetText.title)
         scoreLine(slip)?.let { Text(text = it, style = WidgetText.meta, maxLines = 1) }
         Spacer(GlanceModifier.height(8.dp))
         slip.legs.take(MAX_LEG_LINES).forEach { WidgetLegLine(it) }
@@ -161,6 +164,35 @@ private fun CalmSlipCard(slip: SlipSurfaceState) {
             label = "Take a break",
             description = "Open protection tools and take a break",
             action = actionRunCallback<PanicAction>(),
+            fill = WidgetTokens.surfaceRaised,
+        )
+    }
+}
+
+/**
+ * The card's first line, with the speaker sitting at the end of it.
+ *
+ * It lives on the header rather than in [FeedbackRow] because the feedback row is replaced
+ * once a thumb has been given, and losing the way to hear the card as a side effect of
+ * rating it would be a bad trade for the customer who needs it most.
+ */
+@Composable
+private fun HeaderWithSpeaker(text: String, style: androidx.glance.text.TextStyle) {
+    Row(
+        modifier = GlanceModifier.fillMaxWidth(),
+        verticalAlignment = androidx.glance.layout.Alignment.Vertical.CenterVertically,
+    ) {
+        Text(
+            text = text,
+            style = style,
+            maxLines = 1,
+            modifier = GlanceModifier.defaultWeight(),
+        )
+        WidgetActionButton(
+            label = "🔊",
+            description = "Read this moment out loud",
+            action = actionRunCallback<SpeakWidgetAction>(),
+            modifier = GlanceModifier.width(48.dp),
             fill = WidgetTokens.surfaceRaised,
         )
     }

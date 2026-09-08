@@ -46,6 +46,10 @@ class NanoNarrator(
         val candidate = NarratedText(
             headline = parsed.first,
             detail = parsed.second,
+            // A model that skipped the third line still gets to keep the first two; the
+            // spoken variant is composed from the same facts instead.
+            spokenText = NanoPrompt.parseSpoken(raw)
+                ?: SpokenLines.compose(facts, tone, language),
             engine = NarratorEngine.NANO,
             latencyMs = (System.nanoTime() - started) / 1_000_000,
         )

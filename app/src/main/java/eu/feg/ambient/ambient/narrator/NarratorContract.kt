@@ -64,6 +64,18 @@ data class NarratedText(
     val headline: String,
     /** At most 120 characters. */
     val detail: String,
+    /**
+     * The same moment written for the ear, at most 240 characters.
+     *
+     * Not the visual lines with the punctuation removed. "2/3 ✓ · 61'" read aloud is "two
+     * slash three tick sixty-one apostrophe", which is precisely the experience a customer
+     * using a screen reader gets from a betting notification today. Numbers are expanded,
+     * symbols are spoken or dropped, and it stands on its own as one or two sentences.
+     *
+     * It carries no price and no amount for the same reason the other two do not: the facts
+     * it is written from have no field for one.
+     */
+    val spokenText: String,
     val engine: NarratorEngine,
     val latencyMs: Long,
 )

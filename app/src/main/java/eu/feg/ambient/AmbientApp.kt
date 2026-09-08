@@ -21,4 +21,16 @@ class AmbientApp : Application() {
         container.surfaceCoordinator.start()
         if (BuildConfig.DEBUG) container.logNarratorSelfTest()
     }
+
+    /**
+     * Releases the speech engine's service binding.
+     *
+     * Best effort by design: Android does not call this on a real device, it kills the
+     * process instead — which releases the binding anyway. It is here so the emulator and
+     * instrumentation runs, where onTerminate is called, do not leak an engine per run.
+     */
+    override fun onTerminate() {
+        container.momentSpeaker.shutdown()
+        super.onTerminate()
+    }
 }

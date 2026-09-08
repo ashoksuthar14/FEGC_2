@@ -61,6 +61,7 @@ class LadderNarratorTest {
             NarratedText(
                 headline = "Cash out now",
                 detail = "Your bet is worth €42.50 — guaranteed payout.",
+                spokenText = "Cash out now for forty-two euros fifty.",
                 engine = NarratorEngine.NANO,
                 latencyMs = 12,
             )
@@ -75,7 +76,7 @@ class LadderNarratorTest {
     @Test
     fun `an over-long rung output falls through to the template`() = runTest {
         val verbose = rung {
-            NarratedText("x".repeat(200), "y".repeat(400), NarratorEngine.NANO, 30)
+            NarratedText("x".repeat(200), "y".repeat(400), "z".repeat(500), NarratorEngine.NANO, 30)
         }
         val result = LadderNarrator(listOf(verbose, template))
             .narrate(facts, Tone.PLAIN, NarratorLanguage.EN)
@@ -87,7 +88,13 @@ class LadderNarratorTest {
     @Test
     fun `a clean rung is used and reports its own engine`() = runTest {
         val good = rung {
-            NarratedText("Liverpool 1–0 · 61'", "29 minutes left.", NarratorEngine.NANO, 480)
+            NarratedText(
+                "Liverpool 1–0 · 61'",
+                "29 minutes left.",
+                "Liverpool are one nil up, with twenty-nine minutes to go.",
+                NarratorEngine.NANO,
+                480,
+            )
         }
         val result = LadderNarrator(listOf(good, template))
             .narrate(facts, Tone.PLAIN, NarratorLanguage.EN)

@@ -12,7 +12,9 @@ import eu.feg.ambient.ambient.surfaces.AndroidSurfaceController
 import eu.feg.ambient.ambient.surfaces.LegStatus
 import eu.feg.ambient.ambient.surfaces.LiveSlipService
 import eu.feg.ambient.ambient.surfaces.ProtectionState
+import eu.feg.ambient.ambient.engine.Surface
 import eu.feg.ambient.ambient.surfaces.SlipSurfaceState
+import eu.feg.ambient.ambient.surfaces.SpokenSurface
 import eu.feg.ambient.ambient.surfaces.notifications.Channels
 import eu.feg.ambient.ambient.surfaces.notifications.NotificationPermission
 import eu.feg.ambient.ui.theme.PskColors
@@ -128,6 +130,7 @@ class LiveUpdateRenderer(
             .setShortCriticalText(state.chipText)
             .setContentIntent(openSlipIntent(state.slipId))
             .setDeleteIntent(dismissIntent(state.slipId))
+            .addAction(listenAction(state))
     }
 
     /**
@@ -200,7 +203,10 @@ class LiveUpdateRenderer(
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setContentIntent(openSlipIntent(state.slipId))
             .setDeleteIntent(dismissIntent(state.slipId))
-            // Exactly one action, so it cannot be missed among others.
+            // Listen stays in Calm Mode, but it reads the calm sentence: the score and the
+            // minute. Removing the button would take the surface away from the customer who
+            // most depends on it in order to make the surface quieter for everyone else.
+            .addAction(listenAction(state))
             .addAction(
                 NotificationCompat.Action.Builder(
                     R.drawable.ic_launcher_foreground,
@@ -274,6 +280,32 @@ class LiveUpdateRenderer(
             intent.putExtra("route", deepLink)
         }
         return PendingIntent.getActivity(context, requestCode, intent, PENDING_FLAGS)
+    }
+
+    /**
+     * Speaks the card without opening anything. Absent for UNVERIFIED and BLOCKED because no
+     * card is posted for them at all, so there is never a button to press.
+     */
+    private fun listenAction(state: SlipSurfaceState): NotificationCompat.Action =
+        NotificationCompat.Action.Builder(
+            R.drawable.ic_launcher_foreground,
+            "Listen",
+            speakIntent(state),
+        ).build()
+
+    private fun speakIntent(state: SlipSurfaceState): PendingIntent {
+        val intent = Intent(context, SpeakReceiver::class.java)
+            .setAction(SpeakReceiver.ACTION_SPEAK)
+            // The sentence rides along rather than being looked up later, so what is read
+            // out is exactly what this post put on the screen.
+            .putExtra(SpeakReceiver.EXTRA_TEXT, SpokenSurface.forSlip(state))
+            .putExtra(SpeakReceiver.EXTRA_SURFACE, Surface.LIVE_UPDATE.name)
+        return PendingIntent.getBroadcast(
+            context,
+            ("speak:" + state.slipId).hashCode(),
+            intent,
+            PENDING_FLAGS,
+        )
     }
 
     private fun dismissIntent(slipId: String): PendingIntent {

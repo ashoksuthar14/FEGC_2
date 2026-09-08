@@ -28,6 +28,7 @@ import kotlinx.coroutines.launch
  *   adb shell am broadcast -a eu.feg.ambient.DEMO_SURFACE --es action end
  *   adb shell am broadcast -a eu.feg.ambient.DEMO_SURFACE --es action widget --es state Live
  *   adb shell am broadcast -a eu.feg.ambient.DEMO_SURFACE --es action thumbs --es value up
+ *   adb shell am broadcast -a eu.feg.ambient.DEMO_SURFACE --es action speak
  *
  * Debug builds only — it is registered behind a manifest flag and does nothing in release.
  */
@@ -124,6 +125,16 @@ class DemoSurfaceReceiver : BroadcastReceiver() {
                         else -> WidgetState.Live(slip)
                     }
                     controller.refreshWidget(state)
+                }
+
+                // N1 read aloud, driven the same way. Still never automatic: this is a
+                // broadcast someone typed, which is a tap by another name.
+                "speak" -> {
+                    val result = app.container.spokenMoments.speak(
+                        SpokenSurface.forSlip(slip),
+                        eu.feg.ambient.ambient.engine.Surface.LIVE_UPDATE,
+                    )
+                    Log.i(TAG, "speak result: " + result)
                 }
 
                 // The widget's own feedback buttons, reachable without a finger on the glass.
