@@ -37,6 +37,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import eu.feg.ambient.core.formatMoney
+import eu.feg.ambient.data.model.Limits
 import eu.feg.ambient.data.model.RiskState
 import eu.feg.ambient.ui.components.PskChip
 import eu.feg.ambient.ui.theme.LocalPskColors
@@ -89,6 +90,9 @@ fun ResponsibleGamingScreen(
                 Spacer(Modifier.height(12.dp))
                 DepositLimitPicker(
                     current = state.limits.depositLimit,
+                    // "Chosen" is not the same as "whatever the account shipped with". See
+                    // the picker's own note.
+                    chosen = state.limits != Limits(),
                     onPick = { viewModel.setDepositLimit(it) },
                 )
             }
@@ -285,7 +289,7 @@ private fun Card(title: String, content: @Composable () -> Unit) {
  * recommendation: an operator nudging a customer toward a higher ceiling is the whole problem.
  */
 @Composable
-private fun DepositLimitPicker(current: Double, onPick: (Double) -> Unit) {
+private fun DepositLimitPicker(current: Double, chosen: Boolean, onPick: (Double) -> Unit) {
     val psk = LocalPskColors.current
     Text(
         text = "Your daily deposit limit",
@@ -297,7 +301,13 @@ private fun DepositLimitPicker(current: Double, onPick: (Double) -> Unit) {
         DEPOSIT_PRESETS.forEach { amount ->
             PskChip(
                 label = formatMoney(amount),
-                selected = current == amount,
+                // NOTHING IS SELECTED UNTIL THE CUSTOMER SELECTS SOMETHING. The account ships
+                // with a 500 ceiling it never asked for, and highlighting that chip made the
+                // default look like a decision -- while the missions screen, correctly, still
+                // said "Not set yet". Worse, the highlighted chip was the one tap that did
+                // nothing: choosing the value already stored changes no state, so the customer
+                // most likely to tap it got no limit and no badge.
+                selected = chosen && current == amount,
                 onClick = { onPick(amount) },
                 modifier = Modifier.semantics {
                     contentDescription = "Set the daily deposit limit to " + formatMoney(amount) +
