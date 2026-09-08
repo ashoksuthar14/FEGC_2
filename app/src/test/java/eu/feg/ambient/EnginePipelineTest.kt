@@ -55,7 +55,15 @@ class EnginePipelineTest {
         /** Counted, not recorded as a state: a redraw carries nothing to record. */
         var widgetRedraws = 0
         override suspend fun refreshWidgets() { widgetRedraws++ }
-        override suspend fun postAlert(headline: String, detail: String, deepLink: String): Boolean {
+        /** entryId is recorded so a test can assert the alert carries its ledger row. */
+        var lastAlertEntryId: String? = null
+        override suspend fun postAlert(
+            headline: String,
+            detail: String,
+            deepLink: String,
+            entryId: String?,
+        ): Boolean {
+            lastAlertEntryId = entryId
             alertsAttempted++
             if (alertsAllowed <= 0) return false
             alertsAllowed--

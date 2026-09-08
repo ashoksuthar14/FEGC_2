@@ -45,6 +45,7 @@ import java.util.Locale
 fun BanditDebugScreen(viewModel: EngineLabViewModel, modifier: Modifier = Modifier) {
     val psk = LocalPskColors.current
     val state by viewModel.bandit.collectAsStateWithLifecycle()
+    val feedback by viewModel.feedback.collectAsStateWithLifecycle()
 
     LazyColumn(
         modifier = modifier
@@ -54,11 +55,42 @@ fun BanditDebugScreen(viewModel: EngineLabViewModel, modifier: Modifier = Modifi
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item(key = "title") {
-            Text(
-                text = "Bandit Debug",
-                style = MaterialTheme.typography.titleLarge,
-                color = psk.textPrimary,
-            )
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    text = "How it learns",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = psk.textPrimary,
+                )
+                Text(
+                    text = "Every notification is a guess about what is worth your attention. " +
+                        "Opening one says yes, swiping it away says no, and coming back on " +
+                        "your own after we stayed quiet says the silence was right.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = psk.textSecondary,
+                )
+            }
+        }
+
+        // The gestures themselves, above the bars. The bars say where the router has got to;
+        // this says how it got there, and it is the half a judge can check against what they
+        // just did with their thumb.
+        item(key = "feedback") {
+            DevCard("What you have taught it") {
+                if (feedback.isEmpty()) {
+                    Text(
+                        text = "Nothing yet. Open or swipe away a notification and it appears here.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = psk.textSecondary,
+                    )
+                } else {
+                    feedback.forEach { row ->
+                        DevRow(
+                            label = row.gesture + " · " + humanArm(row.tone),
+                            value = (if (row.reward > 0) "+" else "") + format(row.reward),
+                        )
+                    }
+                }
+            }
         }
 
         item(key = "context") {

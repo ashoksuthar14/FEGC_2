@@ -96,14 +96,19 @@ class AndroidSurfaceController(
         _diagnostics.value = _diagnostics.value.copy(lastWidgetUpdate = Clock.System.now())
     }
 
-    override suspend fun postAlert(headline: String, detail: String, deepLink: String): Boolean {
+    override suspend fun postAlert(
+        headline: String,
+        detail: String,
+        deepLink: String,
+        entryId: String?,
+    ): Boolean {
         if (!alertBudget.tryConsume()) {
             Log.i(TAG, "postAlert refused: budget spent")
             refreshBudgetDiagnostics()
             return false
         }
         Log.i(TAG, "postAlert " + headline)
-        liveUpdateRenderer?.alert(headline, detail, deepLink)
+        liveUpdateRenderer?.alert(headline, detail, deepLink, entryId)
         refreshBudgetDiagnostics()
         return true
     }
@@ -153,7 +158,7 @@ class AndroidSurfaceController(
     interface LiveUpdateRendering {
         fun post(state: SlipSurfaceState)
         fun end(slipId: String, settled: Boolean)
-        fun alert(headline: String, detail: String, deepLink: String)
+        fun alert(headline: String, detail: String, deepLink: String, entryId: String?)
     }
 
     interface WidgetRendering {

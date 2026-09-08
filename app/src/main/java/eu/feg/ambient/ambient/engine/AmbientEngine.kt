@@ -68,6 +68,11 @@ class AmbientEngine(
             narrator.narrate(moment.facts, decision.tone, language())
         }.getOrNull()
 
+        // MINTED HERE, NOT IN record(). A tap or a swipe on a notification has to name the
+        // decision it is feedback ABOUT, and the notification is built before the ledger row
+        // is written -- so the id has to exist first and both have to use the same one.
+        val entryId = newEntryId(moment)
+
         val state = surfaceState(moment, protection, text)
         // A LOYALTY MOMENT IS NOT A SLIP. surfaceState builds a SlipSurfaceState out of the
         // facts, and a badge has no teams, no score and no leg -- so pushing it as
@@ -85,12 +90,12 @@ class AmbientEngine(
                 else surfaceController.refreshWidget(WidgetState.Live(state))
             Surface.ALERT -> {
                 val sent = text?.let {
-                    surfaceController.postAlert(it.headline, it.detail, deepLink)
+                    surfaceController.postAlert(it.headline, it.detail, deepLink, entryId)
                 } ?: false
                 if (!sent) {
                     // The budget said no after the bandit chose it. Record the truth rather
                     // than pretending an alert went out.
-                    record(moment, decision.copy(reason = "Alert budget was spent."), shown = false)
+                    record(moment, decision.copy(reason = "Alert budget was spent."), shown = false, id = entryId)
                     return decision
                 }
             }
@@ -101,7 +106,7 @@ class AmbientEngine(
             Surface.NOTHING -> Unit
         }
 
-        record(moment, decision, shown = true)
+        record(moment, decision, shown = true, id = entryId)
         Log.i(TAG, "surfaced " + decision.surface + " for " + moment.type + " score=" + score)
         return decision
     }
@@ -177,11 +182,15 @@ class AmbientEngine(
         )
     }
 
-    private fun record(moment: Moment, decision: Decision, shown: Boolean) {
+    /** The ledger row's id, minted before the surface so the surface can carry it back. */
+    private fun newEntryId(moment: Moment): String =
+        "led-" + Clock.System.now().toEpochMilliseconds() + "-" + moment.id
+
+    private fun record(moment: Moment, decision: Decision, shown: Boolean, id: String? = null) {
         val now = Clock.System.now()
         ledger.record(
             LedgerEntry(
-                id = "led-" + now.toEpochMilliseconds() + "-" + moment.id,
+                id = id ?: newEntryId(moment),
                 momentId = moment.id,
                 momentType = moment.type.name,
                 contextBucket = contextBucket(moment.type.name, now),

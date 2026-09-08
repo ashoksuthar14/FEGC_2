@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
@@ -53,6 +54,21 @@ data class ArmBar(
     val mean: Double,
     val wins: Double,
     val losses: Double,
+)
+
+/**
+ * One gesture the customer made, and what it was worth.
+ *
+ * The bars show where the router has GOT to; this shows how it got there. Without it "the app
+ * learns" is a claim about two numbers that were already moving when you opened the screen.
+ */
+data class FeedbackRow(
+    val moment: String,
+    val surface: String,
+    val tone: String,
+    val gesture: String,
+    val reward: Double,
+    val at: Long,
 )
 
 data class BanditState(
@@ -150,6 +166,33 @@ class EngineLabViewModel(private val container: AppContainer) : ViewModel() {
      * Recomputed from [eu.feg.ambient.ambient.engine.ledger.Ledger.arms] rather than polled, so
      * a thumbs press moves the bars on the same frame the counter is written.
      */
+    /**
+     * Every decision the customer has answered, newest first.
+     *
+     * Read off the ledger rather than kept alongside it: the ledger already records the
+     * reward and the gesture stamps, so a second store would only be a way for the two to
+     * disagree. A row with no reward has not been answered and is not listed.
+     */
+    val feedback: StateFlow<List<FeedbackRow>> = container.ledger.entries
+        .map { entries ->
+            entries.asSequence()
+                .filter { it.reward != null }
+                .map { entry ->
+                    FeedbackRow(
+                        moment = entry.momentType,
+                        surface = entry.surface,
+                        tone = entry.tone,
+                        gesture = gestureOf(entry),
+                        reward = entry.reward ?: 0.0,
+                        at = entry.dismissedAt ?: entry.tappedAt ?: entry.createdAt,
+                    )
+                }
+                .sortedByDescending { it.at }
+                .take(FEEDBACK_ROWS)
+                .toList()
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT), emptyList())
+
     val bandit: StateFlow<BanditState> = combine(
         container.ledger.arms,
         selectedContext,
@@ -253,6 +296,21 @@ class EngineLabViewModel(private val container: AppContainer) : ViewModel() {
      * Top [TOP_ARMS] only. All 49 arms fit on a screen as hairlines nobody can read from the
      * back of a room; six fit as bars a judge can see move.
      */
+    /**
+     * What the customer did, in the words the screen shows.
+     *
+     * Derived from the stamps rather than stored, and the order matters: a card can be tapped
+     * and later swiped away, and the dismissal is the more recent answer. A silence has
+     * neither stamp -- it was rewarded because the customer came back on their own.
+     */
+    private fun gestureOf(entry: LedgerEntry): String = when {
+        entry.dismissedAt != null -> "Swiped away"
+        entry.tappedAt != null -> "Opened"
+        entry.surface == Surface.NOTHING.name -> "Stayed quiet, and you came back anyway"
+        entry.reward != null && entry.reward > 0 -> "Liked"
+        else -> "Disliked"
+    }
+
     private fun barsFor(context: String): List<ArmBar> =
         container.router.snapshot(context)
             .take(TOP_ARMS)
@@ -268,6 +326,9 @@ class EngineLabViewModel(private val container: AppContainer) : ViewModel() {
 
     companion object {
         const val TOP_ARMS = 6
+
+        /** Enough to see a pattern, few enough to read on a phone without scrolling for it. */
+        const val FEEDBACK_ROWS = 12
 
         /** The bar every arm starts at, drawn as a marker so movement is movement from somewhere. */
         val PRE_SEED_MEAN: Double =

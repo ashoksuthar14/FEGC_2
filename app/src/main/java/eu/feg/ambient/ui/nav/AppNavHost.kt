@@ -87,13 +87,14 @@ import eu.feg.ambient.ui.theme.LocalPskColors
 private val MORE_ITEMS = listOf(
     "Lotto", "Promo", "Forum", "Results", "Statistics", "News",
     "Arena", "Champions Club", "Branches", "Help", "Missions", "My rewards",
+    "How it learns",
     "Responsible gaming", "Settings",
 )
 
 /** Phase 2 test benches, kept under their own heading so they read as developer tools. */
 private val DEVELOPER_ITEMS = listOf(
     "AI diagnostics", "Narrator Lab", "Surface Lab",
-    "Register Panel", "Why this?", "Bandit Debug",
+    "Register Panel", "Why this?",
 )
 
 /** PRD section 4 — one Activity, one NavHost, five tabs plus a More sheet. */
@@ -446,7 +447,11 @@ fun AppNavHost(
                                     "Register Panel" ->
                                         navController.navigate(Routes.REGISTER_PANEL)
                                     "Why this?" -> navController.navigate(Routes.WHY_THIS)
-                                    "Bandit Debug" -> navController.navigate(Routes.BANDIT_DEBUG)
+                                    // Out of the developer section: "does it actually
+                                    // learn" is the question this app most needs to be able
+                                    // to answer, and the answer should not be behind a
+                                    // heading that says it is for engineers.
+                                    "How it learns" -> navController.navigate(Routes.BANDIT_DEBUG)
                                 }
                             }
                             .padding(horizontal = 20.dp, vertical = 14.dp),

@@ -147,8 +147,19 @@ interface SurfaceController {
      */
     suspend fun refreshWidgets()
 
-    /** Returns false when the 24h budget is spent — never silently swallowed. */
-    suspend fun postAlert(headline: String, detail: String, deepLink: String): Boolean
+    /**
+     * Returns false when the 24h budget is spent — never silently swallowed.
+     *
+     * [entryId] is the ledger row this alert IS, so a tap or a swipe on it can be attributed
+     * to the decision that put it there. Null for alerts nobody is learning from -- the demo
+     * bubble's, and the coordinator's settlement notice, which no arm chose.
+     */
+    suspend fun postAlert(
+        headline: String,
+        detail: String,
+        deepLink: String,
+        entryId: String? = null,
+    ): Boolean
 
     suspend fun refreshShortcuts(protection: ProtectionState)
 

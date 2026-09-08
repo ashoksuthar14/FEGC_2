@@ -111,6 +111,14 @@
                 android:resource="@xml/widget_protection_info" />
         </receiver>
 
+        <!--
+          The swipe half of the learning loop. Not exported: only the system fires it, from a
+          PendingIntent this app created.
+        -->
+        <receiver
+            android:name=".ambient.surfaces.live.AlertFeedbackReceiver"
+            android:exported="false" />
+
         <receiver
             android:name=".ambient.surfaces.live.DismissReceiver"
             android:exported="false" />

@@ -92,7 +92,7 @@ class LiveUpdateRenderer(
         lastState.remove(slipId)
     }
 
-    override fun alert(headline: String, detail: String, deepLink: String) {
+    override fun alert(headline: String, detail: String, deepLink: String, entryId: String?) {
         if (!NotificationPermission.isGranted(context)) return
         val builder = NotificationCompat.Builder(context, Channels.SETTLEMENT)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
@@ -104,7 +104,14 @@ class LiveUpdateRenderer(
             .setCategory(NotificationCompat.CATEGORY_STATUS)
             .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
             .setAutoCancel(true)
-            .setContentIntent(openAppIntent(deepLink.hashCode(), deepLink))
+            .setContentIntent(openAppIntent(deepLink.hashCode(), deepLink, entryId))
+        // A SWIPE IS AN ANSWER. Without a deleteIntent the only feedback the router ever
+        // heard was a thumb on the widget, so an alert nobody wanted looked exactly like an
+        // alert nobody had seen -- and the arm that sent it kept its score. This is the
+        // negative half of the loop, and it costs the customer nothing to give.
+        if (entryId != null) {
+            builder.setDeleteIntent(AlertFeedbackReceiver.dismissIntent(context, entryId))
+        }
         notify(ALERT_NOTIFICATION_ID, builder)
     }
 
@@ -361,7 +368,11 @@ class LiveUpdateRenderer(
     private fun openSlipIntent(slipId: String): PendingIntent =
         openAppIntent(slipId.hashCode(), ROUTE_MY_BETS)
 
-    private fun openAppIntent(requestCode: Int, deepLink: String?): PendingIntent {
+    private fun openAppIntent(
+        requestCode: Int,
+        deepLink: String?,
+        entryId: String? = null,
+    ): PendingIntent {
         val intent = Intent(context, MainActivity::class.java)
             .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
         if (deepLink != null) {
@@ -369,6 +380,8 @@ class LiveUpdateRenderer(
             // The extra MainActivity actually navigates on.
             intent.putExtra("route", deepLink)
         }
+        // The positive half of the loop: MainActivity turns this into engine.onTapped.
+        if (entryId != null) intent.putExtra(AlertFeedbackReceiver.EXTRA_ENTRY_ID, entryId)
         return PendingIntent.getActivity(context, requestCode, intent, PENDING_FLAGS)
     }
 
