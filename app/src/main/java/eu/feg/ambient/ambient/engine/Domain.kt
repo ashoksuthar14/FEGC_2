@@ -51,6 +51,15 @@ data class MatchEvent(
     val awayScore: Int,
     val scorer: String? = null,
     val period: String? = null,
+    /**
+     * Minutes until kick-off, for KICKOFF_FOLLOWED and nothing else.
+     *
+     * Carried on the event rather than recomputed downstream because the moment is raised
+     * inside a window, not at an instant: KickoffMomentSource fires anywhere in the minute
+     * either side of forty, and "kick off in 40 minutes" read out at 38 is a small lie the
+     * customer can check against their own clock.
+     */
+    val kickoffInMinutes: Int? = null,
     val at: Instant,
 )
 

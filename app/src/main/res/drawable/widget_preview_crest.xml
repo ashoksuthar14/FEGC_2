@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A club crest stands in as a disc in the club's colour: no scraped logos, here either. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="oval">
+    <solid android:color="#FF0E4C96" />
+    <stroke android:width="1dp" android:color="#33FFFFFF" />
+</shape>

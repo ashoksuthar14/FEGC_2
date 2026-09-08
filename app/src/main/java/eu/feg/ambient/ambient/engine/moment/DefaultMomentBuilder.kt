@@ -29,8 +29,12 @@ import eu.feg.ambient.data.repo.BetRepository
 class DefaultMomentBuilder(
     private val betRepository: BetRepository,
     /**
-     * There is no follow store yet. Step 16 introduces one and passes its reader in here;
-     * until then every event is judged on slip ownership alone.
+     * The clubs the customer follows, by the name the fixtures use.
+     *
+     * Defaulted to empty for tests and for the surface lab, but AppContainer must pass the
+     * real reader: with the default, every KICKOFF_FOLLOWED event resolves to
+     * Ownership.NEITHER and the engine drops it as "not yours" -- the moment is built,
+     * scored and thrown away, and the only trace is a log line.
      */
     private val followedTeams: () -> Set<String> = { emptySet() },
     /** Same shape, same reason: step 16 owns per-match mutes. */
@@ -121,7 +125,13 @@ class DefaultMomentBuilder(
             legsWon = if (legs.isEmpty()) null else legs.count { it.status == LegStatus.WON },
             legsLost = if (legs.isEmpty()) null else legs.count { it.status == LegStatus.LOST },
             myLegDescription = mine?.description,
-            minutesRemaining = (FULL_TIME - event.minute).coerceAtLeast(0),
+            // Nothing has been played yet before kick-off, so there is no remainder to
+            // report. Left at 90 it read as "ninety minutes left" on a match that has not
+            // started, which is the kind of true-sounding wrong the templates cannot catch.
+            minutesRemaining =
+                if (event.type == MomentType.KICKOFF_FOLLOWED) null
+                else (FULL_TIME - event.minute).coerceAtLeast(0),
+            kickoffInMinutes = event.kickoffInMinutes,
             followedTeam = if (ownership == Ownership.FOLLOWED_TEAM) followedTeamIn(event) else null,
         )
     }

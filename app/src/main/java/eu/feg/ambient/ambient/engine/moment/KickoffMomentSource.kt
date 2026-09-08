@@ -83,6 +83,7 @@ class KickoffMomentSource(
                     homeScore = 0,
                     awayScore = 0,
                     period = match.period,
+                    kickoffInMinutes = (match.kickoff - now).inWholeMinutes.toInt(),
                     at = now,
                 ),
             )

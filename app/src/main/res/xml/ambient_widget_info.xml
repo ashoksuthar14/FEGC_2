@@ -1,4 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  previewLayout, not previewImage: the picker then draws the real card's shape rather than the
+  Glance loading placeholder. Without it every provider in this app looks identical in the
+  picker, and a customer adds one widget five times instead of adding five widgets.
+-->
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
     android:minWidth="250dp"
     android:minHeight="180dp"
@@ -8,4 +13,5 @@
     android:updatePeriodMillis="0"
     android:widgetCategory="home_screen"
     android:description="@string/widget_description"
+    android:previewLayout="@layout/widget_preview_live"
     android:initialLayout="@layout/glance_default_loading_layout" />

@@ -235,7 +235,19 @@ class AppContainer(context: Context) {
 
     val router = BanditRouter(ledger)
 
-    private val momentBuilder = DefaultMomentBuilder(betRepository)
+    /**
+     * Ownership needs the club's NAME, because that is what a fixture carries; the user state
+     * stores its id. ClubThemes is the one place that maps between them, and byId falls back
+     * to the operator's own theme, so an unknown or absent id has to become an empty set here
+     * rather than the literal team "PSK".
+     */
+    private val momentBuilder = DefaultMomentBuilder(
+        betRepository = betRepository,
+        followedTeams = {
+            val theme = ClubThemes.byId(userStateRepository.state.value.myClubId)
+            if (theme.clubId.isEmpty()) emptySet() else setOf(theme.name)
+        },
+    )
 
     private val attentionBudget = DefaultAttentionBudget(
         context = context,
