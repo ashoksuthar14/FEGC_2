@@ -27,6 +27,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
@@ -87,7 +89,7 @@ fun MissionsScreen(
             }
         }
 
-        item(key = "tier") { TierHeader(state) }
+        item(key = "tier") { TierHero(state) }
 
         if (state.paused) {
             item(key = "paused") { PausedNotice() }
@@ -135,35 +137,37 @@ private fun MissionCard(mission: Mission, badge: Badge?) {
         Modifier
             .fillMaxWidth()
             .clip(PskShapes.card)
-            .background(psk.surfaceRaised)
-            .padding(12.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+            .background(psk.surface)
+            .border(1.dp, psk.surfaceRaised, PskShapes.card)
+            .padding(14.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            badge?.let { BadgeIcon(it, psk.textPrimary) }
+            // Dimmed until it is earned: the plate shows what the mission is FOR, and a badge
+            // drawn at full strength before it is won is the card claiming something.
+            badge?.let { Medallion(it.iconRes, psk.brandBlue, dimmed = true) }
             Column(Modifier.weight(1f)) {
                 Text(
                     text = mission.title,
                     style = MaterialTheme.typography.titleMedium,
                     color = psk.textPrimary,
+                    fontWeight = FontWeight.SemiBold,
                 )
                 badge?.let {
                     Text(
-                        text = "Badge: " + it.name +
-                            (if (it.weight > 1) " (counts " + it.weight + ")" else ""),
+                        text = it.name + (if (it.weight > 1) " · counts " + it.weight else ""),
                         style = MaterialTheme.typography.labelSmall,
                         color = psk.textSecondary,
                     )
                 }
             }
             // The bar below announces the same value; reading it twice is noise.
-            Text(
+            CountPill(
                 text = progressLine,
-                style = MaterialTheme.typography.labelMedium,
-                color = psk.textSecondary,
+                tint = psk.brandBlue,
                 modifier = Modifier.clearAndSetSemantics { },
             )
         }
@@ -196,8 +200,10 @@ private fun CareCard(mission: Mission, onSetLimit: () -> Unit) {
         Modifier
             .fillMaxWidth()
             .clip(PskShapes.card)
-            .background(psk.surface)
-            .border(1.dp, psk.positive, PskShapes.card)
+            .background(
+                Brush.horizontalGradient(listOf(psk.positive.copy(alpha = 0.13f), psk.surface)),
+            )
+            .border(1.dp, psk.positive.copy(alpha = 0.7f), PskShapes.card)
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
@@ -205,12 +211,7 @@ private fun CareCard(mission: Mission, onSetLimit: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Icon(
-                painter = painterResource(R.drawable.ic_badge_shield),
-                contentDescription = null,
-                tint = psk.positive,
-                modifier = Modifier.size(28.dp),
-            )
+            Medallion(R.drawable.ic_badge_shield, psk.positive)
             Text(
                 text = mission.title,
                 style = MaterialTheme.typography.titleMedium,
@@ -289,7 +290,9 @@ private fun DoneRow(mission: Mission, badge: Badge?) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        badge?.let { BadgeIcon(it, if (care) psk.positive else psk.textPrimary) }
+        badge?.let {
+            Medallion(it.iconRes, if (care) psk.positive else psk.brandBlue, size = 36.dp)
+        }
         Column(Modifier.weight(1f)) {
             Text(
                 text = mission.title,

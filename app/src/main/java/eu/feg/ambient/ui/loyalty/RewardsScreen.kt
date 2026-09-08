@@ -1,6 +1,7 @@
 package eu.feg.ambient.ui.loyalty
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -35,7 +36,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import eu.feg.ambient.ambient.loyalty.LoyaltyRepository.RedeemResult
 import eu.feg.ambient.ambient.loyalty.LoyaltyState
+import eu.feg.ambient.R
 import eu.feg.ambient.ambient.loyalty.Perk
+import eu.feg.ambient.ambient.loyalty.PerkCategory
 import eu.feg.ambient.ambient.loyalty.Redemption
 import eu.feg.ambient.ui.components.PskChip
 import eu.feg.ambient.ui.theme.LocalPskColors
@@ -187,25 +190,47 @@ private fun PerkCard(
 ) {
     val psk = LocalPskColors.current
     val status = perkStatus(perk, state, redemption)
+    // Locked perks step back rather than disappear: seeing what is out of reach is the point
+    // of a catalogue, and greying the whole card would make it look broken instead of distant.
+    val reachable = redemption != null || status.isNullOrEmpty()
+    val accent = if (redemption != null) psk.positive else psk.brandBlue
     Column(
         Modifier
             .fillMaxWidth()
             .clip(PskShapes.card)
-            .background(psk.surfaceRaised)
-            .padding(12.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+            .background(psk.surface)
+            .border(
+                1.dp,
+                if (reachable) accent.copy(alpha = 0.45f) else psk.surfaceRaised,
+                PskShapes.card,
+            )
+            .padding(14.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text(
-                text = perk.name,
-                style = MaterialTheme.typography.titleMedium,
-                color = psk.textPrimary,
-                modifier = Modifier.weight(1f),
+            Medallion(
+                iconRes = perkIcon(perk.category),
+                tint = accent,
+                size = 44.dp,
+                dimmed = !reachable,
             )
-            CategoryTag(categoryLabel(perk.category))
+            Column(Modifier.weight(1f)) {
+                Text(
+                    text = perk.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = psk.textPrimary,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    text = categoryLabel(perk.category),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = psk.textSecondary,
+                )
+            }
+            CountPill(badgeCount(perk.badgeCost), accent)
         }
         Text(
             text = perk.description,
@@ -217,9 +242,9 @@ private fun PerkCard(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Text(
-                text = badgeCount(perk.badgeCost) + " · " + perk.stock + " available",
-                style = MaterialTheme.typography.labelMedium,
-                color = psk.textPrimary,
+                text = perk.stock.toString() + " available",
+                style = MaterialTheme.typography.labelSmall,
+                color = psk.textSecondary,
                 modifier = Modifier.weight(1f),
             )
             when {
@@ -241,6 +266,21 @@ private fun PerkCard(
             }
         }
     }
+}
+
+/**
+ * A glyph per category, from the badge set rather than a new icon pack.
+ *
+ * Approximate on purpose: five categories share four drawables, because a bespoke icon each
+ * would be five more files to keep honest for a difference the customer already reads in the
+ * label beneath the name.
+ */
+private fun perkIcon(category: PerkCategory): Int = when (category) {
+    PerkCategory.MATCH_TICKET -> R.drawable.ic_badge_ticket
+    PerkCategory.EXPERIENCE -> R.drawable.ic_badge_star
+    PerkCategory.FEATURE_ACCESS -> R.drawable.ic_badge_widget
+    PerkCategory.CHARITY_DONATION -> R.drawable.ic_badge_shield
+    PerkCategory.MERCHANDISE, PerkCategory.PARTNER_VOUCHER -> R.drawable.ic_badge_crest
 }
 
 /** A static label, not a chip: PskChip announces itself as a button, and this does nothing. */

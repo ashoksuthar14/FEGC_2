@@ -84,7 +84,7 @@ import eu.feg.ambient.ui.theme.LocalPskColors
 
 private val MORE_ITEMS = listOf(
     "Lotto", "Promo", "Forum", "Results", "Statistics", "News",
-    "Champions Club", "Branches", "Help", "Missions", "My rewards",
+    "Arena", "Champions Club", "Branches", "Help", "Missions", "My rewards",
     "Responsible gaming", "Settings",
 )
 
@@ -425,6 +425,9 @@ fun AppNavHost(
                             .clickable {
                                 showMore = false
                                 when (item) {
+                                    // Left the bottom bar when Scan and Rewards joined it;
+                                    // the screen is unchanged and this is now its door.
+                                    "Arena" -> navController.navigate(Routes.ARENA)
                                     "Missions" -> navController.navigate(Routes.MISSIONS)
                                     "My rewards" -> navController.navigate(Routes.REWARDS)
                                     "Responsible gaming" ->
