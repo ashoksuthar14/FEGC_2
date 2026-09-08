@@ -172,15 +172,22 @@ class DefaultRelevanceScorer(
         const val BASE_FOLLOWED = 0.3
 
         /**
-         * Loyalty, below a followed club's match and well below the customer's own slip.
+         * Loyalty: the lowest thing that still speaks.
          *
-         * Deliberate. A badge is worth telling someone about and is never worth interrupting
-         * them for, so at this base it reaches the widget and only clears the bar for an
-         * alert on a quiet day when the budget has gone unspent. That is the whole of the
-         * "missions do not get their own push channel" promise, expressed as a number rather
-         * than as a rule somebody has to remember.
+         * IT WAS 0.25, AND THAT WAS A BUG rather than a strict setting. A loyalty moment gets
+         * no DECIDES_BONUS and no urgency -- minutesRemaining is null for a badge -- so its
+         * total IS its base, and RewardTable.MIN_SCORE_TO_SPEAK is 0.30 and gates every
+         * surface, not merely alerts. At 0.25 every badge the app ever awarded was routed to
+         * NOTHING, for ever: the ledger filled with correct-sounding silence rows and two
+         * moment types' worth of copy could not be reached by any code path.
+         *
+         * So it clears the bar with a little headroom, and stays well under a goal on the
+         * customer's own slip. Clearing the bar is not the same as interrupting: it makes the
+         * moment eligible, and the attention budget still decides whether an alert is one of
+         * the surfaces on offer. That division is what "missions never nag" actually rests on
+         * -- not on a score too low to be heard at all.
          */
-        const val BASE_MINE = 0.25
+        const val BASE_MINE = 0.35
         const val DECIDES_BONUS = 0.3
 
         /** The closing stretch. Before this, urgency contributes nothing. */

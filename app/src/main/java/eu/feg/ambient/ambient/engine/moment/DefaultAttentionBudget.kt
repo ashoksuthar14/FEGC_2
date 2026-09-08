@@ -5,6 +5,7 @@ import android.content.Context
 import eu.feg.ambient.ambient.engine.AttentionBudget
 import eu.feg.ambient.ambient.engine.Moment
 import eu.feg.ambient.ambient.engine.Surface
+import eu.feg.ambient.ambient.narrator.MomentType
 import eu.feg.ambient.ambient.surfaces.AlertBudget
 import eu.feg.ambient.ambient.surfaces.ProtectionState
 import eu.feg.ambient.data.model.QuietHours
@@ -60,6 +61,19 @@ class DefaultAttentionBudget(
             Surface.IN_APP,
             Surface.ALERT,
         )
+
+        // A BADGE IS NOT AN ONGOING THING, so it may not take the ongoing surface.
+        //
+        // A Live Update is a promoted, persistent lock-screen card with a progress state; it
+        // exists for a slip that is still being decided. A mission completion is an instant
+        // with nothing left to follow, and the card it would post is built from a moment that
+        // has no teams, no score and no leg -- so it would replace a customer's running slip
+        // with a blank one and then sit there. The engine's own dispatch already refuses to
+        // overwrite the WIDGET this way; the eligibility belongs here, where "which surfaces
+        // may this kind of moment ever use" is decided, rather than as a second guard.
+        if (moment.type == MomentType.MISSION_COMPLETE || moment.type == MomentType.TIER_REACHED) {
+            allowed.remove(Surface.LIVE_UPDATE)
+        }
 
         // Quiet hours are the user's own instruction, so they outrank everything else here.
         // IN_APP survives because it is not a push: it is what they find when they open the
