@@ -21,11 +21,13 @@ data class BetRow(
 
 data class MyBetsUiState(
     val showSettled: Boolean = false,
+    /** The slip currently carrying a Live Update, if any. */
+    val liveOnLockScreenSlipId: String? = null,
     val openBets: List<BetRow> = emptyList(),
     val settledBets: List<BetRow> = emptyList(),
 )
 
-class MyBetsViewModel(container: AppContainer) : ViewModel() {
+class MyBetsViewModel(private val container: AppContainer) : ViewModel() {
 
     private val settledTab = MutableStateFlow(false)
 
@@ -33,7 +35,8 @@ class MyBetsViewModel(container: AppContainer) : ViewModel() {
         container.betRepository.placedBets,
         container.matchRepository.matches,
         settledTab,
-    ) { bets, matches, settled ->
+        container.surfaceCoordinator.liveSlipId,
+    ) { bets, matches, settled, liveSlipId ->
         val rows = bets.map { bet ->
             val liveLegs = bet.legs.filter { leg ->
                 matches.firstOrNull { it.id == leg.matchId }?.state == MatchState.LIVE
@@ -54,6 +57,7 @@ class MyBetsViewModel(container: AppContainer) : ViewModel() {
         }
         MyBetsUiState(
             showSettled = settled,
+            liveOnLockScreenSlipId = liveSlipId,
             openBets = rows.filter { it.bet.status == BetStatus.OPEN },
             settledBets = rows.filter { it.bet.status != BetStatus.OPEN },
         )

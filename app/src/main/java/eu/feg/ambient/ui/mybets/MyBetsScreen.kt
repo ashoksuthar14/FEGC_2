@@ -92,13 +92,15 @@ fun MyBetsScreen(
                 )
             }
         } else {
-            items(bets, key = { it.bet.id }) { row -> BetCard(row) }
+            items(bets, key = { it.bet.id }) { row ->
+                BetCard(row, liveOnLockScreen = row.bet.id == state.liveOnLockScreenSlipId)
+            }
         }
     }
 }
 
 @Composable
-private fun BetCard(row: BetRow) {
+private fun BetCard(row: BetRow, liveOnLockScreen: Boolean = false) {
     val psk = LocalPskColors.current
     Column(
         Modifier
@@ -108,6 +110,16 @@ private fun BetCard(row: BetRow) {
             .padding(12.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
+        if (liveOnLockScreen) {
+            // The app says what is actually on the phone, rather than leaving the user to guess.
+            Text(
+                text = "Live on lock screen",
+                style = MaterialTheme.typography.labelSmall,
+                color = psk.positive,
+                fontWeight = FontWeight.SemiBold,
+            )
+        }
+
         row.bet.legs.forEach { leg ->
             Row(
                 verticalAlignment = Alignment.CenterVertically,

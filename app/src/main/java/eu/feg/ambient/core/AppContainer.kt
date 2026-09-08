@@ -17,6 +17,7 @@ import eu.feg.ambient.ambient.narrator.TemplateNarrator
 import eu.feg.ambient.ambient.surfaces.AndroidSurfaceController
 import eu.feg.ambient.ambient.surfaces.DemoSurfaceData
 import eu.feg.ambient.ambient.surfaces.SurfaceController
+import eu.feg.ambient.ambient.surfaces.SurfaceCoordinator
 import eu.feg.ambient.ambient.surfaces.live.LiveUpdateRenderer
 import eu.feg.ambient.ambient.surfaces.widget.WidgetRenderer
 import eu.feg.ambient.data.clock.MatchClock
@@ -145,6 +146,20 @@ class AppContainer(context: Context) {
 
     /** Ready-made slips so the surfaces have something real to show before the engine exists. */
     val demoData = DemoSurfaceData
+
+    /**
+     * Step 14E: turns ordinary app use into surfaces. Started from the Application so a bet
+     * placed anywhere reaches the lock screen without a screen having to remember to ask.
+     */
+    val surfaceCoordinator = SurfaceCoordinator(
+        scope = appScope,
+        controller = surfaceController,
+        betRepository = betRepository,
+        matchRepository = matchRepository,
+        userStateRepository = userStateRepository,
+        narrator = narrator,
+        clock = clock,
+    )
 
     /**
      * Debug-only: once the local model is ready, narrate a few moments and log the result.

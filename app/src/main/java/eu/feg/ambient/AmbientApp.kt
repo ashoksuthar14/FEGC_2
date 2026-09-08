@@ -17,6 +17,8 @@ class AmbientApp : Application() {
         // Off the main thread by construction — the first inference can take many seconds
         // and onCreate must never block on it.
         container.warmUpNarrator()
+        // Bet placement, the match clock and protection changes now drive the surfaces.
+        container.surfaceCoordinator.start()
         if (BuildConfig.DEBUG) container.logNarratorSelfTest()
     }
 }

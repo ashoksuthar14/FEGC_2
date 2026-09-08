@@ -11,7 +11,9 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.ui.graphics.toArgb
 import androidx.core.content.ContextCompat
-import eu.feg.ambient.ambient.surfaces.PromotionSpike
+import androidx.lifecycle.lifecycleScope
+import eu.feg.ambient.ambient.surfaces.notifications.NotificationPermission
+import kotlinx.coroutines.launch
 import eu.feg.ambient.ui.nav.AppNavHost
 import eu.feg.ambient.ui.theme.PskColors
 import eu.feg.ambient.ui.theme.PskTheme
@@ -28,9 +30,23 @@ class MainActivity : ComponentActivity() {
         val container = (application as AmbientApp).container
         val startRoute = intent?.getStringExtra("route")
 
-        // Step 14.0c spike, debug only: find out whether this device promotes an ongoing
-        // notification before the rest of step 14 is built around the assumption that it does.
-        if (BuildConfig.DEBUG) runPromotionSpike()
+        // Asked when a live slip is placed, never at launch: a denied notification
+        // permission is close to permanent, and the ask lands best right after someone has
+        // shown they want exactly this (step 14, decision 2).
+        val requestNotifications = registerForActivityResult(
+            ActivityResultContracts.RequestPermission(),
+        ) { granted -> container.surfaceCoordinator.onNotificationPermissionResult(granted) }
+
+        lifecycleScope.launch {
+            container.surfaceCoordinator.permissionWanted.collect { slipId ->
+                if (slipId == null) return@collect
+                if (NotificationPermission.isGranted(this@MainActivity)) {
+                    container.surfaceCoordinator.onNotificationPermissionResult(true)
+                } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    requestNotifications.launch(Manifest.permission.POST_NOTIFICATIONS)
+                }
+            }
+        }
         setContent {
             PskTheme {
                 AppNavHost(container, startRoute = startRoute)
@@ -38,24 +54,4 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun runPromotionSpike() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
-            PromotionSpike.run(this)
-            return
-        }
-        val granted = ContextCompat.checkSelfPermission(
-            this,
-            Manifest.permission.POST_NOTIFICATIONS,
-        ) == PackageManager.PERMISSION_GRANTED
-
-        if (granted) {
-            PromotionSpike.run(this)
-        } else {
-            // The spike asks at launch on purpose. Real bet placement asks at the right
-            // moment instead — see section 14.0 decision 2.
-            registerForActivityResult(ActivityResultContracts.RequestPermission()) {
-                PromotionSpike.run(this)
-            }.launch(Manifest.permission.POST_NOTIFICATIONS)
-        }
-    }
 }
