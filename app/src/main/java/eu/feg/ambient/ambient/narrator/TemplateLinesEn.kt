@@ -104,6 +104,19 @@ internal object TemplateLinesEn : TemplateLines {
             Tone.ONE_LINER -> f.badge + " ✓" to f.mission + " done."
         }
 
+        // An offer, never a push. It says the task, where the customer has got to, and what
+        // it earns -- and nothing about when it ends, because nothing does.
+        MomentType.MISSION_AVAILABLE -> when (tone) {
+            Tone.PLAIN -> f.mission to
+                (f.missionStep?.let { it + ". " } ?: "") + "Earns you the " + f.badge + " badge."
+            Tone.WITTY -> "Something to aim at · " + f.mission to
+                (if (f.missionLeft > 0) f.missionLeft.toString() + " to go and the " + f.badge +
+                    " badge is yours." else "The " + f.badge + " badge is waiting.")
+            Tone.STATS -> f.mission + " · " + (f.missionStep ?: "open") to
+                "Earns " + f.badge + ". You are on " + f.tier + " with " + badges(f) + "."
+            Tone.ONE_LINER -> f.mission to (f.missionStep ?: "Open") + " · " + f.badge
+        }
+
         MomentType.TIER_REACHED -> when (tone) {
             Tone.PLAIN -> f.tier + " reached" to
                 badges(f).replaceFirstChar { it.uppercase() } + " got you there. " + nextTier(f, "more for ")

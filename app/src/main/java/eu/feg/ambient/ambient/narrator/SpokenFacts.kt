@@ -75,6 +75,18 @@ internal class SpokenFacts(private val f: MomentFacts, private val language: Nar
     val badge: String = f.badgeName ?: if (language == NarratorLanguage.EN) "a badge" else "značka"
     val badges: String = words.countBadges((f.badgeCount ?: 0).coerceAtLeast(0))
     val tier: String = f.tierName ?: "Bronze"
+
+    /**
+     * "one of three", in words.
+     *
+     * Spelled out because this is written for the ear: "1 of 3" read aloud by a screen reader
+     * is fine, but the spoken variant exists precisely so the sentence does not depend on the
+     * reader to expand it.
+     */
+    val step: String? =
+        if (f.missionProgress != null && f.missionTarget != null) {
+            words.of(f.missionProgress) + " of " + words.of(f.missionTarget)
+        } else null
     val nextTier: String? = nextTierName(tier)
     /** Null at the top tier. */
     val toNext: String? = f.badgesToNextTier?.takeIf { it > 0 }?.let { words.countBadges(it) }

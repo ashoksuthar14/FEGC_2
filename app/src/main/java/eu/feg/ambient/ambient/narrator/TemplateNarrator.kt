@@ -39,6 +39,16 @@ internal class Facts(private val f: MomentFacts) {
     /** Null at the top tier, or when the facts did not say. The tables read null as "top". */
     val toNext: Int? = f.badgesToNextTier?.takeIf { it > 0 }
     val nextTier: String? = nextTierName(tier)
+
+    /** "1 of 3" for an offered mission, or null when the facts carry no progress. */
+    val missionStep: String? =
+        if (f.missionProgress != null && f.missionTarget != null) {
+            f.missionProgress.toString() + " of " + f.missionTarget
+        } else null
+
+    /** What is still to do: 2 when it is 1 of 3. Never below zero. */
+    val missionLeft: Int =
+        ((f.missionTarget ?: 0) - (f.missionProgress ?: 0)).coerceAtLeast(0)
 }
 
 /**

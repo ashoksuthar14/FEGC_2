@@ -102,6 +102,19 @@ internal object TemplateLinesHr : TemplateLines {
             Tone.ONE_LINER -> f.badge + " ✓" to f.mission + " gotovo."
         }
 
+        // Ponuda, nikad poziv. Kaze se zadatak, dokle je korisnik stigao i sto nosi -- i
+        // nista o roku, jer roka nema.
+        MomentType.MISSION_AVAILABLE -> when (tone) {
+            Tone.PLAIN -> f.mission to
+                (f.missionStep?.let { it + ". " } ?: "") + "Nosi znacku " + f.badge + "."
+            Tone.WITTY -> "Nesto za cilj · " + f.mission to
+                (if (f.missionLeft > 0) "Jos " + CroatianWords.badges(f.missionLeft) +
+                    " i znacka " + f.badge + " je tvoja." else "Znacka " + f.badge + " te ceka.")
+            Tone.STATS -> f.mission + " · " + (f.missionStep ?: "otvoreno") to
+                "Nosi znacku " + f.badge + ". Trenutno " + f.tier + ", ukupno " + badges(f) + "."
+            Tone.ONE_LINER -> f.mission to (f.missionStep ?: "Otvoreno") + " · " + f.badge
+        }
+
         MomentType.TIER_REACHED -> when (tone) {
             Tone.PLAIN -> TierHr.level(f.tier) to
                 "Ukupno " + badges(f) + " i " + TierHr.level(f.tier).lowercase() + " je tvoja. " + nextTier(f)

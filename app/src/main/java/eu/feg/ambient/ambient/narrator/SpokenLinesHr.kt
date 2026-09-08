@@ -118,6 +118,18 @@ internal object SpokenLinesHr : SpokenLines {
             Tone.ONE_LINER -> "Značka ${f.badge} osvojena. ${f.mission} gotovo."
         }
 
+        MomentType.MISSION_AVAILABLE -> when (tone) {
+            Tone.PLAIN ->
+                f.mission + ". " + (f.step?.let { it + ". " } ?: "") +
+                    "Nosi znacku " + f.badge + "."
+            Tone.WITTY ->
+                "Nesto za cilj. " + f.mission + ", a na kraju te ceka znacka " + f.badge + "."
+            Tone.STATS ->
+                f.mission + ", " + (f.step ?: "jos nije poceto") + ". Nosi znacku " +
+                    f.badge + ", a trenutno si na razini " + f.tier + "."
+            Tone.ONE_LINER -> f.mission + ". Znacka " + f.badge + "."
+        }
+
         MomentType.TIER_REACHED -> when (tone) {
             Tone.PLAIN ->
                 "${TierHr.level(f.tier)} dosegnuta. Imaš ${f.badges}. ${nextTier(f)}"

@@ -76,6 +76,8 @@ import eu.feg.ambient.ambient.surfaces.ProtectionState
 import androidx.compose.runtime.LaunchedEffect
 import eu.feg.ambient.ui.promo.PromoScreen
 import eu.feg.ambient.ui.loyalty.LoyaltyViewModel
+import eu.feg.ambient.ui.demo.DemoBubble
+import eu.feg.ambient.BuildConfig
 import eu.feg.ambient.ui.loyalty.MissionsScreen
 import eu.feg.ambient.ui.loyalty.RewardsScreen
 import eu.feg.ambient.ui.rg.ResponsibleGamingScreen
@@ -197,6 +199,11 @@ fun AppNavHost(
                 )
             }
           }
+        },
+        // Debug only, and it sits above the bottom bar because Scaffold puts it there. The
+        // whole control disappears from a release build with the BuildConfig check.
+        floatingActionButton = {
+            if (BuildConfig.DEBUG) DemoBubble(container)
         },
         bottomBar = {
             BottomBar(currentRoute = currentRoute) { tab ->

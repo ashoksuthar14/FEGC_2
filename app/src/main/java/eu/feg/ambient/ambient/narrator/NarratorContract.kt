@@ -26,6 +26,19 @@ enum class MomentType {
 
     /** N7. Enough badges for the next tier. Rarer than MISSION_COMPLETE, same rules. */
     TIER_REACHED,
+
+    /**
+     * N7. A mission the customer has not finished, offered rather than announced.
+     *
+     * A SEPARATE TYPE BECAUSE IT IS A SEPARATE CLAIM. MISSION_COMPLETE says "you earned
+     * this"; this says "here is one to go for", and using the first to say the second would
+     * be the app congratulating someone for something they have not done. It carries progress
+     * so the line can be specific -- "1 of 3" is an invitation, "a mission awaits" is spam.
+     *
+     * It is still not allowed to nag: the copy states the task and what it earns, and
+     * NarratorGuard's urgency rules apply to it exactly as they do everywhere else.
+     */
+    MISSION_AVAILABLE,
 }
 
 enum class Tone { PLAIN, WITTY, STATS, ONE_LINER }
@@ -92,6 +105,12 @@ data class MomentFacts(
 
     /** How many more badges the next tier needs, for TIER_REACHED and the widget line. */
     val badgesToNextTier: Int? = null,
+
+    /** Where the customer has got to on an offered mission, for MISSION_AVAILABLE. */
+    val missionProgress: Int? = null,
+
+    /** What that mission needs in total. */
+    val missionTarget: Int? = null,
 )
 
 data class NarratedText(

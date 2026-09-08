@@ -120,6 +120,19 @@ internal object SpokenLinesEn : SpokenLines {
             Tone.ONE_LINER -> "${f.badge} earned. ${f.mission} done."
         }
 
+        MomentType.MISSION_AVAILABLE -> when (tone) {
+            Tone.PLAIN ->
+                f.mission + ". " + (f.step?.let { it + ". " } ?: "") +
+                    "It earns you the " + f.badge + " badge."
+            Tone.WITTY ->
+                "Something to aim at. " + f.mission + ", and the " + f.badge +
+                    " badge at the end of it."
+            Tone.STATS ->
+                f.mission + ", " + (f.step ?: "not started") + ". It earns " + f.badge +
+                    ", and you are on " + f.tier + "."
+            Tone.ONE_LINER -> f.mission + ". " + f.badge + " badge."
+        }
+
         MomentType.TIER_REACHED -> when (tone) {
             Tone.PLAIN ->
                 "${f.tier} reached. ${f.badges} got you there. ${nextTier(f)}"
