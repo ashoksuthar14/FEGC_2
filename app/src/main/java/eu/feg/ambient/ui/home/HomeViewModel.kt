@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import eu.feg.ambient.ambient.identity.ClubTheme
 import eu.feg.ambient.core.AppContainer
 import eu.feg.ambient.data.model.League
+import eu.feg.ambient.data.model.PlacedBet
 import eu.feg.ambient.data.model.Match
 import eu.feg.ambient.data.model.MatchState
 import eu.feg.ambient.data.model.Selection
@@ -35,6 +36,8 @@ data class HomeUiState(
     val selectedOutcomeIds: Set<String> = emptySet(),
     val slipCount: Int = 0,
     val now: Instant = Instant.fromEpochSeconds(0),
+    /** Open placed bets, so a row can say how the slip behind it is doing. */
+    val openBets: List<PlacedBet> = emptyList(),
 )
 
 class HomeViewModel(private val container: AppContainer) : ViewModel() {
@@ -55,9 +58,10 @@ class HomeViewModel(private val container: AppContainer) : ViewModel() {
         container.betRepository.slip,
         timeTab,
         sportFilter,
-        combine(countryFilter, loading) { country, isLoading -> country to isLoading },
+        // combine() takes five flows; the sixth rides in the nested one.
+        combine(countryFilter, loading, container.betRepository.placedBets) { c, l, b -> Triple(c, l, b) },
     ) { matches, slip, tab, sport, countryAndLoading ->
-        val (country, isLoading) = countryAndLoading
+        val (country, isLoading, openBets) = countryAndLoading
         val now = container.clock.now()
         val leagues = container.matchRepository.leaguesFor(sport)
         val leagueIds = leagues.map { it.id }.toSet()
@@ -69,6 +73,7 @@ class HomeViewModel(private val container: AppContainer) : ViewModel() {
 
         HomeUiState(
             loading = isLoading,
+            openBets = openBets,
             timeTab = tab,
             sportFilter = sport,
             countryFilter = country,

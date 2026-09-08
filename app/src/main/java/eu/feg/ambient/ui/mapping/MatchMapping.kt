@@ -4,6 +4,9 @@ import eu.feg.ambient.core.formatKickoff
 import eu.feg.ambient.core.formatLiveMinute
 import eu.feg.ambient.core.formatOdds
 import eu.feg.ambient.data.model.Market
+import eu.feg.ambient.data.model.BetStatus
+import eu.feg.ambient.data.model.LegStatus
+import eu.feg.ambient.data.model.PlacedBet
 import eu.feg.ambient.data.model.Match
 import eu.feg.ambient.data.model.MatchState
 import eu.feg.ambient.ui.components.MatchRowUi
@@ -23,6 +26,9 @@ fun Match.toRowUi(
     oddsMoves: Map<String, Int> = emptyMap(),
     market: Market? = null,
     isFavourite: Boolean = false,
+    /** From the customer's open slip on this match, for the spoken sentence only. */
+    legsWon: Int? = null,
+    legsTotal: Int? = null,
 ): MatchRowUi {
     val shown = market ?: markets.firstOrNull()
     val live = state == MatchState.LIVE
@@ -56,7 +62,22 @@ fun Match.toRowUi(
             )
         },
         isFavourite = isFavourite,
+        legsWon = legsWon,
+        legsTotal = legsTotal,
     )
+}
+
+/**
+ * The customer's open slip that includes this match, as (legs won, legs total), or null.
+ *
+ * Feeds the row's spoken sentence -- "two of your three legs won" -- and nothing visual: the
+ * row already shows the match, and a screen-reader user is the one who cannot glance at the
+ * My Bets tab to find out how the slip is doing.
+ */
+fun List<PlacedBet>.slipLegsFor(matchId: String): Pair<Int, Int>? {
+    val bet = firstOrNull { it.status == BetStatus.OPEN && it.legs.any { l -> l.matchId == matchId } }
+        ?: return null
+    return bet.legs.count { it.status == LegStatus.WON } to bet.legs.size
 }
 
 /** The market a row's odds group should show: 1/X/2 unless the match has nothing else. */

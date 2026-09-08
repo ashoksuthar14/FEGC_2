@@ -28,6 +28,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import eu.feg.ambient.ambient.engine.Explain
 import eu.feg.ambient.ambient.engine.Surface
 import eu.feg.ambient.ambient.engine.ledger.LedgerEntry
+import eu.feg.ambient.ambient.recap.Recap
+import eu.feg.ambient.ui.recap.RecapCard
 import eu.feg.ambient.ambient.engine.ledger.RegisterCheck
 import eu.feg.ambient.ui.components.PskChip
 import eu.feg.ambient.ui.theme.LocalPskColors
@@ -43,7 +45,13 @@ import kotlinx.datetime.Instant
  * disagrees with the record is worse than no transparency view.
  */
 @Composable
-fun WhyThisScreen(viewModel: EngineLabViewModel, modifier: Modifier = Modifier) {
+fun WhyThisScreen(
+    viewModel: EngineLabViewModel,
+    modifier: Modifier = Modifier,
+    /** N5: the period's recap, when there is one worth showing; null draws nothing. */
+    recap: Recap? = null,
+    onSpeakRecap: (Recap) -> Unit = {},
+) {
     val psk = LocalPskColors.current
     val state by viewModel.whyThis.collectAsStateWithLifecycle()
 
@@ -74,6 +82,11 @@ fun WhyThisScreen(viewModel: EngineLabViewModel, modifier: Modifier = Modifier) 
                     color = psk.textSecondary,
                 )
             }
+        }
+
+        // N5. First in the inbox: it is the one card here that is a gift rather than a record.
+        if (recap != null) {
+            item(key = "recap") { RecapCard(recap = recap, onSpeak = { onSpeakRecap(recap) }) }
         }
 
         item(key = "filter") {

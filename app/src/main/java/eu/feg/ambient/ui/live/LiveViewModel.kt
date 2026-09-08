@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import eu.feg.ambient.data.model.PlacedBet
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.datetime.Instant
 
@@ -29,6 +30,7 @@ data class LiveUiState(
     val selectedOutcomeIds: Set<String> = emptySet(),
     val oddsMoves: Map<String, Int> = emptyMap(),
     val now: Instant = Instant.fromEpochSeconds(0),
+    val openBets: List<PlacedBet> = emptyList(),
 )
 
 /**
@@ -49,7 +51,8 @@ class LiveViewModel(private val container: AppContainer) : ViewModel() {
         container.matchRepository.oddsMoves,
         container.betRepository.slip,
         timeTab,
-    ) { live, moves, slip, tab ->
+        container.betRepository.placedBets,
+    ) { live, moves, slip, tab, openBets ->
         val leagues = container.matchRepository.leagues.associateBy { it.id }
 
         val groups = container.matchRepository.sports.mapNotNull { sport ->
@@ -69,6 +72,7 @@ class LiveViewModel(private val container: AppContainer) : ViewModel() {
         }
 
         LiveUiState(
+            openBets = openBets,
             timeTab = tab,
             sportGroups = groups,
             selectedOutcomeIds = slip.selections.map { it.matchId + "/" + it.outcomeId }.toSet(),

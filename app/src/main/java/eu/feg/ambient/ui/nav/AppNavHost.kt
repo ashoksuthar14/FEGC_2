@@ -52,6 +52,7 @@ import eu.feg.ambient.ui.betslip.BetSlipViewModel
 import eu.feg.ambient.ui.casino.CasinoScreen
 import eu.feg.ambient.ui.casino.GameLoadingScreen
 import eu.feg.ambient.ui.dev.BanditDebugScreen
+import eu.feg.ambient.ui.recap.RecapViewModel
 import eu.feg.ambient.ui.dev.EngineLabViewModel
 import eu.feg.ambient.ui.dev.RegisterPanelScreen
 import eu.feg.ambient.ui.dev.SurfaceLabScreen
@@ -324,7 +325,12 @@ fun AppNavHost(
                 val vm: EngineLabViewModel = viewModel(
                     factory = PskViewModelFactory(container) { EngineLabViewModel(it) },
                 )
-                WhyThisScreen(vm)
+                val recapVm: RecapViewModel = viewModel(
+                    factory = PskViewModelFactory(container) { RecapViewModel(it) },
+                )
+                val month by recapVm.month.collectAsStateWithLifecycle()
+                val season by recapVm.season.collectAsStateWithLifecycle()
+                WhyThisScreen(vm, recap = month ?: season, onSpeakRecap = recapVm::speak)
             }
 
             composable(Routes.BANDIT_DEBUG) {

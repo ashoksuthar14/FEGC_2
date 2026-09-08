@@ -40,6 +40,7 @@ import eu.feg.ambient.ui.components.LeagueSection
 import eu.feg.ambient.ui.components.MatchRow
 import eu.feg.ambient.ui.components.TimeTabs
 import eu.feg.ambient.ui.mapping.primaryMarket
+import eu.feg.ambient.ui.mapping.slipLegsFor
 import eu.feg.ambient.ui.mapping.toRowUi
 import eu.feg.ambient.ui.theme.LocalPskColors
 import eu.feg.ambient.ui.theme.PskShapes
@@ -109,6 +110,8 @@ fun LiveScreen(
                                     selectedOutcomeIds = state.selectedOutcomeIds,
                                     oddsMoves = state.oddsMoves,
                                     market = match.primaryMarket(),
+                                    legsWon = state.openBets.slipLegsFor(match.id)?.first,
+                                    legsTotal = state.openBets.slipLegsFor(match.id)?.second,
                                 ),
                                 onClick = { onMatchClick(match.id) },
                                 onOddClick = { oddIndex ->

@@ -37,6 +37,7 @@ import eu.feg.ambient.ui.components.SectionHeader
 import eu.feg.ambient.ui.components.ShimmerRow
 import eu.feg.ambient.ui.components.TimeTabs
 import eu.feg.ambient.ui.mapping.primaryMarket
+import eu.feg.ambient.ui.mapping.slipLegsFor
 import eu.feg.ambient.ui.mapping.toRowUi
 import eu.feg.ambient.ui.theme.LocalPskColors
 
@@ -152,6 +153,8 @@ fun HomeScreen(
                                 now = state.now,
                                 selectedOutcomeIds = state.selectedOutcomeIds,
                                 market = match.primaryMarket(),
+                                legsWon = state.openBets.slipLegsFor(match.id)?.first,
+                                legsTotal = state.openBets.slipLegsFor(match.id)?.second,
                             ),
                             onClick = { onMatchClick(match.id) },
                             onOddClick = { index ->
