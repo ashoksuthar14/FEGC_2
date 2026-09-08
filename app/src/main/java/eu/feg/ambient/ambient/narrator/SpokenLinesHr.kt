@@ -61,14 +61,16 @@ internal object SpokenLinesHr : SpokenLines {
             Tone.ONE_LINER -> "Sve je riješeno. ${f.won} od ${f.legsTotal}."
         }
 
+        // Činjenica, ne poziv — vidi TemplateLinesEn. Imena klubova ostaju u nominativu
+        // ("igraju Hajduk i Rijeka"), jer se "protiv Rijeke" ne može sklanjati iz teksta.
         MomentType.KICKOFF_FOLLOWED -> when (tone) {
             Tone.PLAIN ->
-                "${f.followed} počinje za ${f.kickoffMinutes}, " +
-                    "${f.home} protiv ${f.away}. Pratiš ih već neko vrijeme."
+                "${f.followed} počinje za ${f.kickoffMinutes}. Igraju ${f.home} i ${f.away}."
             Tone.WITTY ->
-                "${f.followed} igra za ${f.kickoffMinutes}, protiv ${f.away}. Bez pritiska."
+                "${f.followed} kreće za ${f.kickoffMinutes}, igraju ${f.home} i ${f.away}. " +
+                    "Kava se stigne skuhati."
             Tone.STATS ->
-                "Početak za ${f.kickoffMinutes}. ${f.home} protiv ${f.away}."
+                "Početak za ${f.kickoffMinutes}. ${f.home} kod kuće, gost je ${f.away}."
             Tone.ONE_LINER -> "${f.followed} počinje za ${f.kickoffMinutes}."
         }
 

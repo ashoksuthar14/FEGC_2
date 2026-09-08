@@ -1,7 +1,6 @@
 package eu.feg.ambient.ambient.surfaces.widget
 
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.ColorFilter
@@ -303,7 +302,4 @@ private fun VDivider() {
     Box(modifier = GlanceModifier.width(1.dp).height(26.dp).background(ColorProvider(WHITE_10)), contentAlignment = Alignment.Center) {}
 }
 
-private val WHITE = Color(0xFFFFFFFF)
-private val GREY = Color(0xFF939AA8)
-private val WHITE_10 = Color(0x1AFFFFFF)
-private val LIVE_GREEN = Color(0xFF35D07F)
+// Colours live in WidgetShell.kt so the five widgets cannot drift apart.

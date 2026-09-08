@@ -44,8 +44,10 @@ class WidgetRenderer(
         store.save(state)
         // A widget the customer has not added yet is not an error: updateAll simply has no
         // ids to update. Failing loudly here would put a crash in the demo's happy path.
-        runCatching { AmbientWidget().updateAll(context) }
-            .onFailure { Log.w(TAG, "widget update failed", it) }
+        // The whole family, not just the Live Slip: the club, the digest and the protection
+        // card all read from this same store, and a widget that quietly stops updating looks
+        // exactly like a widget with nothing to say.
+        WidgetRefresher.refreshAll(context)
         Unit
     }
 

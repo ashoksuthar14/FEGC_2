@@ -64,14 +64,16 @@ internal object SpokenLinesEn : SpokenLines {
             Tone.ONE_LINER -> "All settled. ${f.won} of ${f.legsTotal} home."
         }
 
+        // A fact about a followed club, not an invitation — see TemplateLinesEn. The ear
+        // version is held to the same rule: nothing that tells the customer to act.
         MomentType.KICKOFF_FOLLOWED -> when (tone) {
             Tone.PLAIN ->
-                "${f.followed} kick off in ${f.kickoffMinutes}, " +
-                    "${f.home} against ${f.away}. You have been following them."
+                "${f.followed} kick off against ${opponent(f)} in ${f.kickoffMinutes}."
             Tone.WITTY ->
-                "${f.followed} are up in ${f.kickoffMinutes}, against ${f.away}. No pressure."
+                "${f.followed} are up against ${opponent(f)} in ${f.kickoffMinutes}. " +
+                    "The kettle has time to boil."
             Tone.STATS ->
-                "Kick-off in ${f.kickoffMinutes}. ${f.home} against ${f.away}."
+                "Kick-off in ${f.kickoffMinutes}. ${f.followed} ${venue(f)} ${opponent(f)}."
             Tone.ONE_LINER -> "${f.followed} kick off in ${f.kickoffMinutes}."
         }
 
@@ -106,4 +108,12 @@ internal object SpokenLinesEn : SpokenLines {
             Tone.ONE_LINER -> "Catching up. ${f.digest}"
         }
     }
+
+    /**
+     * The followed club's opponent. The facts carry home and away, and which of the two is
+     * followed; "Hajduk kick off against Rijeka" needs the other one.
+     */
+    private fun opponent(f: SpokenFacts): String = if (f.followed == f.home) f.away else f.home
+
+    private fun venue(f: SpokenFacts): String = if (f.followed == f.home) "at home to" else "away at"
 }

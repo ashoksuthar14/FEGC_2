@@ -61,6 +61,55 @@
                 android:resource="@xml/ambient_widget_info" />
         </receiver>
 
+
+        <receiver
+            android:name=".ambient.surfaces.widget.ClubWidgetReceiver"
+            android:exported="false"
+            android:label="@string/widget_club_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_club_info" />
+        </receiver>
+
+        <receiver
+            android:name=".ambient.surfaces.widget.DigestWidgetReceiver"
+            android:exported="false"
+            android:label="@string/widget_digest_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_digest_info" />
+        </receiver>
+
+        <receiver
+            android:name=".ambient.surfaces.widget.SeasonWidgetReceiver"
+            android:exported="false"
+            android:label="@string/widget_season_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_season_info" />
+        </receiver>
+
+        <receiver
+            android:name=".ambient.surfaces.widget.ProtectionWidgetReceiver"
+            android:exported="false"
+            android:label="@string/widget_protection_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_protection_info" />
+        </receiver>
+
         <receiver
             android:name=".ambient.surfaces.live.DismissReceiver"
             android:exported="false" />

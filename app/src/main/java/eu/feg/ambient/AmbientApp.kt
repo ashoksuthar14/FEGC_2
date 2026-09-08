@@ -19,6 +19,7 @@ class AmbientApp : Application() {
         container.warmUpNarrator()
         // Bet placement, the match clock and protection changes now drive the surfaces.
         container.surfaceCoordinator.start()
+        container.kickoffMomentSource.start()
         // Registered from the Application because ACTION_USER_PRESENT cannot be declared in
         // the manifest. It only reaches us while this process happens to be alive, which is
         // why it is an enhancement and the widget is the trigger.

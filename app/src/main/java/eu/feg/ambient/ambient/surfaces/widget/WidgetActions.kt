@@ -1,6 +1,8 @@
 package eu.feg.ambient.ambient.surfaces.widget
 
 import android.content.Context
+import android.content.Intent
+import eu.feg.ambient.MainActivity
 import android.util.Log
 import android.widget.Toast
 import androidx.glance.GlanceId
@@ -35,7 +37,16 @@ class RemindMeAction : ActionCallback {
         glanceId: GlanceId,
         parameters: ActionParameters,
     ) {
-        // TODO(step 13B): schedule the kickoff moment through the Moment Engine.
+        // KickoffMomentSource already watches every followed club and raises the moment at
+        // forty minutes; there is nothing to schedule here, so this confirms rather than
+        // promising something a second system would have to deliver.
+        withContext(Dispatchers.Main) {
+            Toast.makeText(
+                context.applicationContext,
+                "We'll tell you 40 minutes before kick-off",
+                Toast.LENGTH_SHORT,
+            ).show()
+        }
         Log.i(TAG, "remind me tapped")
     }
 
@@ -179,6 +190,16 @@ class PanicAction : ActionCallback {
         glanceId: GlanceId,
         parameters: ActionParameters,
     ) {
+        // The way out has to go somewhere. It opens Responsible Gaming directly rather than
+        // the app's start destination: the moment a customer reaches for this, a home screen
+        // full of matches is the last thing that should stand in the way.
+        runCatching {
+            context.startActivity(
+                Intent(context, MainActivity::class.java)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                    .putExtra("route", "rg"),
+            )
+        }.onFailure { Log.w(TAG, "could not open protection tools", it) }
         Log.i(TAG, "panic tapped")
     }
 

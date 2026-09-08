@@ -48,14 +48,16 @@ internal object TemplateLinesHr : TemplateLines {
             Tone.ONE_LINER -> f.legs to "Riješeno."
         }
 
+        // Činjenica o klubu koji korisnik prati, a ne poziv da nešto učini — vidi
+        // TemplateLinesEn za razlog. Nema "ne propusti", nema "propuštaš".
         MomentType.KICKOFF_FOLLOWED -> when (tone) {
-            Tone.PLAIN -> f.followed + " počinje za " + f.kickoff + " min" to
-                f.home + " - " + f.away + ". Pratiš " + f.followed + "."
-            Tone.WITTY -> f.followed + " uskoro kreće" to
-                "Još " + f.kickoff + " minuta do " + f.home + " - " + f.away + ". Bez pritiska."
+            Tone.PLAIN -> f.followed + " počinje za " + f.kickoff + " minuta" to
+                f.home + " – " + f.away + ". Pratiš " + f.followed + "."
+            Tone.WITTY -> f.followed + " kreće za " + f.kickoff + " minuta" to
+                f.home + " – " + f.away + ". Kava se stigne skuhati."
             Tone.STATS -> f.followed + " · početak za " + f.kickoff + " min" to
-                f.home + " - " + f.away + ". " + f.habit
-            Tone.ONE_LINER -> f.followed + " · " + f.kickoff + " min" to f.home + " - " + f.away + "."
+                f.home + " – " + f.away + " · početak za " + f.kickoff + " minuta."
+            Tone.ONE_LINER -> f.followed + " · " + f.kickoff + " min" to f.home + " – " + f.away + "."
         }
 
         MomentType.HALFTIME -> when (tone) {

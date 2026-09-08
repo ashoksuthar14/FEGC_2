@@ -1,6 +1,16 @@
 <resources>
     <string name="app_name">PSK</string>
     <string name="widget_description">Your slip, live on the home screen.</string>
+    <!-- Widget picker: the label and the one line under it are all a customer reads before
+         deciding, so they say what the widget does rather than naming a feature. -->
+    <string name="widget_club_label">PSK · My club</string>
+    <string name="widget_club_description">Your club, its next fixture and last result.</string>
+    <string name="widget_digest_label">PSK · While you were away</string>
+    <string name="widget_digest_description">What happened while you were away.</string>
+    <string name="widget_season_label">PSK · My season</string>
+    <string name="widget_season_description">Your season so far, in counts.</string>
+    <string name="widget_protection_label">PSK · My protection</string>
+    <string name="widget_protection_description">Your limits, your register check, and the way out.</string>
     <string name="shortcut_help_short">Help</string>
     <string name="shortcut_help_long">Responsible gaming and help</string>
 </resources>

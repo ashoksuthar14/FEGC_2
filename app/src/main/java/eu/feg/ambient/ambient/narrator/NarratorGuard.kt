@@ -28,8 +28,37 @@ object NarratorGuard {
         "kvota", "kvote", "oklada", "okladi", "ulog", "uloži", "isplata", "dobitak",
     )
 
-    /** Phrases that are only a problem as a phrase. */
-    private val BLOCKED_PHRASES = listOf("free bet", "cash out", "win money")
+    /**
+     * Phrases that are only a problem as a phrase.
+     *
+     * The first three are money. The rest are inducement — the "you're missing your team's
+     * game" framing that turns a fact about a followed club into a nudge to act. An
+     * inducement needs marketing consent, is restricted in some markets, and must never
+     * reach an at-risk or self-excluded customer, so it is not a matter of tone: it is
+     * rejected outright, whatever narrator produced it.
+     *
+     * "missing" lives here in its inducing forms rather than in [BLOCKED_WORDS], because the
+     * bare word is also ordinary English — "the missing leg", "a missing voice" — and a
+     * word-boundary match would reject those legitimate sentences. What is forbidden is
+     * telling the customer *they* are missing something, so that is what is matched.
+     *
+     * "bet now" is already caught by the "bet" word rule; it is listed anyway so the reason
+     * the guard reports names the inducement, not merely the noun.
+     */
+    private val BLOCKED_PHRASES = listOf(
+        // Money
+        "free bet", "cash out", "win money",
+        // Inducement, English. Both apostrophes: models and keyboards disagree about them.
+        "you're missing", "you’re missing", "you are missing", "missing your", "missing out",
+        "don't miss", "don’t miss", "do not miss", "miss out",
+        "last chance", "bet now", "back them",
+        // Inducement, Croatian. "ne propusti" is "don't miss"; "propuštaš" is "you're missing"
+        // (second person, so the bare stem — "propustio si", he missed — still passes and the
+        // digest's "Propustio si ponešto" stays legal); "zadnja/posljednja prilika" is "last
+        // chance"; "kladi se"/"kladite se" is the imperative "place a bet", which is both
+        // "bet now" and "back them" in one verb.
+        "ne propusti", "propuštaš", "zadnja prilika", "posljednja prilika", "kladi se", "kladite se",
+    )
 
     private val CURRENCY = Regex("[€$£]|EUR", RegexOption.IGNORE_CASE)
 

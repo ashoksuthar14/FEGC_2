@@ -49,14 +49,18 @@ internal object TemplateLinesEn : TemplateLines {
             Tone.ONE_LINER -> f.legs to "Settled."
         }
 
+        // A statement of fact about a club the customer chose to follow — never a reason to
+        // open the app. "You're missing your team's game" is an inducement, which needs
+        // marketing consent, is restricted in some markets, and must never reach an at-risk
+        // customer. So nothing here implies the customer should do anything about it.
         MomentType.KICKOFF_FOLLOWED -> when (tone) {
-            Tone.PLAIN -> f.followed + " kick off in " + f.kickoff + " min" to
-                f.home + " v " + f.away + ". You have been following " + f.followed + "."
-            Tone.WITTY -> f.followed + " are up soon" to
-                f.kickoff + " minutes until " + f.home + " v " + f.away + ". No pressure."
+            Tone.PLAIN -> f.followed + " kick off in " + f.kickoff + " minutes" to
+                f.home + " – " + f.away + ". You follow " + f.followed + "."
+            Tone.WITTY -> f.followed + " are up in " + f.kickoff + " minutes" to
+                f.home + " – " + f.away + ". The kettle has time to boil."
             Tone.STATS -> f.followed + " · KO in " + f.kickoff + " min" to
-                f.home + " v " + f.away + ". " + f.habit
-            Tone.ONE_LINER -> f.followed + " · " + f.kickoff + " min" to f.home + " v " + f.away + "."
+                f.home + " – " + f.away + " · kick-off in " + f.kickoff + " minutes."
+            Tone.ONE_LINER -> f.followed + " · " + f.kickoff + " min" to f.home + " – " + f.away + "."
         }
 
         MomentType.HALFTIME -> when (tone) {

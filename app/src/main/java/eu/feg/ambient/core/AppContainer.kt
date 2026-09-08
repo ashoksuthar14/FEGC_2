@@ -17,6 +17,7 @@ import eu.feg.ambient.ambient.narrator.TemplateNarrator
 import eu.feg.ambient.ambient.identity.ClubTheme
 import eu.feg.ambient.ambient.identity.ClubThemes
 import eu.feg.ambient.ambient.digest.AwayTracker
+import eu.feg.ambient.ambient.surfaces.ProtectionState
 import eu.feg.ambient.ambient.digest.DefaultDigestBuilder
 import eu.feg.ambient.ambient.digest.Digest
 import eu.feg.ambient.ambient.digest.DigestBuilder
@@ -35,6 +36,7 @@ import eu.feg.ambient.ambient.engine.AmbientEngine
 import eu.feg.ambient.ambient.engine.ledger.Ledger
 import eu.feg.ambient.ambient.engine.moment.DefaultAttentionBudget
 import eu.feg.ambient.ambient.engine.moment.DefaultMomentBuilder
+import eu.feg.ambient.ambient.engine.moment.KickoffMomentSource
 import eu.feg.ambient.ambient.engine.moment.DefaultRelevanceScorer
 import eu.feg.ambient.ambient.engine.protection.DefaultProtectionEvaluator
 import eu.feg.ambient.ambient.engine.protection.PrefsAgeAssurance
@@ -287,6 +289,22 @@ class AppContainer(context: Context) {
      * is deliberate — if we drew it, it has been offered, and offering it twice is the push
      * notification we claim to have replaced.
      */
+    /**
+     * The digest WITHOUT consuming it.
+     *
+     * The dedicated "While you were away" widget is about the away period itself, so it shows
+     * the catch-up for as long as that period lasts; only the Live Slip card, which borrows
+     * its one surface, takes it once. Without this split the two widgets raced -- whichever
+     * composed first marked it shown and the other quietly fell to its empty state.
+     */
+    suspend fun peekDigest(): Digest? {
+        val protection = protectionEvaluator.evaluate()
+        if (protection == ProtectionState.BLOCKED || protection == ProtectionState.UNVERIFIED) return null
+        val since = awayTracker.lastInteractionAt() ?: return null
+        if (awayTracker.awayDuration() < AwayTracker.AWAY_THRESHOLD) return null
+        return digestBuilder.build(since)
+    }
+
     suspend fun digestForWidget(): Digest? {
         val protection = protectionEvaluator.evaluate()
         if (!awayTracker.shouldShowDigest(protection)) return null
@@ -351,6 +369,23 @@ class AppContainer(context: Context) {
             )
         }
     }
+
+    /**
+     * The forty-minute warning for a followed club.
+     *
+     * It raises a MatchEvent and stops; the engine decides whether that becomes a widget, an
+     * alert or nothing at all, exactly as it does for a goal. Riding the match clock rather
+     * than WorkManager keeps this dependency-free -- minute precision is all a forty-minute
+     * lead needs.
+     */
+    val kickoffMomentSource = KickoffMomentSource(
+        scope = appScope,
+        clock = clock,
+        matchRepository = matchRepository,
+        myClubId = { userStateRepository.state.value.myClubId },
+        protection = { protectionEvaluator.evaluate() },
+        onEvent = { engine.onEvent(it) },
+    )
 
     /**
      * Step 14E: turns ordinary app use into surfaces. Started from the Application so a bet

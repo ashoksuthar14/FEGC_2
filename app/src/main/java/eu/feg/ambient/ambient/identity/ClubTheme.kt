@@ -152,9 +152,25 @@ object ClubThemes {
         return club("", name, safe.take(3), psk.surfaceRaised, safe, psk.surfaceVariant, ClubPattern.SOLID)
     }
 
-    /** Team names arrive from the fixtures as text; the narrator's facts carry no ids. */
-    fun byName(name: String?): ClubTheme? =
-        name?.let { n -> all.firstOrNull { it.name.equals(n, ignoreCase = true) } }
+    /**
+     * Team names arrive from the fixtures as text; the narrator's facts carry no ids.
+     *
+     * Compared without diacritics, because the fixtures spell it "Varazdin" and the club is
+     * "Varaždin". An exact compare silently gave that club no fixture and no crest -- the
+     * worst kind of bug, because the widget still looked fine, it just quietly said the
+     * customer's club had nothing on.
+     */
+    fun byName(name: String?): ClubTheme? {
+        val wanted = fold(name ?: return null)
+        return all.firstOrNull { fold(it.name) == wanted }
+    }
+
+    /** Lower-cased and stripped of accents: "Varaždin" and "Varazdin" are the same club. */
+    private fun fold(value: String): String =
+        java.text.Normalizer.normalize(value, java.text.Normalizer.Form.NFD)
+            .replace(Regex("""\p{Mn}+"""), "")
+            .lowercase()
+            .trim()
 
     private fun club(
         clubId: String,
