@@ -84,13 +84,10 @@ fun RewardsScreen(
             }
         }
 
-        item(key = "balance") {
-            Text(
-                text = badgeCount(state.spendableBadges) + " to spend · " + tierLabel(state.tier),
-                style = MaterialTheme.typography.bodyMedium,
-                color = psk.textSecondary,
-            )
-        }
+        // The same hero the missions screen opens on. It already says the tier and what is
+        // left to spend, which is exactly the two facts a catalogue is read against, and two
+        // screens of one feature should not introduce themselves differently.
+        item(key = "tier") { TierHero(state) }
 
         if (state.paused) {
             item(key = "paused") { PausedNotice() }
@@ -271,16 +268,18 @@ private fun PerkCard(
 /**
  * A glyph per category, from the badge set rather than a new icon pack.
  *
- * Approximate on purpose: five categories share four drawables, because a bespoke icon each
- * would be five more files to keep honest for a difference the customer already reads in the
- * label beneath the name.
+ * THE SHIELD IS NOT IN HERE. It is the deposit-limit mission's mark, and it was briefly a
+ * charity donation too -- which put the protection glyph on a reward and made the one icon
+ * that means "we are looking after you" mean "you bought something". A donation to grassroots
+ * football gets the ball instead, which is also simply better. Voucher shares the ticket:
+ * five euros of coffee is a ticket for a coffee, and one honest reuse beats a sixth drawable.
  */
 private fun perkIcon(category: PerkCategory): Int = when (category) {
-    PerkCategory.MATCH_TICKET -> R.drawable.ic_badge_ticket
+    PerkCategory.MATCH_TICKET, PerkCategory.PARTNER_VOUCHER -> R.drawable.ic_badge_ticket
     PerkCategory.EXPERIENCE -> R.drawable.ic_badge_star
     PerkCategory.FEATURE_ACCESS -> R.drawable.ic_badge_widget
-    PerkCategory.CHARITY_DONATION -> R.drawable.ic_badge_shield
-    PerkCategory.MERCHANDISE, PerkCategory.PARTNER_VOUCHER -> R.drawable.ic_badge_crest
+    PerkCategory.CHARITY_DONATION -> R.drawable.ic_ball
+    PerkCategory.MERCHANDISE -> R.drawable.ic_badge_crest
 }
 
 /** A static label, not a chip: PskChip announces itself as a button, and this does nothing. */

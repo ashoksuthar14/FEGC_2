@@ -96,7 +96,9 @@ fun Medallion(
     size: Dp = 44.dp,
     dimmed: Boolean = false,
 ) {
-    val alpha = if (dimmed) 0.35f else 1f
+    // 0.55, not 0.35. Dimmed has to read as "not yet", and at a third of full strength the
+    // glyph stopped being legible at all -- the plate looked empty rather than unearned.
+    val alpha = if (dimmed) 0.55f else 1f
     Box(
         modifier
             .size(size)

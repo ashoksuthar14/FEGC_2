@@ -19,7 +19,17 @@ enum class MarketCountry { CZ, SK, PL, RO, HR }
 @Serializable
 data class Limits(
     val depositLimit: Double = 500.0,
-    val depositUsed: Double = 120.0,
+    /**
+     * Thirty-five, not the hundred and twenty it was.
+     *
+     * The protection evaluator calls Calm Mode at 80% of any limit, and the deposit picker
+     * offers 50 as its lowest ceiling -- so with 120 already used, a customer setting a
+     * sensible limit was instantly over it and the app calmed down on them mid-demo. That
+     * behaviour is right and stays; what was wrong was seeding the account so that every
+     * careful choice tripped it. At 35 each preset is a real choice, and the rule is still
+     * demonstrable by picking 50.
+     */
+    val depositUsed: Double = 35.0,
     val lossLimit: Double = 200.0,
     val lossUsed: Double = 45.0,
     /** Minutes. */
