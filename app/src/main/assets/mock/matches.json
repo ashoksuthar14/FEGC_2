@@ -115,9 +115,9 @@
       }
     ],
     "homeScore": 0,
-    "awayScore": 2,
-    "minute": 74,
-    "period": "2. poluvrijeme"
+    "awayScore": 1,
+    "minute": 12,
+    "period": "1. poluvrijeme"
   },
   {
     "id": "pm001",
@@ -213,10 +213,10 @@
         ]
       }
     ],
-    "homeScore": 2,
-    "awayScore": 1,
-    "minute": 58,
-    "period": "2. poluvrijeme"
+    "homeScore": 0,
+    "awayScore": 0,
+    "minute": 5,
+    "period": "1. poluvrijeme"
   },
   {
     "id": "pm002",
@@ -2731,9 +2731,9 @@
       }
     ],
     "homeScore": 1,
-    "awayScore": 1,
-    "minute": 67,
-    "period": "2. poluvrijeme"
+    "awayScore": 0,
+    "minute": 8,
+    "period": "1. poluvrijeme"
   },
   {
     "id": "pm024",

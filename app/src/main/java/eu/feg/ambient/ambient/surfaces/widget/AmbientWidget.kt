@@ -62,15 +62,20 @@ class AmbientWidget : GlanceAppWidget() {
             // first time. See WidgetStoreVersion.
             val version by WidgetStoreVersion.flow.collectAsState()
             val frame by produceState<WidgetFrame?>(initialValue = null, key1 = version) {
+                val stored = store.load()
+                // A LIVE SLIP ALWAYS WINS, and that now governs the catch-up as well as the
+                // recap. It used to govern only the recap: digestForWidget() was asked first
+                // and its answer outranked everything, which was harmless for as long as the
+                // digest never had anything to say. The moment it did, a slip in play had its
+                // score card replaced by a catch-up -- the customer watching a match lost the
+                // match to a summary of matches. The catch-up has had its own widget since the
+                // family landed, so borrowing this one was a leftover in any case.
+                val quiet = stored is WidgetState.Idle || stored is WidgetState.Protected
                 // THE DIGEST IS A WIDGET DECISION. The launcher redraws this whether or not
                 // our process is alive, and a customer who has been away for two hours is
                 // precisely the one whose process is not. Asking here is what makes the
-                // catch-up work at all.
-                val digest = app?.container?.digestForWidget()
-                val stored = store.load()
-                // N5: with nothing live and no catch-up due, an unseen recap takes the card.
-                // A live slip always wins -- the recap is for the quiet days.
-                val quiet = stored is WidgetState.Idle || stored is WidgetState.Protected
+                // catch-up work at all -- but only when there is nothing to interrupt.
+                val digest = if (quiet) app?.container?.digestForWidget() else null
                 val recap = if (digest == null && quiet) app?.container?.recapForWidget() else null
                 val state = digest
                     ?.let { WidgetState.Digest(it.headline, it.detail, it.generatedAt) }
@@ -127,9 +132,12 @@ internal fun WidgetBody(state: WidgetState, feedback: FeedbackMark? = null) {
         is WidgetState.PreMatch -> PreMatchCard(state)
         // The glass match card handles NORMAL and CALM itself; see LiveMatchCard.
         is WidgetState.Live -> LiveMatchCard(state.slip, feedback)
+        // The same card, at full time. A slip that changes visual language the moment the
+        // whistle goes reads as a different product having taken over the widget; the score
+        // is still the fact the card exists for, and it is now final.
         is WidgetState.Settled ->
             if (protection == ProtectionState.CALM) CalmSlipCard(state.slip)
-            else SettledCard(state.slip, feedback)
+            else LiveMatchCard(state.slip, feedback)
         is WidgetState.Digest -> DigestCard(state, feedback)
         // N5. Counts only, club-themed, unchanged in Calm Mode: there is no money in it.
         is WidgetState.Recap -> eu.feg.ambient.ambient.recap.RecapCard(state.recap)
@@ -204,28 +212,6 @@ private fun LiveCard(slip: SlipSurfaceState, feedback: FeedbackMark? = null) {
         )
         Spacer(GlanceModifier.defaultWeight())
         ActionRow(muteMatch = slip.activeMatch, given = feedback)
-    }
-}
-
-/** Settled leads with the count that decided it, not with a two-word summary of it. */
-@Composable
-private fun SettledCard(slip: SlipSurfaceState, feedback: FeedbackMark? = null) {
-    WidgetCard(
-        description = SpokenSurface.forSlip(slip) ?: spokenSlip(slip, slip.narrated?.headline),
-        onClick = openRoute(ROUTE_MY_BETS),
-    ) {
-        ClubBand(trailing = "FULL TIME")
-        Spacer(GlanceModifier.height(6.dp))
-        WidgetHero(
-            label = matchLabel(slip),
-            value = slip.legsWon.toString() + "/" + slip.legsTotal,
-        )
-        Spacer(GlanceModifier.height(8.dp))
-        WidgetLegDots(slip.legs, slip.legsWon, slip.legsTotal)
-        Spacer(GlanceModifier.height(6.dp))
-        Text(text = scoreLine(slip) ?: "", style = WidgetText.meta, maxLines = 1)
-        Spacer(GlanceModifier.defaultWeight())
-        ActionRow(muteMatch = null, given = feedback)
     }
 }
 

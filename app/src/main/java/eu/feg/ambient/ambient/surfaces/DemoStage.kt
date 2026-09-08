@@ -6,6 +6,10 @@ import eu.feg.ambient.ambient.identity.ClubThemes
 import eu.feg.ambient.ambient.narrator.MomentType
 import eu.feg.ambient.core.AppContainer
 import eu.feg.ambient.data.model.BetStatus
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import eu.feg.ambient.data.model.Leg
 import eu.feg.ambient.data.model.LegStatus
 import eu.feg.ambient.data.model.Match
@@ -36,10 +40,22 @@ import kotlin.time.Duration.Companion.minutes
 object DemoStage {
 
     /**
-     * Stable, so re-arming after a restart cannot make a second slip: [track] refuses an id
-     * it already holds.
+     * Numbered, because the stage is armed again each time its matches run out: [track]
+     * refuses an id it already holds, so a second slip needs a second id.
      */
     const val BET_ID = "demo-stage"
+
+    private var armCount = 0
+
+    /**
+     * One arming at a time.
+     *
+     * The launch-time call and the watcher's first tick landed together and both passed the
+     * "is a slip in play" guard before either had tracked one, so the demo opened with two
+     * slips competing for a single Live Update. The guard has to be read and acted on without
+     * anything else in between.
+     */
+    private val gate = Mutex()
 
     /**
      * Long enough to clear [eu.feg.ambient.ambient.digest.AwayTracker.AWAY_THRESHOLD] with
@@ -54,14 +70,19 @@ object DemoStage {
      * Returns false when it declined -- an existing slip, or fewer live fixtures than the
      * slip needs -- so the caller can log the reason rather than wonder.
      */
-    suspend fun arm(container: AppContainer): Boolean {
-        // A REAL SLIP ALWAYS WINS. The moment someone places a bet in the app, the demo slip
-        // would be a second card competing for one Live Update, and the one that loses is
-        // the customer's own.
-        if (container.betRepository.placedBets.value.isNotEmpty()) {
-            Log.i(TAG, "not arming: a slip is already tracked")
-            return false
+    suspend fun arm(container: AppContainer): Boolean = gate.withLock { armLocked(container) }
+
+    private suspend fun armLocked(container: AppContainer): Boolean {
+        // A SLIP STILL IN PLAY ALWAYS WINS, whoever placed it. A second card would compete
+        // for one Live Update and the one that loses could be the customer's own. Settled
+        // slips do not count: matches reach full time in under a minute of demo clock, and a
+        // stage that could only be armed once would spend the pitch showing a final score.
+        val slipInPlay = container.betRepository.placedBets.value.any { bet ->
+            bet.status == BetStatus.OPEN && bet.legs.any { leg ->
+                container.matchRepository.match(leg.matchId)?.state == MatchState.LIVE
+            }
         }
+        if (slipInPlay) return false
 
         // A CLUB THE CARD CAN DRESS BEATS A FIXTURE THAT IS MERELY FURTHER ALONG.
         //
@@ -88,8 +109,9 @@ object DemoStage {
         val landed = ordered[1]
         val running = ordered[2]
 
+        armCount++
         val bet = PlacedBet(
-            id = BET_ID,
+            id = if (armCount == 1) BET_ID else BET_ID + "-" + armCount,
             legs = listOf(
                 Leg(active.id, active.home.name + " to win", 1.85, LegStatus.PENDING),
                 // One leg already home, so the card opens on "1 of 3" rather than on a row
@@ -125,6 +147,21 @@ object DemoStage {
 
         Log.i(TAG, "armed on " + active.id + ", " + landed.id + ", " + running.id)
         return true
+    }
+
+    /**
+     * Puts the stage back on a running match when its own has finished.
+     *
+     * The mock clock runs three seconds to the match minute, so a slip placed at 74' is
+     * settled inside a minute; MatchRepository.promoteKickoffs keeps twelve fixtures on the
+     * pitch, and without this the demo watched them go by with a final score on the card.
+     * The check is the same one [arm] makes, so nothing is re-armed over a slip in play --
+     * the customer's included.
+     */
+    fun keepArmed(container: AppContainer, scope: CoroutineScope) {
+        scope.launch {
+            container.clock.ticks.collect { arm(container) }
+        }
     }
 
     /**

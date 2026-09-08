@@ -72,7 +72,14 @@ internal fun LiveMatchCard(slip: SlipSurfaceState, feedback: FeedbackMark? = nul
         Spacer(GlanceModifier.height(4.dp))
         Timeline(slip, showLegs = !calm)
         Divider()
-        if (calm) CalmActions(slip) else Actions(slip, feedback)
+        when {
+            calm -> CalmActions(slip)
+            // Nothing is still running, so there is nothing to mute and no live updates to
+            // turn off. What is left is whether the moment was worth showing, which is the
+            // one question still worth asking.
+            slip.settled -> SettledActions(feedback)
+            else -> Actions(slip, feedback)
+        }
     }
 }
 
@@ -101,11 +108,36 @@ private fun Header(slip: SlipSurfaceState) {
             )
         }
         Spacer(GlanceModifier.width(14.dp))
-        LivePill()
-        Spacer(GlanceModifier.width(14.dp))
+        if (slip.settled) {
+            // No green, and no minute. Green means "in play" everywhere in this app, and a
+            // minute that has stopped counting invites the reader to watch it.
+            StatePill(label = "FULL TIME", colour = GREY)
+        } else {
+            LivePill()
+            Spacer(GlanceModifier.width(14.dp))
+            Text(
+                text = (slip.minute ?: 0).toString() + "'",
+                style = TextStyle(ColorProvider(WHITE), 23.sp, FontWeight.Bold),
+                maxLines = 1,
+            )
+        }
+    }
+}
+
+/** The pill without the dot: a state that is not "in play" has no business looking live. */
+@Composable
+private fun StatePill(label: String, colour: androidx.compose.ui.graphics.Color) {
+    Row(
+        modifier = GlanceModifier
+            .height(34.dp)
+            .background(ColorProvider(WHITE_10))
+            .cornerRadius(17.dp)
+            .padding(horizontal = 14.dp),
+        verticalAlignment = Alignment.Vertical.CenterVertically,
+    ) {
         Text(
-            text = (slip.minute ?: 0).toString() + "'",
-            style = TextStyle(ColorProvider(WHITE), 23.sp, FontWeight.Bold),
+            text = label,
+            style = TextStyle(ColorProvider(colour), 14.sp, FontWeight.Bold),
             maxLines = 1,
         )
     }
@@ -251,6 +283,28 @@ private fun Actions(slip: SlipSurfaceState, feedback: FeedbackMark?) {
         }
         VDivider()
         ActionItem(R.drawable.ic_bell_off, "Mute", "Mute this match", actionRunCallback<MuteMatchAction>())
+    }
+}
+
+/**
+ * Full time: rate the moment, or open the slip. No mute and no live toggle, because there is
+ * nothing left to mute or to follow.
+ */
+@Composable
+private fun SettledActions(feedback: FeedbackMark?) {
+    Row(modifier = GlanceModifier.fillMaxWidth().height(44.dp), verticalAlignment = Alignment.Vertical.CenterVertically) {
+        if (feedback == null) {
+            ActionItem(R.drawable.ic_thumb_up, "Like", "Like this update", actionRunCallback<ThumbsUpAction>())
+            VDivider()
+            ActionItem(R.drawable.ic_thumb_down, "Dislike", "Dislike this update", actionRunCallback<ThumbsDownAction>())
+        } else {
+            Text(
+                text = if (feedback == FeedbackMark.UP) "More like this" else if (feedback == FeedbackMark.DOWN) "Fewer like this" else "Muted",
+                style = TextStyle(ColorProvider(GREY), 14.sp),
+                maxLines = 1,
+                modifier = GlanceModifier.defaultWeight().padding(horizontal = 8.dp),
+            )
+        }
     }
 }
 

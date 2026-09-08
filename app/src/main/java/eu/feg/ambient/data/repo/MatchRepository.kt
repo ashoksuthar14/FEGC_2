@@ -157,8 +157,16 @@ class MatchRepository(
     }
 
     private companion object {
-        /** Ticks of the clock per minute of match time. */
-        const val SECONDS_PER_MINUTE = 3
+        /**
+         * Ticks of the clock per minute of match time.
+         *
+         * Eight, not three. At three a match ran its ninety minutes in four and a half, so a
+         * fixture was on the pitch for less time than it takes to talk about it -- the widget
+         * settled mid-sentence and the recognisable clubs were gone before anyone looked. At
+         * eight a match lasts twelve minutes, which outlasts a demo, and the minute still
+         * visibly moves.
+         */
+        const val SECONDS_PER_MINUTE = 8
 
         /** Ticks between goals, across all live matches. */
         const val SECONDS_PER_GOAL = 45

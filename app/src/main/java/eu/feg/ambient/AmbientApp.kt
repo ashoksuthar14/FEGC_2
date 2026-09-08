@@ -34,7 +34,11 @@ class AmbientApp : Application() {
         // engine, so the lock screen, the widget family and the catch-up all have something
         // true on them before anyone taps anything. It stands down if a real slip exists.
         if (BuildConfig.DEBUG) {
-            CoroutineScope(SupervisorJob() + Dispatchers.Default).launch { DemoStage.arm(container) }
+            val demoScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+            demoScope.launch { DemoStage.arm(container) }
+            // And again whenever its matches reach full time, so the card keeps a match on it
+            // rather than a final score for the rest of the demo.
+            DemoStage.keepArmed(container, demoScope)
         }
         if (BuildConfig.DEBUG) container.logNarratorSelfTest()
     }
