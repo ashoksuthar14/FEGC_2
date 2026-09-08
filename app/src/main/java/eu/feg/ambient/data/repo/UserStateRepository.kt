@@ -41,6 +41,14 @@ class UserStateRepository(private val prefs: SharedPreferences?) {
 
     fun clearPanic() = update { it.copy(panicUntil = null) }
 
+    /**
+     * N6. Kept here rather than in DataStore, which the spec suggested: DataStore would be a
+     * new direct dependency for one nullable string, and this repository already persists a
+     * preference through SharedPreferences with a StateFlow on top — which is exactly the
+     * shape the surfaces need in order to re-theme the moment it changes.
+     */
+    fun setMyClub(clubId: String?) = update { it.copy(myClubId = clubId) }
+
     private fun update(block: (UserState) -> UserState) {
         val next = block(_state.value)
         _state.value = next

@@ -2,6 +2,7 @@ package eu.feg.ambient.ui.match
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import eu.feg.ambient.ambient.identity.ClubTheme
 import eu.feg.ambient.core.AppContainer
 import eu.feg.ambient.data.model.Match
 import eu.feg.ambient.data.model.Selection
@@ -38,6 +39,11 @@ class MatchDetailViewModel(
             now = container.clock.now(),
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), MatchDetailUiState())
+
+    /** N6. The Match screen is where a customer is looking at exactly one club. */
+    val myClubTheme: StateFlow<ClubTheme> = container.myClubTheme
+
+    fun setMyClub(clubId: String) = container.userStateRepository.setMyClub(clubId)
 
     fun toggleSelection(marketId: String, outcomeId: String) {
         val match = uiState.value.match ?: return

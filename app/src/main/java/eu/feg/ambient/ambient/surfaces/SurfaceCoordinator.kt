@@ -13,11 +13,13 @@ import eu.feg.ambient.data.model.PlacedBet
 import eu.feg.ambient.data.repo.BetRepository
 import eu.feg.ambient.data.repo.MatchRepository
 import eu.feg.ambient.ambient.engine.MatchEvent
+import eu.feg.ambient.ambient.identity.ClubTheme
 import eu.feg.ambient.data.repo.UserStateRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import eu.feg.ambient.data.model.LegStatus as DomainLegStatus
 
@@ -43,6 +45,8 @@ class SurfaceCoordinator(
     private val protection: suspend () -> ProtectionState,
     /** Step 13: every event goes through the engine, which decides whether it surfaces at all. */
     private val onMatchEvent: suspend (MatchEvent) -> Unit,
+    /** N6: the customer's club, already combined with protection by the container. */
+    private val clubTheme: StateFlow<ClubTheme>,
 ) {
 
     /**
@@ -68,6 +72,39 @@ class SurfaceCoordinator(
         observeTicks()
         observeProtection()
         observeMatchEvents()
+        observeClubTheme()
+    }
+
+    /**
+     * A club change repaints every surface at once, on the same path a protection change
+     * takes — not on the next tick.
+     *
+     * This is a demo beat: the club is picked on the phone and the lock screen and the home
+     * screen are expected to follow while the audience is still looking at them. Twenty
+     * seconds of throttle later would read as the feature not working.
+     */
+    private fun observeClubTheme() {
+        scope.launch {
+            // drop(1): the first value is the current theme, and repainting on start-up would
+            // fight resumeOpenSlip for the same surfaces.
+            clubTheme.drop(1).collect {
+                val protection = protection()
+                controller.refreshShortcuts(protection)
+
+                val slipId = _liveSlipId.value
+                if (slipId == null) {
+                    controller.refreshWidget(quietWidgetState(protection))
+                    return@collect
+                }
+                val bet = betRepository.placedBets.value.firstOrNull { it.id == slipId } ?: return@collect
+                val state = surfaceState(bet) ?: return@collect
+                // Bypasses the throttle deliberately: nothing about the slip changed, but
+                // everything about how it looks did.
+                lastSignature = null
+                controller.updateLiveUpdate(state)
+                controller.refreshWidget(WidgetState.Live(state))
+            }
+        }
     }
 
     /**
@@ -219,7 +256,7 @@ class SurfaceCoordinator(
 
                 val slipId = _liveSlipId.value
                 if (slipId == null) {
-                    controller.refreshWidget(WidgetState.Protected(protection, lastRegisterCheck = clock.now()))
+                    controller.refreshWidget(quietWidgetState(protection))
                     return@collect
                 }
 
@@ -233,6 +270,36 @@ class SurfaceCoordinator(
                 controller.refreshWidget(WidgetState.Live(state))
             }
         }
+    }
+
+    /**
+     * What the widget shows with no slip in flight.
+     *
+     * N6 gives this state something to say on a day with nothing running, which was the
+     * widget's weakest moment: a followed club's next fixture instead of a card that admits
+     * it has nothing. Under protection it goes back to the neutral operator card — the club
+     * is cosmetic, and cosmetics do not outrank a protection message.
+     */
+    private fun quietWidgetState(protection: ProtectionState): WidgetState {
+        if (protection != ProtectionState.NORMAL && protection != ProtectionState.CALM) {
+            return WidgetState.Protected(protection, lastRegisterCheck = clock.now())
+        }
+        val fixture = clubFixture()
+            ?: return WidgetState.Protected(protection, lastRegisterCheck = clock.now())
+        return WidgetState.Idle(nextFixture = fixture.first, kickoff = fixture.second)
+    }
+
+    /** The followed club's next match, as a label and a kickoff time. */
+    private fun clubFixture(): Pair<String, kotlinx.datetime.Instant?>? {
+        val theme = clubTheme.value
+        if (theme.clubId.isEmpty()) return null
+        val match = matchRepository.matches.value
+            .filter {
+                it.home.name.equals(theme.name, true) || it.away.name.equals(theme.name, true)
+            }
+            .minByOrNull { if (it.state == MatchState.LIVE) 0 else 1 }
+            ?: return null
+        return (match.home.name + " – " + match.away.name) to match.kickoff
     }
 
     // ---- mapping ---------------------------------------------------------------------

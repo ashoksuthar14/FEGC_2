@@ -1,6 +1,7 @@
 package eu.feg.ambient.ambient.surfaces.widget
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceModifier
@@ -17,6 +18,7 @@ import androidx.glance.layout.Spacer
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.height
+import androidx.glance.layout.size
 import androidx.glance.layout.padding
 import androidx.glance.layout.width
 import androidx.glance.semantics.contentDescription
@@ -25,6 +27,7 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
+import eu.feg.ambient.ambient.identity.ClubThemes
 import eu.feg.ambient.ambient.surfaces.LegState
 import eu.feg.ambient.ambient.surfaces.LegStatus
 import eu.feg.ambient.ambient.surfaces.SlipSurfaceState
@@ -105,8 +108,29 @@ internal fun WidgetCard(
 }
 
 /**
+ * N6: whose colours this widget is drawn in.
+ *
+ * A CompositionLocal rather than a parameter threaded through nine card composables. The club
+ * is a property of the whole card, not of any one element, and passing it by hand would mean
+ * every future state having to remember to forward it — which is the sort of thing that gets
+ * forgotten and ships as one un-themed card.
+ */
+internal val LocalClubTheme = staticCompositionLocalOf { ClubThemes.Default }
+
+/** The club colour as an accent, and the text colour that is legible on it. */
+internal val clubAccent: ColorProvider
+    @Composable get() = ColorProvider(LocalClubTheme.current.primary)
+
+internal val onClubAccent: ColorProvider
+    @Composable get() = ColorProvider(LocalClubTheme.current.onPrimary)
+
+/**
  * [modifier] is the caller's business because a button in a row of three needs a weight and
  * a button on its own needs the full width; everything else about it is fixed here.
+ *
+ * The label colour follows the fill rather than being fixed white: on Hajduk's white and
+ * Varaždin's yellow, white text is an invisible control. [onFill] defaults to the club's
+ * computed contrast colour and is overridden only where the fill is one of ours.
  */
 @Composable
 internal fun WidgetActionButton(
@@ -114,7 +138,8 @@ internal fun WidgetActionButton(
     description: String,
     action: Action,
     modifier: GlanceModifier = GlanceModifier.fillMaxWidth(),
-    fill: ColorProvider = WidgetTokens.brandBlue,
+    fill: ColorProvider = clubAccent,
+    onFill: ColorProvider = onClubAccent,
 ) {
     Box(
         modifier = modifier
@@ -125,7 +150,37 @@ internal fun WidgetActionButton(
             .padding(horizontal = 10.dp, vertical = 8.dp),
         contentAlignment = Alignment.Center,
     ) {
-        Text(text = label, style = WidgetText.button, maxLines = 1)
+        Text(
+            text = label,
+            style = TextStyle(onFill, 12.sp, FontWeight.Medium),
+            maxLines = 1,
+        )
+    }
+}
+
+/**
+ * The club's mark on the widget: initials in a coloured circle, the Glance twin of
+ * CrestBadge. Drawn rather than downloaded, for the same trademark reason.
+ */
+@Composable
+internal fun WidgetCrest(size: androidx.compose.ui.unit.Dp = 24.dp) {
+    val theme = LocalClubTheme.current
+    Box(
+        modifier = GlanceModifier
+            .size(size)
+            .cornerRadius(size / 2)
+            .background(ColorProvider(theme.primary)),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = theme.crestInitials,
+            style = TextStyle(
+                ColorProvider(theme.onPrimary),
+                (size.value * 0.38f).sp,
+                FontWeight.Bold,
+            ),
+            maxLines = 1,
+        )
     }
 }
 

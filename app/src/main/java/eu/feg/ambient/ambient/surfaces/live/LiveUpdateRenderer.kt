@@ -13,6 +13,9 @@ import eu.feg.ambient.ambient.surfaces.LegStatus
 import eu.feg.ambient.ambient.surfaces.LiveSlipService
 import eu.feg.ambient.ambient.surfaces.ProtectionState
 import eu.feg.ambient.ambient.engine.Surface
+import eu.feg.ambient.ambient.identity.ClubTheme
+import eu.feg.ambient.ambient.identity.ClubThemes
+import eu.feg.ambient.ambient.identity.CrestBitmap
 import eu.feg.ambient.ambient.surfaces.SlipSurfaceState
 import eu.feg.ambient.ambient.surfaces.SpokenSurface
 import eu.feg.ambient.ambient.surfaces.notifications.Channels
@@ -37,6 +40,12 @@ import java.util.concurrent.ConcurrentHashMap
  */
 class LiveUpdateRenderer(
     private val context: Context,
+    /**
+     * Read on every post rather than injected once: the club can change while a card is on
+     * the lock screen, and the next post has to be in the new colours without this object
+     * being rebuilt.
+     */
+    private val clubTheme: () -> ClubTheme = { ClubThemes.Default },
 ) : AndroidSurfaceController.LiveUpdateRendering {
 
     private val colors = PskColors()
@@ -127,7 +136,7 @@ class LiveUpdateRenderer(
             // The chip is glanceable shorthand for the status bar; it is not what a screen
             // reader announces. TalkBack reads contentTitle then contentText, so the detail
             // line is always a full sentence and carries the meaning on its own.
-            .setShortCriticalText(state.chipText)
+            .setShortCriticalText(chipText(state))
             .setContentIntent(openSlipIntent(state.slipId))
             .setDeleteIntent(dismissIntent(state.slipId))
             .addAction(listenAction(state))
@@ -165,7 +174,10 @@ class LiveUpdateRenderer(
         if (goals <= 0) return emptyList()
         return (1..goals).map { index ->
             val position = (total.toLong() * index / (goals + 1)).toInt().coerceAtLeast(1)
-            NotificationCompat.ProgressStyle.Point(position).setColor(colors.brandBlue.toArgb())
+            // The goal markers take the club's accent too, so the theme reaches the one
+            // part of this card a customer actually watches change.
+            NotificationCompat.ProgressStyle.Point(position)
+                .setColor(clubTheme().primary.toArgb())
         }
     }
 
@@ -224,17 +236,41 @@ class LiveUpdateRenderer(
      * added: custom RemoteViews, setCustomContentView, setGroupSummary(true) and
      * setColorized(true) — each one silently disqualifies the notification from promotion.
      */
-    private fun base(channelId: String): NotificationCompat.Builder =
-        NotificationCompat.Builder(context, channelId)
+    private fun base(channelId: String): NotificationCompat.Builder {
+        val theme = clubTheme()
+        return NotificationCompat.Builder(context, channelId)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setCategory(NotificationCompat.CATEGORY_EVENT)
             .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
             .setOnlyAlertOnce(true)
+            // N6: the accent, and the crest. setColor tints the small icon and the accent
+            // furniture, which is the whole of the club's presence on this surface.
+            //
+            // setColorized(true) is NOT called and must not be. It floods the notification
+            // background with the colour, and a colorized notification is disqualified from
+            // being promoted to the lock screen — the club would cost us the surface it was
+            // meant to decorate.
+            .setColor(theme.primary.toArgb())
+            .setLargeIcon(CrestBitmap.of(theme))
+    }
 
     private fun notify(id: Int, builder: NotificationCompat.Builder) {
         // The permission can be revoked between the check and the post; a SecurityException
         // here must not take the match tick down with it.
         runCatching { NotificationManagerCompat.from(context).notify(id, builder.build()) }
+    }
+
+    /**
+     * The status-bar chip. The club code goes in front only when the match on the card is
+     * actually that club's — a Dinamo fan watching a Liverpool slip should not see "DIN"
+     * next to someone else's score, which would be identity applied as decoration rather
+     * than as meaning. The chip is short-critical text, so it is kept to a few characters.
+     */
+    private fun chipText(state: SlipSurfaceState): String {
+        val theme = clubTheme()
+        val isMyClub = theme.clubId.isNotEmpty() &&
+            (theme.name.equals(state.homeTeam, true) || theme.name.equals(state.awayTeam, true))
+        return if (isMyClub) theme.short + " " + state.chipText else state.chipText
     }
 
     private fun scoreLine(state: SlipSurfaceState): String? {

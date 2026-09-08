@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -108,11 +109,13 @@ fun AppNavHost(
 
     // Content files are read once; they never change in Phase 1.
     val content = remember { StaticContent(container) }
+    val club by container.myClubTheme.collectAsStateWithLifecycle()
 
     Scaffold(
         modifier = modifier,
         containerColor = psk.background,
         topBar = {
+          Column {
             TopAppBar(
                 title = {
                     Text(
@@ -166,6 +169,19 @@ fun AppNavHost(
                     actionIconContentColor = psk.textPrimary,
                 ),
             )
+            // N6, applied with a light hand: the bar stays the operator's blue and the club
+            // gets a stripe under it. Repainting the whole bar would make the app look like a
+            // fan app rather than the customer's corner of PSK's, which is the distinction
+            // this feature lives or dies on. It disappears under protection with the theme.
+            if (club.clubId.isNotEmpty()) {
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .height(3.dp)
+                        .background(club.primary),
+                )
+            }
+          }
         },
         bottomBar = {
             BottomBar(currentRoute = currentRoute) { tab ->

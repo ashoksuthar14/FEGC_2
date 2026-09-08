@@ -41,6 +41,7 @@ import eu.feg.ambient.data.model.MatchState
 import eu.feg.ambient.ui.components.OddsButton
 import eu.feg.ambient.ui.components.OddsState
 import eu.feg.ambient.ui.components.PskChip
+import eu.feg.ambient.ui.components.SetAsMyClubChip
 import eu.feg.ambient.ui.components.TeamCrest
 import eu.feg.ambient.ui.theme.LocalPskColors
 import eu.feg.ambient.ui.theme.PskShapes
@@ -56,6 +57,7 @@ fun MatchDetailScreen(
 ) {
     val psk = LocalPskColors.current
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val club by viewModel.myClubTheme.collectAsStateWithLifecycle()
     var group by remember { mutableStateOf(MARKET_GROUPS.first()) }
     val match = state.match
 
@@ -97,6 +99,13 @@ fun MatchDetailScreen(
                     )
                     TeamScoreLine(match.home.name, match.homeScore)
                     TeamScoreLine(match.away.name, match.awayScore)
+                    // Offered per team, and only for the eight themed clubs — a control that
+                    // appeared on every fixture and did nothing on most would be worse than
+                    // no control.
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        SetAsMyClubChip(match.home.name, club, viewModel::setMyClub)
+                        SetAsMyClubChip(match.away.name, club, viewModel::setMyClub)
+                    }
                     Text(
                         text = if (match.state == MatchState.LIVE) {
                             formatLiveMinute(match.period, match.minute)

@@ -30,6 +30,8 @@ class AndroidSurfaceController(
 
     var widgetRenderer: WidgetRendering? = null
 
+    var shortcutRenderer: ShortcutRendering? = null
+
     init {
         Channels.ensure(context)
         refreshDiagnostics()
@@ -87,6 +89,7 @@ class AndroidSurfaceController(
 
     override suspend fun refreshShortcuts(protection: ProtectionState) {
         Log.i(TAG, "refreshShortcuts for " + protection)
+        shortcutRenderer?.refresh(protection)
     }
 
     override fun resetAlertBudget() {
@@ -134,6 +137,11 @@ class AndroidSurfaceController(
 
     interface WidgetRendering {
         suspend fun render(state: WidgetState)
+    }
+
+    /** N6: the launcher's long-press menu, led by the customer's club. */
+    interface ShortcutRendering {
+        fun refresh(protection: ProtectionState)
     }
 
     private companion object {

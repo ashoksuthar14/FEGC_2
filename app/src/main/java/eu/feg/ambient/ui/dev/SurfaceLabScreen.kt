@@ -41,6 +41,7 @@ import eu.feg.ambient.ambient.narrator.Tone
 import eu.feg.ambient.ambient.surfaces.ProtectionState
 import eu.feg.ambient.ambient.surfaces.notifications.NotificationPermission
 import eu.feg.ambient.ui.components.PskChip
+import eu.feg.ambient.ui.components.MyClubRow
 import eu.feg.ambient.ui.theme.LocalPskColors
 import eu.feg.ambient.ui.theme.PskShapes
 import kotlinx.datetime.Instant
@@ -220,6 +221,18 @@ fun SurfaceLabScreen(viewModel: SurfaceLabViewModel, modifier: Modifier = Modifi
                         fontWeight = FontWeight.SemiBold,
                     )
                 }
+            }
+        }
+
+        item(key = "club") {
+            LabCard("My club (N6)") {
+                val club by viewModel.myClubTheme.collectAsStateWithLifecycle()
+                MyClubRow(selected = club, onSelect = viewModel::setMyClub)
+                Text(
+                    text = "Cosmetic only. UNVERIFIED and BLOCKED fall back to PSK blue.",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = psk.textSecondary,
+                )
             }
         }
 

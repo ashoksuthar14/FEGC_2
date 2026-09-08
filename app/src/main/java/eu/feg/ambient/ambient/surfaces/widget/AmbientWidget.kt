@@ -2,6 +2,7 @@ package eu.feg.ambient.ambient.surfaces.widget
 
 import android.content.Context
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.unit.dp
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
@@ -22,6 +23,7 @@ import eu.feg.ambient.MainActivity
 import eu.feg.ambient.ambient.surfaces.LegStatus
 import eu.feg.ambient.ambient.surfaces.ProtectionState
 import eu.feg.ambient.ambient.surfaces.SlipSurfaceState
+import eu.feg.ambient.ambient.identity.ClubThemes
 import eu.feg.ambient.ambient.surfaces.SpokenSurface
 import eu.feg.ambient.ambient.surfaces.WidgetState
 
@@ -47,7 +49,14 @@ class AmbientWidget : GlanceAppWidget() {
         val store = WidgetStateStore(context)
         val state = store.load()
         val feedback = store.feedback()
-        provideContent { WidgetBody(state, feedback) }
+        // The club is read from the widget's own store, saved beside the state, so a redraw
+        // after a reboot finds it without waking anything else of ours.
+        val club = store.club()
+        provideContent {
+            CompositionLocalProvider(LocalClubTheme provides club) {
+                WidgetBody(state, feedback)
+            }
+        }
     }
 }
 
@@ -68,7 +77,12 @@ internal fun WidgetBody(state: WidgetState, feedback: FeedbackMark? = null) {
         else -> ProtectionState.NORMAL
     }
     if (protection == ProtectionState.UNVERIFIED || protection == ProtectionState.BLOCKED) {
-        ProtectedCard(protection, lastRegisterCheck = null)
+        // The club falls away here as well as in the container's flow. A stored snapshot can
+        // outlive the decision that allowed it, and a protected card wearing a fan's colours
+        // would be the operator's own message dressed up as somebody else's.
+        CompositionLocalProvider(LocalClubTheme provides ClubThemes.Default) {
+            ProtectedCard(protection, lastRegisterCheck = null)
+        }
         return
     }
     when (state) {
@@ -182,6 +196,8 @@ private fun HeaderWithSpeaker(text: String, style: androidx.glance.text.TextStyl
         modifier = GlanceModifier.fillMaxWidth(),
         verticalAlignment = androidx.glance.layout.Alignment.Vertical.CenterVertically,
     ) {
+        WidgetCrest(size = 22.dp)
+        Spacer(GlanceModifier.width(6.dp))
         Text(
             text = text,
             style = style,

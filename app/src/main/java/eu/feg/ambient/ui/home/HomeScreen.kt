@@ -30,6 +30,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import eu.feg.ambient.data.model.Promo
 import eu.feg.ambient.ui.components.LeagueSection
 import eu.feg.ambient.ui.components.MatchRow
+import eu.feg.ambient.ui.components.MyClubRow
 import eu.feg.ambient.ui.components.PskChip
 import eu.feg.ambient.ui.components.SectionHeader
 import eu.feg.ambient.ui.components.ShimmerRow
@@ -55,6 +56,7 @@ fun HomeScreen(
     val psk = LocalPskColors.current
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val collapsed by viewModel.collapsedLeagues.collectAsStateWithLifecycle()
+    val club by viewModel.myClubTheme.collectAsStateWithLifecycle()
 
     LazyColumn(
         modifier = modifier
@@ -68,6 +70,12 @@ fun HomeScreen(
 
         // 2 — quick links
         item(key = "quicklinks") { QuickLinkRow() }
+
+        // N6 — the customer's club. High enough to be found, small enough that the app still
+        // reads as the operator's rather than as a fan page.
+        item(key = "myclub") {
+            MyClubRow(selected = club, onSelect = viewModel::setMyClub)
+        }
 
         // 3 — time tabs
         item(key = "timetabs") {
@@ -116,6 +124,9 @@ fun HomeScreen(
                         label = sport.name,
                         selected = state.sportFilter == sport.id,
                         count = sport.totalCount,
+                        // The one in-app place the accent lands, besides the club strip.
+                        selectedFill = club.primary,
+                        selectedContent = club.onPrimary,
                         onClick = { viewModel.selectSport(sport.id) },
                     )
                 }

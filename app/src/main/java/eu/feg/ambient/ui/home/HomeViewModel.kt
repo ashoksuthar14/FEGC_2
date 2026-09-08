@@ -2,6 +2,7 @@ package eu.feg.ambient.ui.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import eu.feg.ambient.ambient.identity.ClubTheme
 import eu.feg.ambient.core.AppContainer
 import eu.feg.ambient.data.model.League
 import eu.feg.ambient.data.model.Match
@@ -37,6 +38,11 @@ data class HomeUiState(
 )
 
 class HomeViewModel(private val container: AppContainer) : ViewModel() {
+
+    /** N6. Read-only here; the container owns the combination with protection. */
+    val myClubTheme: StateFlow<ClubTheme> = container.myClubTheme
+
+    fun setMyClub(clubId: String?) = container.userStateRepository.setMyClub(clubId)
 
     private val timeTab = MutableStateFlow(TimeTab.TODAY)
     private val sportFilter = MutableStateFlow("football")

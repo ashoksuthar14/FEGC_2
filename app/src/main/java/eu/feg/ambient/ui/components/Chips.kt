@@ -33,13 +33,18 @@ fun PskChip(
     selected: Boolean = false,
     count: Int? = null,
     leadingDotColor: androidx.compose.ui.graphics.Color? = null,
+    /** N6: the club accent, when a caller has one. Defaults to the operator's brand blue. */
+    selectedFill: androidx.compose.ui.graphics.Color? = null,
+    /** Text on [selectedFill]. Computed by the caller from the club, never assumed white. */
+    selectedContent: androidx.compose.ui.graphics.Color? = null,
     onClick: () -> Unit = {},
 ) {
     val psk = LocalPskColors.current
     val fill by animateColorAsState(
-        targetValue = if (selected) psk.brandBlue else psk.surfaceVariant,
+        targetValue = if (selected) selectedFill ?: psk.brandBlue else psk.surfaceVariant,
         label = "chipFill",
     )
+    val onFill = if (selected) selectedContent ?: psk.textPrimary else psk.textSecondary
     Row(
         modifier = modifier
             .clip(PskShapes.chip)
@@ -60,7 +65,7 @@ fun PskChip(
         Text(
             text = label,
             style = MaterialTheme.typography.labelMedium,
-            color = if (selected) psk.textPrimary else psk.textSecondary,
+            color = onFill,
             fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
             maxLines = 1,
         )
@@ -68,7 +73,7 @@ fun PskChip(
             Text(
                 text = it.toString(),
                 style = MaterialTheme.typography.labelSmall,
-                color = if (selected) psk.textPrimary else psk.textSecondary,
+                color = onFill,
                 maxLines = 1,
             )
         }

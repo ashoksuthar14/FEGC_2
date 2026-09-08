@@ -51,4 +51,10 @@ data class UserState(
     val realityCheckMinutes: Int = 60,
     val market: MarketCountry = MarketCountry.HR,
     val balance: Double = 250.00,
+    /**
+     * The club whose colour themes the OS surfaces. Cosmetic and nothing else: no offer, no
+     * limit and no protection decision reads this field, and none may start to. It lives on
+     * UserState only because that is where the app already keeps one persisted preference.
+     */
+    val myClubId: String? = null,
 )

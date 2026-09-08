@@ -12,6 +12,8 @@ import eu.feg.ambient.ambient.surfaces.LegState
 import eu.feg.ambient.ambient.surfaces.LegStatus
 import eu.feg.ambient.ambient.surfaces.ProtectionState
 import eu.feg.ambient.ambient.engine.Surface
+import eu.feg.ambient.ambient.identity.ClubTheme
+import eu.feg.ambient.ambient.identity.ClubThemes
 import eu.feg.ambient.ambient.surfaces.SlipSurfaceState
 import eu.feg.ambient.ambient.surfaces.SpeakResult
 import eu.feg.ambient.ambient.surfaces.SpokenSurface
@@ -245,6 +247,20 @@ class SurfaceLabViewModel(private val container: AppContainer) : ViewModel() {
                 "LanguageFallback — read in the device's default voice."
             }
         is SpeakResult.Unavailable -> "Unavailable — " + result.reason + "."
+    }
+
+    /**
+     * N6 on stage. Switching club here goes through the same repository the Home strip
+     * writes to, so the surfaces repaint by the same path — this is a shortcut to the
+     * control, not a second way of doing it.
+     */
+    val myClubTheme: StateFlow<ClubTheme> = container.myClubTheme
+
+    fun setMyClub(clubId: String?) {
+        container.userStateRepository.setMyClub(clubId)
+        _state.value = _state.value.copy(
+            lastAction = "Club: " + (ClubThemes.byId(clubId).name),
+        )
     }
 
     fun resetAlertBudget() {

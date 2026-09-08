@@ -3,6 +3,8 @@ package eu.feg.ambient.ambient.surfaces.widget
 import android.content.Context
 import android.content.SharedPreferences
 import android.util.Log
+import eu.feg.ambient.ambient.identity.ClubTheme
+import eu.feg.ambient.ambient.identity.ClubThemes
 import eu.feg.ambient.ambient.narrator.NarratedText
 import eu.feg.ambient.ambient.narrator.NarratorEngine
 import eu.feg.ambient.ambient.surfaces.LegState
@@ -68,6 +70,13 @@ class WidgetStateStore(private val prefs: SharedPreferences?) {
         prefs?.edit()?.putString(KEY_FEEDBACK, mark.name)?.apply()
     }
 
+    /** N6. Stored as the id and resolved on load, so a palette edit reaches stored widgets. */
+    fun saveClub(clubId: String) {
+        prefs?.edit()?.putString(KEY_CLUB, clubId)?.apply()
+    }
+
+    fun club(): ClubTheme = ClubThemes.byId(prefs?.getString(KEY_CLUB, null))
+
     /** Idle with nothing to show is the honest answer when there is no stored state. */
     fun load(): WidgetState {
         val json = prefs?.getString(KEY, null) ?: return EMPTY
@@ -87,6 +96,7 @@ class WidgetStateStore(private val prefs: SharedPreferences?) {
         const val PREFS = "ambient_widget"
         const val KEY = "widget_state"
         const val KEY_FEEDBACK = "widget_feedback"
+        const val KEY_CLUB = "widget_club"
         val EMPTY: WidgetState = WidgetState.Idle(nextFixture = null, kickoff = null)
         val JSON = Json { ignoreUnknownKeys = true; encodeDefaults = true }
     }

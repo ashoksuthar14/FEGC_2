@@ -14,6 +14,9 @@ import eu.feg.ambient.ambient.narrator.NanoNarrator
 import eu.feg.ambient.ambient.narrator.NanoState
 import eu.feg.ambient.ambient.narrator.Narrator
 import eu.feg.ambient.ambient.narrator.TemplateNarrator
+import eu.feg.ambient.ambient.identity.ClubShortcuts
+import eu.feg.ambient.ambient.identity.ClubTheme
+import eu.feg.ambient.ambient.identity.ClubThemes
 import eu.feg.ambient.ambient.surfaces.AndroidSurfaceController
 import eu.feg.ambient.ambient.surfaces.DemoSurfaceData
 import eu.feg.ambient.ambient.surfaces.SurfaceController
@@ -42,6 +45,11 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -52,6 +60,19 @@ import kotlinx.coroutines.launch
 class AppContainer(context: Context) {
 
     private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+    // --- club identity (N6) --------------------------------------------------------------
+
+    /**
+     * The customer's club, or the operator's own colours.
+     *
+     * Declared here, at the top, rather than derived where its inputs live: the Live Update
+     * renderer is built long before the protection evaluator is, and a surface asking "whose
+     * colours am I?" must never depend on the order this file happens to be written in. The
+     * flow is filled in by [observeClubTheme] once everything exists.
+     */
+    private val _myClubTheme = MutableStateFlow(ClubThemes.Default)
+    val myClubTheme: StateFlow<ClubTheme> = _myClubTheme.asStateFlow()
 
     /** Public so the UI can read the static content files directly. */
     val source = MockDataSource.fromContext(context)
@@ -152,8 +173,9 @@ class AppContainer(context: Context) {
      * controller stays testable and knows nothing about notifications or Glance.
      */
     val surfaceController: SurfaceController = AndroidSurfaceController(context, AlertBudget(context)).apply {
-        liveUpdateRenderer = LiveUpdateRenderer(context)
-        widgetRenderer = WidgetRenderer(context)
+        liveUpdateRenderer = LiveUpdateRenderer(context) { _myClubTheme.value }
+        widgetRenderer = WidgetRenderer(context, clubTheme = { _myClubTheme.value })
+        shortcutRenderer = ClubShortcuts(context, matchRepository) { _myClubTheme.value }
     }
 
     /** Ready-made slips so the surfaces have something real to show before the engine exists. */
@@ -240,6 +262,7 @@ class AppContainer(context: Context) {
         clock = clock,
         protection = { protectionEvaluator.evaluate() },
         onMatchEvent = { engine.onEvent(it) },
+        clubTheme = myClubTheme,
     )
 
     /**
@@ -273,6 +296,28 @@ class AppContainer(context: Context) {
             }
 
         }
+    }
+
+    /**
+     * Club plus protection, combined into the one value every surface reads.
+     *
+     * Eager, and started here rather than by a screen, because the surfaces that use it run
+     * with no UI on screen at all — a widget redraw after a reboot must find the right club
+     * already resolved.
+     */
+    private fun observeClubTheme() {
+        appScope.launch {
+            combine(
+                userStateRepository.state,
+                protectionEvaluator.state,
+            ) { user, protection -> ClubThemes.forState(user.myClubId, protection) }
+                .distinctUntilChanged()
+                .collect { _myClubTheme.value = it }
+        }
+    }
+
+    init {
+        observeClubTheme()
     }
 
     companion object {
