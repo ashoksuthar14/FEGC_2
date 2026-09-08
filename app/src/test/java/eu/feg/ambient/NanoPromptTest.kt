@@ -49,16 +49,49 @@ class NanoPromptTest {
     @Test
     fun `prompt states the language and the tone`() {
         val prompt = NanoPrompt.build(facts, Tone.WITTY, NarratorLanguage.HR)
-        assertTrue(prompt.contains("Write in Croatian."))
+        assertTrue(prompt.contains("Language: Croatian."))
         assertTrue(prompt.contains("light and human"))
         assertTrue(prompt.contains("HEADLINE:"))
         assertTrue(prompt.contains("DETAIL:"))
     }
 
     @Test
-    fun `prompt repeats the two-line instruction last, to resist drift`() {
+    fun `prompt ends by asking for the two lines, to resist drift`() {
         val prompt = NanoPrompt.build(facts, Tone.PLAIN, NarratorLanguage.EN)
-        assertTrue(prompt.trimEnd().endsWith("Output EXACTLY two lines and nothing else."))
+        assertTrue(prompt.trimEnd().endsWith("Now write the two lines, and nothing else:"))
+    }
+
+    @Test
+    fun `prompt is short enough for a small model`() {
+        val prompt = NanoPrompt.build(facts, Tone.PLAIN, NarratorLanguage.EN)
+        assertTrue(
+            "prompt grew to " + prompt.length + " chars; a 270M model loses the format",
+            prompt.length < 700,
+        )
+    }
+
+    @Test
+    fun `facts read as a sentence rather than json`() {
+        val text = NanoPrompt.factsText(facts)
+        assertTrue(text, text.contains("Liverpool 1–0 Ipswich"))
+        assertTrue(text, text.contains("your pick: Liverpool win"))
+        assertTrue(text, text.contains("2 of 3 picks won"))
+        assertFalse("no json braces in the prompt facts", text.contains("{"))
+    }
+
+    @Test
+    fun `absent facts simply do not appear`() {
+        val text = NanoPrompt.factsText(MomentFacts(type = MomentType.SLIP_SETTLED))
+        assertFalse(text, text.contains("null"))
+        assertFalse(text, text.contains("minutes played"))
+    }
+
+    @Test
+    fun `an echoed example is treated as no answer`() {
+        val echoed = NanoPrompt.parse(
+            "HEADLINE: Arsenal 2–1 · 70'\nDETAIL: Your Arsenal win pick is still alive.",
+        )
+        assertNull("the model just copied the example", echoed)
     }
 
     @Test

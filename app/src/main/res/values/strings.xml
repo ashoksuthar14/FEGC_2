@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">PSK</string>
+    <string name="widget_description">Your slip, live on the home screen.</string>
 </resources>

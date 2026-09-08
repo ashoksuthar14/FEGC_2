@@ -27,6 +27,238 @@ close to permanent, and notification opt-in retention is one of the metrics bein
 
 ---
 
+## 14.0b — Building step 14 before step 13 (this is the plan)
+
+Step 13 (protection layer, moment engine, learning router) does not exist yet, and step 14 was
+written not to need it. Two adjustments make that work cleanly.
+
+**Adjustment 1 — a temporary `ProtectionState`.** The real one arrives in 13A from the register
+check and the age proof. For now derive it from what the shell already has
+(`UserState.riskState` from PRD-01 §6) plus a stub age flag, and keep it in
+`ambient/surfaces/` so 13A can move it later without touching a renderer:
+
+```kotlin
+enum class ProtectionState { NORMAL, CALM, UNVERIFIED, BLOCKED }
+
+// TEMPORARY — replaced in step 13A by the register check + age assurance.
+// Renderers must depend on ProtectionState only, never on UserState.riskState.
+fun UserState.toProtectionStateTemp(ageVerified: Boolean): ProtectionState = when {
+  !ageVerified                          -> ProtectionState.UNVERIFIED
+  riskState == RiskState.SELF_EXCLUDED  -> ProtectionState.BLOCKED
+  riskState == RiskState.AT_RISK        -> ProtectionState.CALM
+  panicUntil?.let { it > Clock.System.now() } == true -> ProtectionState.CALM
+  limits.anyAtOrAbove(0.8)              -> ProtectionState.CALM
+  else                                  -> ProtectionState.NORMAL
+}
+```
+
+**Adjustment 2 — dummy data.** Create `ambient/surfaces/DemoSurfaceData.kt` with three
+ready-made slips built from the existing mock matches, so every surface has something real to
+show before any engine exists:
+
+- `threeLegLive` — Liverpool–Ipswich 1–0 at 61', legs: Liverpool win (pending), Betis win
+  (won), Sparta win (won) → renders as `2/3 ✓ · 61'`
+- `twoLegSettled` — one won, one lost, settled
+- `oneLegPreMatch` — Varaždin–Istria, kickoff in 40 minutes
+
+The Surface Lab (14D) picks between these. Nothing else needs to change.
+
+**The two swap points, so nothing has to be rewritten later**
+
+| Later step | What it replaces |
+|---|---|
+| 13A | `toProtectionStateTemp` → the real register check and age proof. Renderers untouched |
+| 13B | The Surface Lab's buttons → the engine calling the same `SurfaceController` |
+
+---
+
+## 14.0c — Do this 20-minute spike before anything else
+
+The single biggest unknown in step 14 is whether your Pixel 10a will actually *promote* a
+notification. If it does not, the lock-screen centrepiece changes shape and you want to know
+that now, not at hour six.
+
+```
+Before building anything else, spike this in a scratch file and delete it afterwards.
+
+Add to AndroidManifest.xml:
+  <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+  <uses-permission android:name="android.permission.POST_PROMOTED_NOTIFICATIONS"/>
+
+Add a temporary button to any screen that:
+  1. requests POST_NOTIFICATIONS if not granted
+  2. creates a channel "spike" with IMPORTANCE_DEFAULT
+  3. posts a NotificationCompat notification that meets every promotion requirement:
+     ProgressStyle, setOngoing(true), setRequestPromotedOngoing(true), a contentTitle,
+     setShortCriticalText("2/3 · 61'"), NO custom RemoteViews, not a group summary,
+     not colorized
+  4. immediately reads back the posted notification from
+     NotificationManager.getActiveNotifications() and logs:
+       - notificationManager.canPostPromotedNotifications()
+       - whether the notification's flags include FLAG_PROMOTED_ONGOING
+       - notification.hasPromotableCharacteristics()
+
+Check the current ProgressStyle builder signatures against Google's sample at
+https://github.com/android/platform-samples/tree/main/samples/user-interface/live-updates
+rather than guessing them.
+
+Install, tap the button, lock the phone, and tell me three things:
+  a) is there a chip in the status bar
+  b) is the card expanded and uncollapsible on the lock screen
+  c) what the three logged values say
+```
+
+**How to read the result**
+
+| Outcome | What it means | What to do |
+|---|---|---|
+| Chip appears, `FLAG_PROMOTED_ONGOING` set | Promotion works | Build 14A–14E as written |
+| No chip, `canPostPromotedNotifications()` false | The user or OEM disabled it | Open `Settings.ACTION_MANAGE_APP_PROMOTED_NOTIFICATIONS`, enable, retry |
+| No chip, `hasPromotableCharacteristics()` false | One of the eight requirements is violated | Usually a custom view, `setColorized(true)`, or an `IMPORTANCE_MIN` channel |
+| No chip, everything else true | The OEM applies extra eligibility rules | The notification still renders ongoing on the lock screen — lead the demo with the **widget**, keep the lock-screen card as the second beat, and say plainly that promotion is device-dependent. Keep the diagnostics screen; showing the real reason is stronger than pretending |
+
+---
+
+## 14.1 — FAST PATH (use this; ~2h wall clock instead of 4h serial)
+
+The 4-hour figure was serial and over-tested. Three things cut it roughly in half.
+
+**1. All shared-file edits happen once, up front.** Manifest, Gradle, theme and `AppContainer`
+are the only files three workstreams would collide on. Do them all in the foundation prompt,
+then the parallel agents create *new files only* and cannot conflict.
+
+**2. Fan out three agents.** Live Update, widget and Surface Lab touch disjoint packages and
+share nothing but the contract from step one. They are genuinely parallel.
+
+**3. Test only what protects a claim.** One test — that `UNVERIFIED` and `BLOCKED` create no
+Live Update — because that is the compliance property a judge could break on stage. Everything
+else is verified by looking at the phone, which is faster and more honest than a unit test of
+a notification builder.
+
+### Rules that keep the parallel run from going wrong
+
+- **Only the main session runs Gradle.** Parallel agents write files and stop. Concurrent
+  `./gradlew` invocations fight over the daemon and the build lock, and you lose more time to
+  that than you saved. Say this explicitly in the agent prompts.
+- **Give each agent an exact file allowlist.** An agent that "helpfully" edits the manifest
+  undoes the whole point.
+- **Ask for complete files, not incremental edits.** Faster to write and faster to review.
+- **No Compose previews for the notification** (you cannot preview one). Keep previews for the
+  widget only, and only the small size.
+
+### Prompt 1 · Foundation — do everything shared, in one pass (~25 min)
+
+```
+Read docs/CLAUDE_CODE_PROMPTS_PHASE2-Step14-Surfaces.md sections 14.0b and 14A.
+
+Do ALL of the following in one pass. Write complete files. Do not write tests yet.
+
+Shared-file edits (these are the only files anyone will touch outside their own package —
+after this, nothing else in step 14 modifies them):
+  - AndroidManifest.xml: POST_NOTIFICATIONS, POST_PROMOTED_NOTIFICATIONS, the
+    LiveSlipService declaration with foregroundServiceType="dataSync", and the
+    GlanceAppWidgetReceiver.
+  - app/build.gradle.kts: androidx.glance:glance-appwidget and glance-material3, latest stable.
+  - AppContainer: expose `surfaceController: SurfaceController` and `demoData: DemoSurfaceData`.
+
+New files:
+  - ambient/surfaces/SurfaceContracts.kt — ProtectionState, LegStatus, LegState,
+    SlipSurfaceState, WidgetState, SurfaceDiagnostics, and the SurfaceController interface,
+    exactly as specified in 14A. Include the comment that SlipSurfaceState carries no money.
+  - ambient/surfaces/ProtectionStateTemp.kt — toProtectionStateTemp() from 14.0b.
+  - ambient/surfaces/DemoSurfaceData.kt — the three demo slips from 14.0b, built from the
+    existing mock matches.
+  - ambient/surfaces/notifications/Channels.kt — the three channels from 14A.
+  - ambient/surfaces/notifications/NotificationPermission.kt — request helper + rationale.
+  - ambient/surfaces/AlertBudget.kt — 1 per rolling 24h in DataStore.
+  - ambient/surfaces/LiveSlipService.kt — foreground service shell that owns the tick.
+  - ambient/surfaces/AndroidSurfaceController.kt — implements SurfaceController with every
+    method as TODO() that logs its arguments. The three agents will fill these in.
+
+Then run ./gradlew assembleDebug once and fix whatever does not compile. Report the file list.
+```
+
+### Prompt 2 · Fan out three agents in parallel (~50 min wall clock)
+
+```
+Spawn three agents in parallel. Each writes ONLY the files in its allowlist and does NOT run
+Gradle — I will build once when all three finish. If an agent needs something outside its
+allowlist, it must stop and say so rather than editing the file.
+
+AGENT 1 — Live Update
+  Spec: section 14B of docs/CLAUDE_CODE_PROMPTS_PHASE2-Step14-Surfaces.md
+  Files: ambient/surfaces/live/LiveUpdateRenderer.kt, ambient/surfaces/live/DismissReceiver.kt
+  Before writing, check the current ProgressStyle builder signatures against
+  https://github.com/android/platform-samples/tree/main/samples/user-interface/live-updates
+  — do not guess method names.
+  Skip for now: the settled auto-dismiss timer, the deep-link intent (use a TODO), CALM styling
+  polish. Get NORMAL rendering promoted and correct first.
+
+AGENT 2 — Glance widget
+  Spec: section 14C
+  Files: everything under ambient/surfaces/widget/
+  Build all six WidgetState cases but only the SMALL size for now — add Responsive/medium later
+  if there is time. One @Preview for the Live state only.
+  Use PskTheme tokens, never Glance or Material defaults.
+
+AGENT 3 — Surface Lab
+  Spec: section 14D
+  Files: ambient/ui/dev/SurfaceLabScreen.kt, ambient/ui/dev/SurfaceLabViewModel.kt, and the
+  one-line nav entry under the More sheet.
+  It calls SurfaceController only — never a renderer directly. Build the full control set;
+  this screen is how everything else gets tested, so it is not the place to cut corners.
+
+When all three report back, I will build.
+```
+
+### Prompt 3 · Integrate and see it on the phone (~25 min)
+
+```
+Build with ./gradlew assembleDebug, fix compile errors across the three agents' output, wire
+AndroidSurfaceController's TODOs to the three renderers, then installDebug.
+
+Then write exactly ONE test — the compliance property, nothing else:
+  LiveUpdateRendererTest: ProtectionState.UNVERIFIED and ProtectionState.BLOCKED must post no
+  notification. Everything else we verify by looking at the phone.
+
+Open Surface Lab and drive it: start a Live Update, +1 minute three times, home goal, win a
+leg, then flip protection to CALM. Tell me what the diagnostics card says and what you see.
+```
+
+### Prompt 4 · Wire to real app use (~20 min)
+
+```
+Section 14E. Bet placement asks for notification permission and starts the Live Update;
+MatchClock ticks drive updates throttled to 20s unless score or leg status changed; settlement
+ends it and attempts one alert; any ProtectionState change refreshes every surface immediately.
+```
+
+### Where the time actually goes
+
+| Phase | Wall clock |
+|---|---|
+| 14.0c spike | 0h 20 |
+| Prompt 1 foundation | 0h 25 |
+| Prompt 2 three agents in parallel | 0h 50 |
+| Prompt 3 integrate, one test, look at the phone | 0h 25 |
+| Prompt 4 wire to real use | 0h 20 |
+| **Total** | **~2h 20** |
+
+Do not cut the spike. It is 20 minutes that decides whether the other two hours build the right
+thing, and it is the one step where being wrong is expensive.
+
+### Deliberately deferred to later steps or "if time"
+
+Medium widget size · settled auto-dismiss timer · digest state polish · CALM visual refinement ·
+the accessibility pass (step 19 owns it) · shortcuts refresh (step 16) · every unit test except
+the one above.
+
+---
+
+> **Sections 14A–14E below are the detailed specification.** The fast path above executes
+> them; read them as the reference the agents are pointed at, not as five prompts to paste
+> one after another. Paste them individually only if you would rather build serially.
+
 ## 14A — The surface contract and notification plumbing
 
 ```
@@ -34,6 +266,8 @@ We are building the Ambient surfaces. Read docs/Ambient_Final_Spec.md sections 3
 5 (architecture and the renderer matrix) and 6 (protection layer).
 
 This step builds the contract and the plumbing only — no visible surface yet.
+Step 13 does not exist yet: use the temporary ProtectionState and DemoSurfaceData from
+section 14.0b of this document, and make sure no renderer ever reads UserState directly.
 
 1. Create package ambient/surfaces/ with the state the renderers consume. Renderers must be
    pure functions of this; they may not reach into repositories.

@@ -14,6 +14,11 @@ import eu.feg.ambient.ambient.narrator.NanoNarrator
 import eu.feg.ambient.ambient.narrator.NanoState
 import eu.feg.ambient.ambient.narrator.Narrator
 import eu.feg.ambient.ambient.narrator.TemplateNarrator
+import eu.feg.ambient.ambient.surfaces.AndroidSurfaceController
+import eu.feg.ambient.ambient.surfaces.DemoSurfaceData
+import eu.feg.ambient.ambient.surfaces.SurfaceController
+import eu.feg.ambient.ambient.surfaces.live.LiveUpdateRenderer
+import eu.feg.ambient.ambient.surfaces.widget.WidgetRenderer
 import eu.feg.ambient.data.clock.MatchClock
 import eu.feg.ambient.data.clock.SystemMatchClock
 import eu.feg.ambient.data.mock.MockDataSource
@@ -123,6 +128,23 @@ class AppContainer(context: Context) {
             }
         }
     }
+
+    // --- surfaces (Phase 2, step 14) ---------------------------------------------------
+
+    /**
+     * The single door to every OS surface. The Surface Lab drives it today; step 13B's
+     * Moment Engine calls the same methods without any renderer changing.
+     *
+     * The renderers are attached here rather than constructed inside the controller, so the
+     * controller stays testable and knows nothing about notifications or Glance.
+     */
+    val surfaceController: SurfaceController = AndroidSurfaceController(context).apply {
+        liveUpdateRenderer = LiveUpdateRenderer(context)
+        widgetRenderer = WidgetRenderer(context)
+    }
+
+    /** Ready-made slips so the surfaces have something real to show before the engine exists. */
+    val demoData = DemoSurfaceData
 
     /**
      * Debug-only: once the local model is ready, narrate a few moments and log the result.

@@ -42,11 +42,15 @@ A placed bet is an ongoing, user-initiated, time-bound journey — the same shap
 |---|---|---|
 | A1 | **Live Update** — lock screen + always-on display | `ProgressStyle`, one progress segment per leg |
 | A2 | **Status-bar chip** | `2/3 ✓ · 61'`, readable without unlocking |
-| A3 | **Home-screen widget** | 6 states: pre-match · live · settled · digest · idle · **protected** |
+| A3 | **Home-screen widget** | 7 states: pre-match · live · settled · digest · **recap** · idle · **protected** |
 | A4 | **Dynamic launcher shortcuts** | State-driven; reduced set when protected or unverified |
 | A5 | **"While you were away" digest** | One card on unlock after ≥ 60 min — replaces overnight pushes |
 | A6 | **Retail ticket scan** | Barcode on a paper slip → tracked like an online bet |
 | A7 | **Rare alert** | Settlement or urgent only, ≤ 1/day, never in Calm Mode |
+
+| A8 | **Season / month recap** | The "Wrapped" moment — counts, never money |
+| A9 | **Club identity theming** | Followed club's crest and colour on the widget and lock screen |
+| A10 | **Status and streaks** | Non-monetary missions and tiers, rendered on the widget |
 
 ### B · Intelligence, all on device
 
@@ -74,7 +78,7 @@ A placed bet is an ongoing, user-initiated, time-bound journey — the same shap
 
 ## 4. New features that capture the opportunities
 
-Four additions, all directly on-brief, ~2¼ hours total.
+Seven additions, all directly on-brief. N1–N4 close the compliance gaps (~2¼ h); N5–N7 take the mechanics competitors use and strip the money out of them (~2 h).
 
 ### N1 · Spoken moments — relevance for a surface you cannot look at ★
 
@@ -103,6 +107,44 @@ The single attribute `age_over_18 = true`, requested EUDI-Wallet-style with the 
 The ledger already exists. Add a filter that shows only protection events — register checks with timestamps and references, blocked renders, Calm Mode transitions, offers withheld — and a "copy as text" action.
 
 **Why it wins:** it turns "compliance by design" from a claim into something a judge can scroll, and it is the DSA recommender-transparency answer in the same screen. ~20 min.
+
+### N5 · Season Recap — the "Wrapped" moment ★
+
+**What competitors do:** almost nothing. Sportsbooks run bonus-led reactivation; Spotify Wrapped is the template and football clubs have copied it, but the betting industry has not.
+
+**The psychology:** identity and self-narrative. People share things that say something about who they are, and this is reactivation that arrives as a gift instead of a nag.
+
+**What we build:** the narrator already writes summaries, so this is the digest's big brother. At the close of a month or a season: *"38 matches followed. 21 predictions right. Sparta, every single week."* Rendered as a widget state and an in-app shareable card.
+
+**The hard rule:** it counts matches followed, teams supported, predictions, check-ins and streaks. **Never** stake, winnings, losses or balance. That keeps it outside inducement territory, keeps it safe for a customer who is cutting back, and it is what makes it shareable — nobody shares their P&L. In Calm Mode the recap still renders, because it contains no money.
+
+**Why it belongs in this brief:** it is a surface, not a campaign. It gives the widget and the digest something to say on days with no live match — otherwise our weakest moment. ~40 min.
+
+### N6 · Club identity — the customer's club on the glass
+
+**What competitors do:** heavy club sponsorship and team-following, but it stops at a filter in a list.
+
+**The psychology:** identity beats incentive. A customer whose phone is themed around their club has made the app part of who they are, which no bonus can buy.
+
+**What we build:** following a club themes the widget and the Live Update — crest, the club's colour as the accent, their fixtures in the idle state. Cosmetic only, so there is no compliance surface at all, and it survives Calm Mode unchanged.
+
+**Why it belongs in this brief:** widget adoption at 90 days is a named metric, and this is the cheapest lever on it — a fan keeps a widget that looks like their club. ~30 min.
+
+### N7 · Status and streaks — the mission mechanic without the money
+
+**What competitors do:** missions, XP and tiers rewarded with bonus funds, free spins and mystery boxes. The responsible-gambling literature is blunt about the result: players keep wagering to earn points even while losing.
+
+**What we build:** the same mechanic with the currency changed.
+
+| Competitor mission | Ours |
+|---|---|
+| "Wager €50 on football this week" | "Follow three teams" |
+| "Place 10 bets to reach Gold" | "Check in on five live matches" |
+| Reward: €10 free bet | Reward: a badge, a streak, a tier name, early access |
+
+**Two non-negotiable rules:** no mission may require a bet to progress, and no reward may be money or a free bet. Progress renders as a status line on the widget. PSK already runs a Loyalty Club, so the tier language exists — the change is decoupling points from spend. ~45 min.
+
+**Deliberately not built** (named on the roadmap slide instead): a free-to-play prediction game of the Super 6 kind — powerful, but in Croatia it runs through the promotional-prize-game approval route with prize funding and a regulator filing, which is a product decision for FEG, not a hackathon feature. And cash-out-as-control, which is a good reframe but puts a money figure on a surface, so it stays inside the app.
 
 ---
 
@@ -141,7 +183,8 @@ Everything below runs on the phone. The only server component in production is F
  │                Gemma 3 270M (LiteRT-LM) → templates · guard on all output │
  ├──────────────────────────────────────────────────────────────────────────┤
  │ 6. RENDERERS   pure functions of MomentState × ProtectionState            │
- │                Live Update · chip · widget · shortcuts · in-app · alert   │
+ │                Live Update · chip · widget (club-themed) · shortcuts      │
+ │                in-app · alert · recap                                    │
  ├──────────────────────────────────────────────────────────────────────────┤
  │ 7. LEDGER      every decision, every silence, every register check        │
  │                → "Why this?" · compliance view · bandit reward            │
@@ -157,7 +200,7 @@ Everything below runs on the phone. The only server component in production is F
 |---|---|---|---|---|
 | Live Update | Legs, minute, narrated line | Score + minute only, panic action | Never created | Never created |
 | Status chip | `2/3 ✓ · 61'` | `1–0 · 61'` | Never created | Never created |
-| Widget | Full moment card | Match only + reality check + protection status + panic | "Verify to continue" — no odds, no match | Protection status + help only |
+| Widget | Full moment card, club-themed; recap and status when no match is live | Match only + reality check + protection status + panic; recap and club theme still render (no money in them) | "Verify to continue" — no odds, no match | Protection status + help only |
 | Shortcuts | Live match · my slip · scan ticket | Panic · limits · scores | Verify · help | Help only |
 | Alert | ≤ 1/day, settlement or urgent | Never | Never | Never |
 | Offers inbox | Behind four gates | Unreachable | Unreachable | Unreachable |
@@ -218,6 +261,46 @@ data class AgeProof(val verified: Boolean, val method: String, val provenAt: Ins
 
 ---
 
+## 7A. The iOS path (asked at every judging panel)
+
+The engine is platform-neutral Kotlin logic; only the surfaces and the model runtime differ. On iOS the on-device AI story is **stronger** than on Android, because Apple ships the model as a first-party framework rather than a beta wrapper around an OS service that half the devices lack.
+
+### Narrator ladder on iOS
+
+| Tier | What | Cost | Notes |
+|---|---|---|---|
+| 1 | **Apple Foundation Models framework** (iOS 26+) | **0 MB, €0** | Apple's own on-device model. No API key, no per-token bill, no network. `LanguageModelSession` for generation, `SystemLanguageModel.default.availability` for the check. Needs an Apple-Intelligence-capable iPhone |
+| 2 | **Our own model** — Core ML, MLX or LiteRT | Delivered separately | For devices without Apple Intelligence. Shipped via **Background Assets** (On-Demand Resources is deprecated from iOS 27); does not count toward the app's download size |
+| 3 | **Swift templates** | 0 MB | Same contract as the Kotlin templates |
+
+Two things are actually better on iOS. `@Generable` **guided generation** gives typed structured output natively, so the two-line parsing we need on Android disappears. And the 4,000-token context window is far more than a facts-to-one-sentence job needs.
+
+### The App Store question, answered
+
+Guideline 2.5.2 prohibits downloading **code** that introduces or changes app functionality. Model weights are **data**, not code — which is why offline translation and transcription apps ship model downloads today. The safe position is that the app must be complete and functional at review time, with the model improving quality rather than adding capability.
+
+**Our ladder already satisfies that by construction.** The template narrator means the app is fully functional with no model at all; tiers 1 and 2 only make the wording better. That is a cleaner review story than a competitor whose feature simply does not exist without a downloaded model.
+
+### Surface mapping
+
+| Android | iOS | Note |
+|---|---|---|
+| Live Update (`ProgressStyle`) | **Live Activity + Dynamic Island** | The pattern iOS invented; ActivityKit |
+| Status-bar chip | Dynamic Island compact / minimal | Richer than Android's chip |
+| Glance widget | **WidgetKit** | Timeline-driven rather than push-driven |
+| Dynamic shortcuts | **App Intents** + Shortcuts | Also unlocks Siri and Spotlight |
+| — | **Watch complication** | The brief asks for it; Apple Watch is the stronger platform |
+| `ACTION_USER_PRESENT` digest | *No direct equivalent* | Use a widget timeline refresh or a Live Activity update instead — state this honestly |
+
+### Two honest caveats
+
+1. **Less background freedom.** iOS will not let us run an engine on every unlock the way Android does. The digest becomes a widget-timeline decision rather than an event-driven one.
+2. **Apple Intelligence is recent-hardware only**, so tier 2 and 3 carry real traffic — exactly as on Android. The ladder is not a workaround, it is the design.
+
+One line for the deck: *"On iOS the model is free and built into the OS, the surfaces are the ones Apple invented, and the app passes review because it works without any model at all."*
+
+---
+
 ## 8. Remaining build order
 
 Phase 1 (shell) and step 12 (narrator) are done. What is left:
@@ -231,11 +314,12 @@ Phase 1 (shell) and step 12 (narrator) are done. What is left:
 | 15 | Widget, six states, inline actions | 2h 00 |
 | 16 | Digest on unlock · dynamic shortcuts | 1h 15 |
 | 17 | N1 spoken moments · N2 protection status card · N4 compliance view | 1h 30 |
+| 17B | N5 season recap · N6 club identity · N7 status and streaks | 2h 00 |
 | 18 | Retail ticket scan | 1h 15 |
 | 19 | Accessibility pass — contrast, targets, focus, 200% type, reduced motion | 0h 45 |
 | 20 | Pitch, rehearsal, backup video | 2h 30 |
 
-Cut order if time runs short: retail ticket scan → digest alert (keep widget digest) → widget sizes. **Never cut:** the protection layer, the moment engine, the Live Update, Calm Mode.
+Cut order if time runs short: retail ticket scan → N7 status and streaks → N5 season recap → digest alert (keep widget digest) → widget sizes. Keep **N6 club identity** even under pressure — it is 30 minutes and it carries the widget-adoption argument. **Never cut:** the protection layer, the moment engine, the Live Update, Calm Mode.
 
 ---
 
@@ -246,8 +330,10 @@ Cut order if time runs short: retail ticket scan → digest alert (keep widget d
 3. Advance the simulator: a goal lands. Status chip appears, lock screen shows the legs and a sentence written on the device.
 4. **Turn on TalkBack.** The same card reads as a complete sentence. *"Relevance on every surface — including the one you listen to."*
 5. Swipe an update away fast, advance again: the next moment goes to the widget in a shorter tone. Show the bandit's bars moving. *"It learned that in thirty seconds, on the phone."*
-6. Scan a printed retail ticket — it appears on the lock screen like the online slip.
-7. **On the laptop, add the demo player to the synthetic register.** Within one check interval every surface goes calm, the panic button appears on the lock screen, and the protection card says when the register was last checked. *"Not a checkbox — a register."*
-8. Open the compliance view: register checks, blocked renders, offers withheld, pushes sent — zero or one.
-9. Airplane mode on, advance again: everything still works.
-10. Close on the number chain and the three-interface integration.
+6. **Follow a different club.** The widget and the lock-screen card re-theme to its crest and colour in front of the judges. *"It looks like theirs, not ours."*
+7. With no match live, show the widget's recap state — matches followed, predictions right, the streak. *"Counts, never money. That is why it is safe to show a customer who is cutting back."*
+8. Scan a printed retail ticket — it appears on the lock screen like the online slip.
+9. **On the laptop, add the demo player to the synthetic register.** Within one check interval every surface goes calm, the panic button appears on the lock screen, and the protection card says when the register was last checked. *"Not a checkbox — a register."*
+10. Open the compliance view: register checks, blocked renders, offers withheld, pushes sent — zero or one.
+11. Airplane mode on, advance again: everything still works.
+12. Close on the number chain and the three-interface integration.

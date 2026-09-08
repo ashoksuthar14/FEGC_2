@@ -68,6 +68,8 @@ dependencies {
     implementation(libs.coil.compose)
     implementation(libs.mlkit.genai.prompt)
     implementation(libs.litertlm.android)
+    implementation(libs.glance.appwidget)
+    implementation(libs.glance.material3)
 
     debugImplementation(libs.androidx.ui.tooling)
 

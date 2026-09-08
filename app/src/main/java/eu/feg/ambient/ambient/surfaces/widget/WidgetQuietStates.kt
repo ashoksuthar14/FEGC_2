@@ -1,0 +1,141 @@
+package eu.feg.ambient.ambient.surfaces.widget
+
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.unit.dp
+import androidx.glance.GlanceModifier
+import androidx.glance.action.actionStartActivity
+import androidx.glance.appwidget.action.actionRunCallback
+import androidx.glance.layout.Spacer
+import androidx.glance.layout.height
+import androidx.glance.text.Text
+import eu.feg.ambient.MainActivity
+import eu.feg.ambient.ambient.surfaces.ProtectionState
+import eu.feg.ambient.ambient.surfaces.WidgetState
+import kotlinx.datetime.Instant
+
+/**
+ * The four states where nothing is happening, which is most of the time.
+ *
+ * They are in their own file because they are the ones that decide whether the widget earns
+ * its place on a home screen. A card that is blank between slips gets removed, and a removed
+ * widget cannot be the fallback path to the customer when notifications are denied.
+ */
+
+/** "While you were away" — the catch-up, not a nudge to bet. */
+@Composable
+internal fun DigestCard(state: WidgetState.Digest) {
+    WidgetCard(
+        description = "While you were away. " + state.headline + ". " + state.detail,
+        // TODO(step 13B): deep link to the Moments inbox rather than the start destination.
+        onClick = actionStartActivity<MainActivity>(),
+    ) {
+        Text(text = "While you were away", style = WidgetText.meta, maxLines = 1)
+        Spacer(GlanceModifier.height(6.dp))
+        Text(text = state.headline, style = WidgetText.title, maxLines = 2)
+        Spacer(GlanceModifier.height(4.dp))
+        Text(text = state.detail, style = WidgetText.body, maxLines = 3)
+        Spacer(GlanceModifier.defaultWeight())
+        FeedbackRow(muteMatch = null)
+    }
+}
+
+/**
+ * Nothing in flight.
+ *
+ * With a followed team it shows the next fixture; without one it says how to make the widget
+ * useful. It never invents a reason to open the app — an idle widget that advertises is the
+ * fastest way to have the widget removed.
+ */
+@Composable
+internal fun IdleCard(state: WidgetState.Idle) {
+    val fixture = state.nextFixture
+    WidgetCard(
+        description = if (fixture != null) "Next up, " + fixture else FOLLOW_PROMPT,
+        onClick = actionStartActivity<MainActivity>(),
+    ) {
+        if (fixture != null) {
+            Text(text = "Next up", style = WidgetText.meta, maxLines = 1)
+            Spacer(GlanceModifier.height(6.dp))
+            Text(text = fixture, style = WidgetText.title, maxLines = 2)
+            state.kickoff?.let {
+                Spacer(GlanceModifier.height(4.dp))
+                Text(text = untilLabel(it), style = WidgetText.meta, maxLines = 1)
+            }
+        } else {
+            Text(text = FOLLOW_PROMPT, style = WidgetText.body, maxLines = 3)
+        }
+    }
+}
+
+/**
+ * Protection is showing, so the widget shows protection and nothing else.
+ *
+ * The three cases differ in kind, not in degree, which is why they are not one card with a
+ * changing subtitle:
+ *  - CALM       the customer is still betting, so a way out has to be one tap away.
+ *  - UNVERIFIED we do not yet know who this is. No match, no odds, no money, no invitation —
+ *               a neutral card that leads to verification and nowhere else.
+ *  - BLOCKED    the account is closed to play. The only affordance is help.
+ *
+ * Note that a CALM slip with a score is drawn by CalmSlipCard instead: WidgetState.Protected
+ * carries no slip, so when it is the state we have, there is no score to show and we do not
+ * pretend otherwise.
+ */
+@Composable
+internal fun ProtectedCard(protection: ProtectionState, lastRegisterCheck: Instant?) {
+    when (protection) {
+        ProtectionState.UNVERIFIED -> WidgetCard(
+            description = "Verify your account to continue.",
+            onClick = actionStartActivity<MainActivity>(),
+        ) {
+            Text(text = "Verify to continue", style = WidgetText.title, maxLines = 2)
+            Spacer(GlanceModifier.height(6.dp))
+            Text(
+                text = "We need to confirm your details before this can show anything.",
+                style = WidgetText.body,
+                maxLines = 4,
+            )
+        }
+
+        ProtectionState.BLOCKED -> WidgetCard(description = "Your account is protected.") {
+            Text(text = "Account protected", style = WidgetText.title, maxLines = 2)
+            Spacer(GlanceModifier.height(6.dp))
+            Text(text = "Play is paused on this account.", style = WidgetText.body, maxLines = 3)
+            Spacer(GlanceModifier.defaultWeight())
+            WidgetActionButton(
+                label = "Get help",
+                description = "Open support and responsible gambling help",
+                action = actionRunCallback<PanicAction>(),
+                fill = WidgetTokens.surfaceRaised,
+            )
+        }
+
+        ProtectionState.CALM -> WidgetCard(
+            description = "Protection active, register checked " + agoLabel(lastRegisterCheck),
+        ) {
+            Text(text = "Protection active", style = WidgetText.title, maxLines = 2)
+            Spacer(GlanceModifier.height(6.dp))
+            Text(
+                text = "Register checked " + agoLabel(lastRegisterCheck),
+                style = WidgetText.meta,
+                maxLines = 2,
+            )
+            Spacer(GlanceModifier.defaultWeight())
+            WidgetActionButton(
+                label = "Take a break",
+                description = "Open protection tools and take a break",
+                action = actionRunCallback<PanicAction>(),
+                fill = WidgetTokens.surfaceRaised,
+            )
+        }
+
+        // NORMAL should never reach here — the controller only sends Protected when it is not
+        // normal. Rendering the neutral card rather than throwing keeps a wiring mistake from
+        // becoming a crash on someone's home screen.
+        ProtectionState.NORMAL -> WidgetCard(description = "Nothing to show right now.") {
+            Text(text = FOLLOW_PROMPT, style = WidgetText.body, maxLines = 3)
+        }
+    }
+}
+
+internal const val FOLLOW_PROMPT = "Follow a team to see it here"

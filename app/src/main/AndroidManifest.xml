@@ -1,6 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- Runtime permission, asked at bet placement rather than at launch. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Normal permission: lets an ongoing notification be promoted to the lock screen. -->
+    <uses-permission android:name="android.permission.POST_PROMOTED_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+
     <application
         android:name=".AmbientApp"
         android:allowBackup="true"
@@ -18,6 +25,28 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <!-- Keeps the Live Update ticking while the app is backgrounded. dataSync covers a
+             90-minute match; production would agree the final type with Google. -->
+        <service
+            android:name=".ambient.surfaces.LiveSlipService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+
+        <receiver
+            android:name=".ambient.surfaces.widget.AmbientWidgetReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/ambient_widget_info" />
+        </receiver>
+
+        <receiver
+            android:name=".ambient.surfaces.live.DismissReceiver"
+            android:exported="false" />
+
         <!-- Optional: lets a GPU backend load later. Absent on some devices, hence required=false. -->
         <uses-native-library android:name="libvndksupport.so" android:required="false" />
         <uses-native-library android:name="libOpenCL.so" android:required="false" />
