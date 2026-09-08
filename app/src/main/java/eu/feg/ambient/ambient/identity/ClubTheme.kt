@@ -143,12 +143,13 @@ object ClubThemes {
     fun forTeam(name: String): ClubTheme = byName(name) ?: neutral(name)
 
     private fun neutral(name: String): ClubTheme {
-        val initials = name.split(" ", "-", "\u2013")
-            .filter { it.isNotBlank() }
-            .take(2)
-            .joinToString("") { it.first().uppercaseChar().toString() }
-            .ifBlank { "?" }
-        return club("", name, initials.take(3), psk.surfaceRaised, initials, psk.surfaceVariant, ClubPattern.SOLID)
+        val words = name.split(' ', '-', '\u2013').filter { it.isNotBlank() }
+        // "Ipswich" -> IPS, "Real Madrid" -> RM. A one-word club gets a three-letter code, the
+        // way a scoreboard writes it; a lone "I" on a crest reads as nothing at all.
+        val code = if (words.size == 1) words[0].take(3).uppercase()
+        else words.take(3).joinToString("") { it.first().uppercaseChar().toString() }
+        val safe = code.ifBlank { "?" }
+        return club("", name, safe.take(3), psk.surfaceRaised, safe, psk.surfaceVariant, ClubPattern.SOLID)
     }
 
     /** Team names arrive from the fixtures as text; the narrator's facts carry no ids. */

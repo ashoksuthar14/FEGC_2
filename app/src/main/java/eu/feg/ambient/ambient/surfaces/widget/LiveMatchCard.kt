@@ -234,7 +234,7 @@ private fun Divider() {
 private fun Actions(slip: SlipSurfaceState, feedback: FeedbackMark?) {
     val match = (slip.homeTeam ?: "the home side") + " versus " + (slip.awayTeam ?: "the away side")
     Row(modifier = GlanceModifier.fillMaxWidth().height(44.dp), verticalAlignment = Alignment.Vertical.CenterVertically) {
-        ActionItem(R.drawable.ic_ball, "Live Updates", "Live updates for " + match, actionRunCallback<ToggleLiveUpdateAction>())
+        ActionItem(R.drawable.ic_ball, "Live", "Live updates for " + match, actionRunCallback<ToggleLiveUpdateAction>())
         VDivider()
         if (feedback == null) {
             ActionItem(R.drawable.ic_thumb_up, "Like", "Like this update", actionRunCallback<ThumbsUpAction>())
@@ -268,6 +268,9 @@ private fun CalmActions(slip: SlipSurfaceState) {
 
 @Composable
 private fun RowScope.ActionItem(icon: Int, label: String, description: String, action: Action) {
+    // Four labelled actions do not fit a 4-cell card at large font sizes; the labels give
+    // way and the icons stay. The description still says what each one does.
+    val showLabel = LocalContext.current.resources.configuration.fontScale < 1.5f
     Row(
         modifier = GlanceModifier
             .defaultWeight()
@@ -288,8 +291,10 @@ private fun RowScope.ActionItem(icon: Int, label: String, description: String, a
                 colorFilter = ColorFilter.tint(ColorProvider(WHITE)),
             )
         }
-        Spacer(GlanceModifier.width(10.dp))
-        Text(text = label, style = TextStyle(ColorProvider(WHITE), 13.sp), maxLines = 1)
+        if (showLabel) {
+            Spacer(GlanceModifier.width(6.dp))
+            Text(text = label, style = TextStyle(ColorProvider(WHITE), 12.sp), maxLines = 1)
+        }
     }
 }
 
