@@ -127,8 +127,12 @@ class SurfaceCoordinator(
      * The live slip id lives in memory, so without this a process death — or simply swiping
      * the app away — silently ended a Live Update the user could still see a match for. The
      * bet is the durable thing; the card should follow it rather than the process.
+     *
+     * Public because it is also how a slip that arrives after start() gets its surfaces:
+     * DemoStage tracks one and calls this, so the demo's card is raised by the product's own
+     * path instead of by a second one written for the stage.
      */
-    private fun resumeOpenSlip() {
+    fun resumeOpenSlip() {
         scope.launch {
             val open = betRepository.placedBets.value.firstOrNull {
                 it.status == BetStatus.OPEN && hasLiveLeg(it)

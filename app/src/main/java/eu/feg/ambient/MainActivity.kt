@@ -12,7 +12,9 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.ui.graphics.toArgb
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
+import eu.feg.ambient.ambient.surfaces.DemoStage
 import eu.feg.ambient.ambient.surfaces.notifications.NotificationPermission
+import eu.feg.ambient.ambient.surfaces.widget.WidgetRefresher
 import kotlinx.coroutines.launch
 import eu.feg.ambient.ui.nav.AppNavHost
 import eu.feg.ambient.ui.theme.PskColors
@@ -28,6 +30,23 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         (application as? AmbientApp)?.container?.awayTracker?.markInteraction()
+    }
+
+    /**
+     * Leaving the app starts the away period, in debug builds only.
+     *
+     * The catch-up card is real in every other respect -- real ledger rows, real ranking,
+     * real narration -- but it will not build until the customer has been gone an hour, and
+     * a demo cannot wait an hour. Compressing that one gap is the whole of the fiction; see
+     * [DemoStage.armAwayPeriod]. The widgets are redrawn straight after, because the launcher
+     * would otherwise show yesterday's card until something else happened to poke it.
+     */
+    override fun onStop() {
+        super.onStop()
+        if (!BuildConfig.DEBUG) return
+        val container = (application as? AmbientApp)?.container ?: return
+        DemoStage.armAwayPeriod(container)
+        lifecycleScope.launch { WidgetRefresher.refreshAll(applicationContext) }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

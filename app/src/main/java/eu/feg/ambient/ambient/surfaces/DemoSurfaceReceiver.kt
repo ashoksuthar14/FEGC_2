@@ -16,6 +16,7 @@ import eu.feg.ambient.ambient.ticket.ScannedTicket
 import eu.feg.ambient.ambient.ticket.TicketLookupResult
 import eu.feg.ambient.ambient.narrator.Tone
 import kotlin.time.Duration.Companion.days
+import eu.feg.ambient.ambient.surfaces.widget.WidgetRefresher
 import eu.feg.ambient.ambient.surfaces.widget.applyMute
 import eu.feg.ambient.ambient.surfaces.widget.applyThumbs
 import kotlinx.coroutines.CoroutineScope
@@ -31,6 +32,7 @@ import kotlinx.coroutines.launch
  * phone, and awkward when someone else is using the device. This receiver exposes the same
  * SurfaceController calls to:
  *
+ *   adb shell am broadcast -a eu.feg.ambient.DEMO_SURFACE --es action stage
  *   adb shell am broadcast -a eu.feg.ambient.DEMO_SURFACE --es action start
  *   adb shell am broadcast -a eu.feg.ambient.DEMO_SURFACE --es action goal
  *   adb shell am broadcast -a eu.feg.ambient.DEMO_SURFACE --es action minute
@@ -61,6 +63,21 @@ class DemoSurfaceReceiver : BroadcastReceiver() {
 
         scope.launch {
             when (action) {
+                // Re-arms the whole stage: a slip, its Live Update, and real ledger rows
+                // for the catch-up. This is what AmbientApp runs on a cold start, exposed
+                // here so a demo can be reset without force-stopping the app.
+                "stage" -> {
+                    val armed = DemoStage.arm(app.container)
+                    DemoStage.armAwayPeriod(app.container)
+                    WidgetRefresher.refreshAll(context)
+                    // Asked here rather than trusted: the catch-up is built from ledger rows
+                    // the engine wrote a moment ago, and "it should work" is not a check.
+                    val digest = app.container.peekDigest()
+                    Log.i(TAG, "stage armed=" + armed +
+                        ", digest=" + (digest?.headline ?: "none") +
+                        " (" + (digest?.items?.size ?: 0) + " items)")
+                }
+
                 "start" -> {
                     // Narrated, like the real path. Without this the demo card carries no
                     // spoken variant and Listen falls back to the plain sentence, which is

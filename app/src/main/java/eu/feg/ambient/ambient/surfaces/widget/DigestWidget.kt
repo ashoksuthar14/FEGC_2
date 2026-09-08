@@ -65,6 +65,12 @@ class DigestWidget : GlanceAppWidget() {
         // The next fixture, if the family's shared store happens to know it, so the quiet
         // state has something true to say rather than a blank.
         val idle = store.load() as? WidgetState.Idle
+        // "Nothing needs you right now" and "this widget is broken" look identical on the
+        // home screen. This is the line that tells them apart.
+        android.util.Log.i(
+            "DigestWidget",
+            "compose " + id + " -> " + (digest?.let { it.items.size.toString() + " items" } ?: "quiet"),
+        )
         provideContent {
             // Keyed on the store's version, like AmbientWidget: Glance keeps a composition
             // alive between updates, so anything read once before provideContent stays frozen

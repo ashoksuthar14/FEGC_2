@@ -1,7 +1,12 @@
 package eu.feg.ambient
 
 import android.app.Application
+import eu.feg.ambient.ambient.surfaces.DemoStage
 import eu.feg.ambient.core.AppContainer
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 
 /**
  * Holds the single [AppContainer]. No DI framework — plain constructors, per PRD section 2.3.
@@ -24,6 +29,13 @@ class AmbientApp : Application() {
         // the manifest. It only reaches us while this process happens to be alive, which is
         // why it is an enhancement and the widget is the trigger.
         container.unlockWatcher.register()
+        // A cold start leaves every ambient surface empty, because every one of them is
+        // downstream of a placed slip. DemoStage places one and reports three fixtures to the
+        // engine, so the lock screen, the widget family and the catch-up all have something
+        // true on them before anyone taps anything. It stands down if a real slip exists.
+        if (BuildConfig.DEBUG) {
+            CoroutineScope(SupervisorJob() + Dispatchers.Default).launch { DemoStage.arm(container) }
+        }
         if (BuildConfig.DEBUG) container.logNarratorSelfTest()
     }
 
