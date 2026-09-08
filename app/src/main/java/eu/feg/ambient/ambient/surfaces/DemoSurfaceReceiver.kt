@@ -11,6 +11,9 @@ import eu.feg.ambient.ambient.narrator.MomentType
 import eu.feg.ambient.ambient.narrator.NarratorLanguage
 import eu.feg.ambient.ambient.narrator.TemplateNarrator
 import eu.feg.ambient.ambient.recap.RecapPeriod
+import eu.feg.ambient.data.model.RiskState
+import eu.feg.ambient.ambient.ticket.ScannedTicket
+import eu.feg.ambient.ambient.ticket.TicketLookupResult
 import eu.feg.ambient.ambient.narrator.Tone
 import kotlin.time.Duration.Companion.days
 import eu.feg.ambient.ambient.surfaces.widget.applyMute
@@ -42,6 +45,8 @@ import kotlinx.coroutines.launch
  *   adb shell am broadcast -a eu.feg.ambient.DEMO_SURFACE --es action away --ei minutes 90
  *   adb shell am broadcast -a eu.feg.ambient.DEMO_SURFACE --es action seed --ei days 30
  *   adb shell am broadcast -a eu.feg.ambient.DEMO_SURFACE --es action recap --es period month
+ *   adb shell am broadcast -a eu.feg.ambient.DEMO_SURFACE --es action ticket --es code PSK-DEMO-0001
+ *   adb shell am broadcast -a eu.feg.ambient.DEMO_SURFACE --es action risk --es state calm
  *
  * Debug builds only — it is registered behind a manifest flag and does nothing in release.
  */
@@ -145,6 +150,40 @@ class DemoSurfaceReceiver : BroadcastReceiver() {
                         else -> WidgetState.Live(slip)
                     }
                     controller.refreshWidget(state)
+                }
+
+                // Real CALM, through UserState, not a styling flag on the demo slip: the
+                // evaluator derives it and every surface follows. "normal" puts it back.
+                "risk" -> {
+                    val calm = intent.getStringExtra("state") != "normal"
+                    app.container.userStateRepository.setRiskState(
+                        if (calm) RiskState.AT_RISK else RiskState.NORMAL,
+                    )
+                    Log.i(TAG, "risk -> " + app.container.protectionEvaluator.evaluate())
+                }
+
+                // Step 18: the retail slip, without the camera. This is the same seam the
+                // scanner calls -- lookup, then track -- so it exercises the feature rather
+                // than a shortcut around it, and it is the demo's insurance if the camera
+                // fails on stage. The camera itself is the only thing this cannot test.
+                "ticket" -> {
+                    val code = intent.getStringExtra("code") ?: "PSK-DEMO-0001"
+                    val scanned = ScannedTicket(code, "MANUAL", app.container.clock.now())
+                    when (val result = app.container.ticketLookup.lookup(scanned)) {
+                        is TicketLookupResult.Found -> {
+                            val tracked = app.container.ticketTracker.track(result.bet)
+                            Log.i(TAG, "ticket " + code + " -> Found, tracked=" + tracked +
+                                ", legs=" + result.bet.legs.size + ", source=" + result.bet.source)
+                        }
+                        is TicketLookupResult.AlreadyTracked ->
+                            Log.i(TAG, "ticket " + code + " -> AlreadyTracked " + result.betId)
+                        is TicketLookupResult.Settled ->
+                            Log.i(TAG, "ticket " + code + " -> Settled, status=" + result.bet.status)
+                        is TicketLookupResult.Invalid ->
+                            Log.i(TAG, "ticket " + code + " -> Invalid: " + result.reason)
+                        TicketLookupResult.NotFound ->
+                            Log.i(TAG, "ticket " + code + " -> NotFound")
+                    }
                 }
 
                 // 17B: a month of history for the recap. Rows are labelled "Demo seed" and
