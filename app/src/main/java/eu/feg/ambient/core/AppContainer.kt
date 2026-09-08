@@ -23,7 +23,7 @@ import eu.feg.ambient.data.repo.UserStateRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import eu.feg.ambient.ambient.narrator.NarratorEngine
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -63,6 +63,17 @@ class AppContainer(context: Context) {
     private val liteRtNarrator = LiteRtNarrator(liteRtEngine, fallback = templateNarrator)
 
     /**
+     * Whether the local Gemma rung may run.
+     *
+     * This was off while the first generation terminated the process. The cause turned out
+     * to be ours: an uncapped output token budget and native calls spread across threads.
+     * With both fixed it is on, and the diagnostics screen can still disable it if a device
+     * misbehaves — process death is the one failure the ladder cannot catch.
+     */
+    @Volatile
+    var localGenerationEnabled: Boolean = true
+
+    /**
      * Built on every access from the current probe results: Nano first when the OS has it,
      * then our own Gemma, then templates.
      *
@@ -74,7 +85,9 @@ class AppContainer(context: Context) {
         get() = LadderNarrator(
             buildList {
                 if (nanoAvailability.state.value is NanoState.Available) add(nanoNarrator)
-                if (liteRtEngine.state.value is EngineState.Ready) add(liteRtNarrator)
+                if (localGenerationEnabled && liteRtEngine.state.value is EngineState.Ready) {
+                    add(liteRtNarrator)
+                }
                 add(templateNarrator)
             },
         )
@@ -86,9 +99,13 @@ class AppContainer(context: Context) {
     val nanoOrNull: Narrator?
         get() = if (nanoAvailability.state.value is NanoState.Available) nanoNarrator else null
 
-    /** Null until the local model is loaded; the Lab shows why in that case. */
+    /** Null unless the local model is loaded and generation has been explicitly enabled. */
     val localGemmaOrNull: Narrator?
-        get() = if (liteRtEngine.state.value is EngineState.Ready) liteRtNarrator else null
+        get() = if (localGenerationEnabled && liteRtEngine.state.value is EngineState.Ready) {
+            liteRtNarrator
+        } else {
+            null
+        }
 
     init {
         nanoAvailability.check()
@@ -114,6 +131,7 @@ class AppContainer(context: Context) {
      */
     fun logNarratorSelfTest() {
         appScope.launch {
+            if (!localGenerationEnabled) return@launch
             liteRtEngine.state.first { it is EngineState.Ready }
 
             val cases = listOf(
@@ -122,35 +140,20 @@ class AppContainer(context: Context) {
                 Triple(MomentType.AWAY_DIGEST, Tone.PLAIN, NarratorLanguage.EN),
             )
             cases.forEach { (type, tone, language) ->
+                // Spaced out: LiteRT holds native state per conversation, and running them
+                // back to back on a memory-pressured phone gets the process killed.
+                delay(1_500)
+                val started = System.currentTimeMillis()
                 val result = narrator.narrate(eu.feg.ambient.ui.lab.sampleFacts(type), tone, language)
+                val wall = System.currentTimeMillis() - started
                 Log.i(
                     SELF_TEST_TAG,
                     type.name + " / " + tone.name + " / " + language.name +
-                        " | engine=" + result.engine.name + " | " + result.latencyMs + "ms" +
+                        " | engine=" + result.engine.name + " | " + wall + "ms" +
                         " | H: " + result.headline + " | D: " + result.detail,
                 )
             }
 
-            // The full sweep, so we can report how often the model actually carried it.
-            var localCount = 0
-            val latencies = mutableListOf<Long>()
-            MomentType.entries.forEach { type ->
-                Tone.entries.forEach { tone ->
-                    NarratorLanguage.entries.forEach { language ->
-                        val r = narrator.narrate(eu.feg.ambient.ui.lab.sampleFacts(type), tone, language)
-                        latencies += r.latencyMs
-                        if (r.engine == NarratorEngine.LOCAL_GEMMA) localCount++
-                    }
-                }
-            }
-            val sorted = latencies.sorted()
-            Log.i(
-                SELF_TEST_TAG,
-                "SWEEP total=" + latencies.size + " localGemma=" + localCount +
-                    " template=" + (latencies.size - localCount) +
-                    " medianMs=" + sorted[sorted.size / 2] +
-                    " maxMs=" + sorted.last(),
-            )
         }
     }
 

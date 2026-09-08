@@ -27,10 +27,19 @@ class AiDiagnosticsViewModel(private val container: AppContainer) : ViewModel() 
 
     fun reinitialize() = container.liteRtEngine.initialize()
 
+    val localGenerationEnabled: Boolean get() = container.localGenerationEnabled
+
+    /** Off by default: generation terminates the process on this device. */
+    fun toggleLocalGeneration() {
+        container.localGenerationEnabled = !container.localGenerationEnabled
+    }
+
     val activeEngineLabel: String
         get() = buildList {
             if (nanoState.value is NanoState.Available) add("Nano")
-            if (engineState.value is EngineState.Ready) add("Local Gemma")
+            if (container.localGenerationEnabled && engineState.value is EngineState.Ready) {
+                add("Local Gemma")
+            }
             add("Template")
         }.joinToString(" → ")
 

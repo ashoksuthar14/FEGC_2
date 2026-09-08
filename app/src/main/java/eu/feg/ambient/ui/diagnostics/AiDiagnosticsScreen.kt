@@ -173,7 +173,24 @@ fun AiDiagnosticsScreen(
                         fontFamily = FontFamily.Monospace,
                     )
                 }
-                Action("Re-initialize", enabled = true, onClick = viewModel::reinitialize)
+                Text(
+                    text = if (viewModel.localGenerationEnabled) {
+                        "Generation ENABLED — experimental."
+                    } else {
+                        "Generation is off. The engine loads, but the first generation ends " +
+                            "the process on this device, so the ladder runs templates."
+                    },
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (viewModel.localGenerationEnabled) psk.jackpotYellow else psk.textSecondary,
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Action("Re-initialize", enabled = true, onClick = viewModel::reinitialize)
+                    Action(
+                        label = if (viewModel.localGenerationEnabled) "Disable generation" else "Enable generation",
+                        enabled = true,
+                        onClick = viewModel::toggleLocalGeneration,
+                    )
+                }
             }
         }
 

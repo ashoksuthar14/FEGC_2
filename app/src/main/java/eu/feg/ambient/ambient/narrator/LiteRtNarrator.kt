@@ -1,9 +1,9 @@
 package eu.feg.ambient.ambient.narrator
 
 import android.util.Log
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.NonCancellable
-import kotlinx.coroutines.flow.catch
+import com.google.ai.edge.litertlm.Content
+import com.google.ai.edge.litertlm.ConversationConfig
+import com.google.ai.edge.litertlm.Message
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 
@@ -16,11 +16,8 @@ import kotlinx.coroutines.withTimeout
 class LiteRtNarrator(
     private val holder: LiteRtEngineHolder,
     private val fallback: Narrator,
-    /**
-     * Generous on purpose. This runs on CPU, and a timeout here means abandoning a native
-     * conversation rather than cancelling it, so it should fire only on a genuine hang.
-     */
-    private val timeoutMillis: Long = 15_000,
+    /** Generous on purpose: this runs on the CPU, and the call itself blocks. */
+    private val timeoutMillis: Long = 20_000,
 ) : Narrator {
 
     override suspend fun narrate(
@@ -37,30 +34,35 @@ class LiteRtNarrator(
         // The same prompt Nano would have been given — one builder, not two.
         val prompt = NanoPrompt.build(facts, tone, language)
 
-        // A fresh conversation per moment: a goal must not carry context into a settlement.
-        val conversation = runCatching { engine.createConversation() }.getOrNull()
-            ?: return fallback.narrate(facts, tone, language)
-
         val raw: String? = try {
-            val text = withTimeout(timeoutMillis) {
-                withContext(Dispatchers.IO) {
-                    val sb = StringBuilder()
-                    conversation.sendMessageAsync(prompt)
-                        .catch { Log.w(TAG, "generation stream failed", it) }
-                        .collect { chunk -> sb.append(chunk) }
-                    sb.toString()
+            withTimeout(timeoutMillis) {
+                // One thread for every native call. Creating a conversation on one thread and
+                // generating on another is not safe with this runtime.
+                withContext(holder.nativeDispatcher) {
+                    // A fresh conversation per moment, capped: a goal must not carry context
+                    // into a settlement, and an uncapped small model will generate until it
+                    // exhausts the context window.
+                    val conversation = engine.createConversation(
+                        ConversationConfig(maxOutputToken = LiteRtEngineHolder.MAX_OUTPUT_TOKENS),
+                    )
+                    try {
+                        // Blocking sendMessage, deliberately, not sendMessageAsync.
+                        //
+                        // sendMessageAsync in litertlm 0.16.1 was built against an older
+                        // kotlinx-coroutines: its completion callback calls
+                        // SendChannel.close$default, which no longer exists in 1.10.x. That
+                        // throws NoSuchMethodError on the runtime's own raw callback thread,
+                        // where no catch of ours can reach it, and the process dies. The
+                        // synchronous call touches no channels and has no such dependency.
+                        conversation.sendMessage(prompt).textOrNull()
+                    } finally {
+                        // Same thread as creation and generation, after the call returned.
+                        runCatching { conversation.close() }
+                    }
                 }
             }
-            // Only safe to close once the stream has actually finished. NonCancellable so a
-            // cancelled caller cannot skip it and leak the conversation.
-            withContext(NonCancellable) { runCatching { conversation.close() } }
-            text
         } catch (t: Throwable) {
-            // Deliberately NOT closing here. LiteRT's native callback thread may still be
-            // mid-generation; closing underneath it dereferences freed state and takes the
-            // whole process down with SIGSEGV, which no Kotlin catch can recover from.
-            // Abandoning one conversation leaks a little native memory; it does not crash.
-            Log.w(TAG, "Gemma generation failed or timed out, abandoning conversation", t)
+            Log.w(TAG, "Gemma generation failed or timed out", t)
             null
         }
 
@@ -86,6 +88,13 @@ class LiteRtNarrator(
         }
         return candidate
     }
+
+    /** A reply can carry several parts; only the text ones matter to us. */
+    private fun Message.textOrNull(): String? =
+        contents.contents
+            .filterIsInstance<Content.Text>()
+            .joinToString("") { it.text }
+            .takeIf { it.isNotBlank() }
 
     private companion object {
         const val TAG = "LiteRtNarrator"

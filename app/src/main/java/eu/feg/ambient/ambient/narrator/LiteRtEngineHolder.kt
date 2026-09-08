@@ -6,6 +6,7 @@ import com.google.ai.edge.litertlm.Backend
 import com.google.ai.edge.litertlm.Engine
 import com.google.ai.edge.litertlm.EngineConfig
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -13,6 +14,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.util.concurrent.Executors
 
 /** Where the LiteRT-LM engine is in its life cycle. */
 sealed interface EngineState {
@@ -58,6 +60,15 @@ class LiteRtEngineHolder(
     private val _state = MutableStateFlow<EngineState>(EngineState.NotPresent(modelFile.absolutePath))
     val state: StateFlow<EngineState> = _state.asStateFlow()
 
+    /**
+     * Every native call — create, initialise, generate, close — runs on this one thread.
+     * The runtime posts completions to its own `callback_thread`, and touching a
+     * conversation from a different thread than the one that made it crashed the process.
+     */
+    val nativeDispatcher = Executors.newSingleThreadExecutor { r ->
+        Thread(r, "litertlm-native")
+    }.asCoroutineDispatcher()
+
     @Volatile
     var engine: Engine? = null
         private set
@@ -85,7 +96,7 @@ class LiteRtEngineHolder(
             }
 
             publish(EngineState.Initializing)
-            publish(withContext(Dispatchers.IO) {
+            publish(withContext(nativeDispatcher) {
                 try {
                     engine?.runCatching { close() }
                     val started = System.nanoTime()
@@ -95,6 +106,10 @@ class LiteRtEngineHolder(
                             // GPU for Gemma 3 270M on Android is still work in progress
                             // upstream; CPU is the dependable choice for a demo.
                             backend = Backend.CPU(),
+                            // Bounds the KV cache. Left unset the runtime sizes it for the
+                            // model's full context, which is far more than two short lines
+                            // of output need and is enough to take the process down.
+                            maxNumTokens = MAX_CONTEXT_TOKENS,
                             cacheDir = appContext.cacheDir.absolutePath,
                         ),
                     )
@@ -115,6 +130,12 @@ class LiteRtEngineHolder(
     }
 
     companion object {
+        /** Prompt plus two short lines of output fits easily; the default does not bound it. */
+        const val MAX_CONTEXT_TOKENS = 1024
+
+        /** HEADLINE + DETAIL is about 60 tokens. This stops a small model rambling forever. */
+        const val MAX_OUTPUT_TOKENS = 128
+
         const val DEFAULT_MODEL = "gemma3-270m-it-q8.litertlm"
         const val RUNTIME_VERSION = "com.google.ai.edge.litertlm:litertlm-android:0.16.1"
         private const val TAG = "LiteRtEngine"
