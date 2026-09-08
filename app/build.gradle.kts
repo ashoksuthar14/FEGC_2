@@ -42,6 +42,9 @@ android {
 
     testOptions {
         unitTests.isIncludeAndroidResources = true
+        // android.util.Log is unmocked on the JVM and throws. The narrator logs which guard
+        // rule tripped, which the spec asks for, so let the stubs return defaults instead.
+        unitTests.isReturnDefaultValues = true
     }
 }
 
@@ -61,11 +64,13 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.datetime)
     implementation(libs.coil.compose)
+    implementation(libs.mlkit.genai.prompt)
 
     debugImplementation(libs.androidx.ui.tooling)
 
     testImplementation(libs.junit)
     testImplementation(libs.robolectric)
+    testImplementation(libs.kotlinx.coroutines.test)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))

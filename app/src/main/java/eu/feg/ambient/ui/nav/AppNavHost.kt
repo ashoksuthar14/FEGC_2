@@ -49,8 +49,12 @@ import eu.feg.ambient.ui.betslip.BetSlipScreen
 import eu.feg.ambient.ui.betslip.BetSlipViewModel
 import eu.feg.ambient.ui.casino.CasinoScreen
 import eu.feg.ambient.ui.casino.GameLoadingScreen
+import eu.feg.ambient.ui.diagnostics.AiDiagnosticsScreen
+import eu.feg.ambient.ui.diagnostics.AiDiagnosticsViewModel
 import eu.feg.ambient.ui.home.HomeScreen
 import eu.feg.ambient.ui.home.HomeViewModel
+import eu.feg.ambient.ui.lab.NarratorLabScreen
+import eu.feg.ambient.ui.lab.NarratorLabViewModel
 import eu.feg.ambient.ui.live.LiveScreen
 import eu.feg.ambient.ui.live.LiveViewModel
 import eu.feg.ambient.ui.match.MatchDetailScreen
@@ -68,10 +72,23 @@ private val MORE_ITEMS = listOf(
     "Champions Club", "Branches", "Help", "Responsible gaming", "Settings",
 )
 
+/** Phase 2 test benches, kept under their own heading so they read as developer tools. */
+private val DEVELOPER_ITEMS = listOf("AI diagnostics", "Narrator Lab")
+
 /** PRD section 4 — one Activity, one NavHost, five tabs plus a More sheet. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AppNavHost(container: AppContainer, modifier: Modifier = Modifier) {
+fun AppNavHost(
+    container: AppContainer,
+    modifier: Modifier = Modifier,
+    /**
+     * Lets a launch intent open a screen directly, e.g.
+     * `am start -n eu.feg.ambient/.MainActivity --es route narrator_lab`.
+     * The app's own navigation never sets this; it exists so screens deep in the More sheet
+     * can be reached deterministically for screenshots and demos.
+     */
+    startRoute: String? = null,
+) {
     val psk = LocalPskColors.current
     val navController: NavHostController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
@@ -153,7 +170,7 @@ fun AppNavHost(container: AppContainer, modifier: Modifier = Modifier) {
     ) { inner ->
         NavHost(
             navController = navController,
-            startDestination = Routes.SPORT,
+            startDestination = startRoute ?: Routes.SPORT,
             modifier = Modifier.padding(inner),
         ) {
             composable(Routes.SPORT) {
@@ -240,6 +257,20 @@ fun AppNavHost(container: AppContainer, modifier: Modifier = Modifier) {
             }
 
             composable(Routes.PROMO) { PromoScreen(content.promos) }
+
+            composable(Routes.AI_DIAGNOSTICS) {
+                val vm: AiDiagnosticsViewModel = viewModel(
+                    factory = PskViewModelFactory(container) { AiDiagnosticsViewModel(it) },
+                )
+                AiDiagnosticsScreen(vm)
+            }
+
+            composable(Routes.NARRATOR_LAB) {
+                val vm: NarratorLabViewModel = viewModel(
+                    factory = PskViewModelFactory(container) { NarratorLabViewModel(it) },
+                )
+                NarratorLabScreen(vm)
+            }
             composable(Routes.SCAN_TICKET) { ScanTicketScreen() }
             composable(Routes.GAME_LOADING) { GameLoadingScreen() }
         }
@@ -252,7 +283,16 @@ fun AppNavHost(container: AppContainer, modifier: Modifier = Modifier) {
             containerColor = psk.surface,
         ) {
             Column(Modifier.padding(bottom = 24.dp)) {
-                MORE_ITEMS.forEach { item ->
+                (MORE_ITEMS + "Developer" + DEVELOPER_ITEMS).forEach { item ->
+                    if (item == "Developer") {
+                        Text(
+                            text = "Developer",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = psk.textSecondary,
+                            modifier = Modifier.padding(start = 20.dp, top = 14.dp, bottom = 4.dp),
+                        )
+                        return@forEach
+                    }
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -262,6 +302,8 @@ fun AppNavHost(container: AppContainer, modifier: Modifier = Modifier) {
                                     "Responsible gaming" ->
                                         navController.navigate(Routes.RESPONSIBLE_GAMING)
                                     "Promo" -> navController.navigate(Routes.PROMO)
+                                    "AI diagnostics" -> navController.navigate(Routes.AI_DIAGNOSTICS)
+                                    "Narrator Lab" -> navController.navigate(Routes.NARRATOR_LAB)
                                 }
                             }
                             .padding(horizontal = 20.dp, vertical = 14.dp),

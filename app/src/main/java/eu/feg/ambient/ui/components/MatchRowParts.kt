@@ -25,6 +25,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.layout.Column
+import androidx.compose.ui.tooling.preview.Preview
+import eu.feg.ambient.ui.theme.PskTheme
 import eu.feg.ambient.ui.theme.LocalPskColors
 import eu.feg.ambient.ui.theme.PskShapes
 
@@ -141,5 +144,34 @@ fun BadgeChip(text: String, modifier: Modifier = Modifier) {
             maxLines = 1,
             overflow = TextOverflow.Clip,
         )
+    }
+}
+
+@Preview(name = "Row parts", showBackground = true, backgroundColor = 0xFF0E0E10)
+@Composable
+private fun MatchRowPartsPreview() {
+    PskTheme {
+        Column(
+            Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                TeamCrest("Liverpool")
+                TeamCrest("Betis")
+                TeamCrest("NK Lucko")
+                TeamCrest("Imisli FK")
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                KickoffChip("tomorrow 00:30")
+                BadgeChip("BB")
+                BadgeChip("90+")
+                BadgeChip("STREAM")
+            }
+            LiveMinuteChip("1. poluvrijeme - 44m")
+            LiveMinuteChip("Pauza")
+        }
     }
 }

@@ -17,6 +17,8 @@ object Routes {
     const val PROMO = "promo"
     const val SCAN_TICKET = "scan"
     const val GAME_LOADING = "game"
+    const val AI_DIAGNOSTICS = "ai_diagnostics"
+    const val NARRATOR_LAB = "narrator_lab"
 
     fun match(matchId: String) = "match/" + matchId
 }

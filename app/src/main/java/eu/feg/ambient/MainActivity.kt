@@ -20,9 +20,10 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         val container = (application as AmbientApp).container
+        val startRoute = intent?.getStringExtra("route")
         setContent {
             PskTheme {
-                AppNavHost(container)
+                AppNavHost(container, startRoute = startRoute)
             }
         }
     }

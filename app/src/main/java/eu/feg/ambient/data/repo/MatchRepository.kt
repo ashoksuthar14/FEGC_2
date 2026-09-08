@@ -77,6 +77,19 @@ class MatchRepository(
             } else {
                 match.minute ?: 0
             }
+
+            // Full time. Without this the clock runs to "177m" and nothing ever settles.
+            if (advanced > FULL_TIME) {
+                return@map match.copy(
+                    state = MatchState.FINISHED,
+                    minute = FULL_TIME,
+                    period = "Kraj",
+                    markets = match.markets.map { market ->
+                        market.copy(outcomes = market.outcomes.map { it.copy(locked = true) })
+                    },
+                )
+            }
+
             val period = periodFor(advanced, match.period)
 
             if (match.id != scorerId) {
@@ -106,11 +119,40 @@ class MatchRepository(
             )
         }
         _oddsMoves.value = moves
+        promoteKickoffs()
+    }
+
+    /**
+     * Keeps the Live screen populated for as long as the demo runs: every match that reaches
+     * full time hands off to the next prematch fixture, which kicks off at minute 1.
+     */
+    private fun promoteKickoffs() {
+        val live = _matches.value.count { it.state == MatchState.LIVE }
+        if (live >= TARGET_LIVE) return
+
+        val next = _matches.value
+            .filter { it.state == MatchState.PREMATCH }
+            .minByOrNull { it.kickoff }
+            ?: return
+
+        _matches.value = _matches.value.map { match ->
+            if (match.id != next.id) {
+                match
+            } else {
+                match.copy(
+                    state = MatchState.LIVE,
+                    minute = 1,
+                    period = "1. poluvrijeme",
+                    homeScore = 0,
+                    awayScore = 0,
+                )
+            }
+        }
     }
 
     private fun periodFor(minute: Int, current: String?): String = when {
-        current == "Pauza" && minute < 46 -> "Pauza"
-        minute <= 45 -> "1. poluvrijeme"
+        current == "Pauza" && minute < HALF_TIME + 1 -> "Pauza"
+        minute <= HALF_TIME -> "1. poluvrijeme"
         else -> "2. poluvrijeme"
     }
 
@@ -120,5 +162,13 @@ class MatchRepository(
 
         /** Ticks between goals, across all live matches. */
         const val SECONDS_PER_GOAL = 45
+
+        const val HALF_TIME = 45
+
+        /** Matches stop here and settle; the offer locks with them. */
+        const val FULL_TIME = 90
+
+        /** How many matches the live screen keeps on the pitch at once. */
+        const val TARGET_LIVE = 12
     }
 }

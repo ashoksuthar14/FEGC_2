@@ -14,5 +14,8 @@ class AmbientApp : Application() {
     override fun onCreate() {
         super.onCreate()
         container = AppContainer(this)
+        // Off the main thread by construction — the first inference can take many seconds
+        // and onCreate must never block on it.
+        container.warmUpNarrator()
     }
 }

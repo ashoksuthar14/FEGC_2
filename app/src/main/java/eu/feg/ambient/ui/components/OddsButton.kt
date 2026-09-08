@@ -102,6 +102,8 @@ fun OddsButton(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 textAlign = TextAlign.Center,
+                // Keep clear of the TOP badge, which sits in the top-right corner.
+                modifier = Modifier.padding(end = if (isTop) 22.dp else 0.dp),
             )
             Text(
                 text = value,
