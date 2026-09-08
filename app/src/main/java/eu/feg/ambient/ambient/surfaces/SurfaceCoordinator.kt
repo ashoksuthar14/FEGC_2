@@ -12,6 +12,7 @@ import eu.feg.ambient.data.model.MatchState
 import eu.feg.ambient.data.model.PlacedBet
 import eu.feg.ambient.data.repo.BetRepository
 import eu.feg.ambient.data.repo.MatchRepository
+import eu.feg.ambient.ambient.engine.MatchEvent
 import eu.feg.ambient.data.repo.UserStateRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -35,8 +36,13 @@ class SurfaceCoordinator(
     private val userStateRepository: UserStateRepository,
     private val narrator: Narrator,
     private val clock: MatchClock,
-    /** Stubbed until step 13A brings the real age proof. */
-    private val ageVerified: () -> Boolean = { true },
+    /**
+     * Step 13's real evaluator: register check plus age assurance, not a derivation from
+     * UserState. Nothing here may decide protection for itself any more.
+     */
+    private val protection: suspend () -> ProtectionState,
+    /** Step 13: every event goes through the engine, which decides whether it surfaces at all. */
+    private val onMatchEvent: suspend (MatchEvent) -> Unit,
 ) {
 
     /**
@@ -60,6 +66,45 @@ class SurfaceCoordinator(
         observePlacements()
         observeTicks()
         observeProtection()
+        observeMatchEvents()
+    }
+
+    /**
+     * Every scoring change in a live match becomes a MatchEvent for the engine, which decides
+     * whether it is worth saying anything at all. This is what replaces a hand on the Surface
+     * Lab buttons: the coordinator reports what happened, the engine chooses what to do.
+     *
+     * Only changes are emitted. A tick where nothing moved is not an event.
+     */
+    private fun observeMatchEvents() {
+        scope.launch {
+            val lastScores = mutableMapOf<String, String>()
+            clock.ticks.collect {
+                matchRepository.matches.value
+                    .filter { it.state == MatchState.LIVE }
+                    .forEach { match ->
+                        val signature = match.homeScore.toString() + ":" + match.awayScore
+                        if (lastScores[match.id] == signature) return@forEach
+                        val first = lastScores.put(match.id, signature) == null
+                        // The first sighting of a match is its current state, not a goal.
+                        if (first) return@forEach
+
+                        onMatchEvent(
+                            MatchEvent(
+                                matchId = match.id,
+                                type = MomentType.GOAL_ON_SLIP,
+                                minute = match.minute ?: 0,
+                                homeTeam = match.home.name,
+                                awayTeam = match.away.name,
+                                homeScore = match.homeScore ?: 0,
+                                awayScore = match.awayScore ?: 0,
+                                period = match.period,
+                                at = clock.now(),
+                            ),
+                        )
+                    }
+            }
+        }
     }
 
     /** A live bet is the trigger point; everything else follows from it. */
@@ -146,7 +191,7 @@ class SurfaceCoordinator(
     private fun observeProtection() {
         scope.launch {
             userStateRepository.state.collect { user ->
-                val protection = user.toProtectionStateTemp(ageVerified())
+                val protection = protection()
                 controller.refreshShortcuts(protection)
 
                 val slipId = _liveSlipId.value
@@ -173,9 +218,8 @@ class SurfaceCoordinator(
         bet.legs.any { leg -> matchRepository.match(leg.matchId)?.state == MatchState.LIVE }
 
     /** Domain to surface. The surface type has no money field, so nothing about price crosses. */
-    private fun surfaceState(bet: PlacedBet): SlipSurfaceState? {
-        val user = userStateRepository.state.value
-        val protection = user.toProtectionStateTemp(ageVerified())
+    private suspend fun surfaceState(bet: PlacedBet): SlipSurfaceState? {
+        val protection = protection()
         val active: Match? = bet.legs
             .asSequence()
             .mapNotNull { matchRepository.match(it.matchId) }

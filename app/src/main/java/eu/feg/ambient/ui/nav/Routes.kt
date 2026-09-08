@@ -20,6 +20,9 @@ object Routes {
     const val AI_DIAGNOSTICS = "ai_diagnostics"
     const val NARRATOR_LAB = "narrator_lab"
     const val SURFACE_LAB = "surface_lab"
+    const val REGISTER_PANEL = "register_panel"
+    const val WHY_THIS = "why_this"
+    const val BANDIT_DEBUG = "bandit_debug"
 
     fun match(matchId: String) = "match/" + matchId
 }

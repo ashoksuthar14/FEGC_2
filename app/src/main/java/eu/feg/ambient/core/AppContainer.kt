@@ -219,6 +219,8 @@ class AppContainer(context: Context) {
         userStateRepository = userStateRepository,
         narrator = narrator,
         clock = clock,
+        protection = { protectionEvaluator.evaluate() },
+        onMatchEvent = { engine.onEvent(it) },
     )
 
     /**

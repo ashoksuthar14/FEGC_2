@@ -49,8 +49,12 @@ import eu.feg.ambient.ui.betslip.BetSlipScreen
 import eu.feg.ambient.ui.betslip.BetSlipViewModel
 import eu.feg.ambient.ui.casino.CasinoScreen
 import eu.feg.ambient.ui.casino.GameLoadingScreen
+import eu.feg.ambient.ui.dev.BanditDebugScreen
+import eu.feg.ambient.ui.dev.EngineLabViewModel
+import eu.feg.ambient.ui.dev.RegisterPanelScreen
 import eu.feg.ambient.ui.dev.SurfaceLabScreen
 import eu.feg.ambient.ui.dev.SurfaceLabViewModel
+import eu.feg.ambient.ui.dev.WhyThisScreen
 import eu.feg.ambient.ui.diagnostics.AiDiagnosticsScreen
 import eu.feg.ambient.ui.diagnostics.AiDiagnosticsViewModel
 import eu.feg.ambient.ui.home.HomeScreen
@@ -75,7 +79,10 @@ private val MORE_ITEMS = listOf(
 )
 
 /** Phase 2 test benches, kept under their own heading so they read as developer tools. */
-private val DEVELOPER_ITEMS = listOf("AI diagnostics", "Narrator Lab", "Surface Lab")
+private val DEVELOPER_ITEMS = listOf(
+    "AI diagnostics", "Narrator Lab", "Surface Lab",
+    "Register Panel", "Why this?", "Bandit Debug",
+)
 
 /** PRD section 4 — one Activity, one NavHost, five tabs plus a More sheet. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -280,6 +287,28 @@ fun AppNavHost(
                 )
                 SurfaceLabScreen(vm)
             }
+
+            composable(Routes.REGISTER_PANEL) {
+                val vm: EngineLabViewModel = viewModel(
+                    factory = PskViewModelFactory(container) { EngineLabViewModel(it) },
+                )
+                RegisterPanelScreen(vm)
+            }
+
+            composable(Routes.WHY_THIS) {
+                val vm: EngineLabViewModel = viewModel(
+                    factory = PskViewModelFactory(container) { EngineLabViewModel(it) },
+                )
+                WhyThisScreen(vm)
+            }
+
+            composable(Routes.BANDIT_DEBUG) {
+                val vm: EngineLabViewModel = viewModel(
+                    factory = PskViewModelFactory(container) { EngineLabViewModel(it) },
+                )
+                BanditDebugScreen(vm)
+            }
+
             composable(Routes.SCAN_TICKET) { ScanTicketScreen() }
             composable(Routes.GAME_LOADING) { GameLoadingScreen() }
         }
@@ -314,6 +343,10 @@ fun AppNavHost(
                                     "AI diagnostics" -> navController.navigate(Routes.AI_DIAGNOSTICS)
                                     "Narrator Lab" -> navController.navigate(Routes.NARRATOR_LAB)
                                     "Surface Lab" -> navController.navigate(Routes.SURFACE_LAB)
+                                    "Register Panel" ->
+                                        navController.navigate(Routes.REGISTER_PANEL)
+                                    "Why this?" -> navController.navigate(Routes.WHY_THIS)
+                                    "Bandit Debug" -> navController.navigate(Routes.BANDIT_DEBUG)
                                 }
                             }
                             .padding(horizontal = 20.dp, vertical = 14.dp),
