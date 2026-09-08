@@ -1,0 +1,29 @@
+{
+  "register": "HR-SYNTHETIC",
+  "entries": [
+    {
+      "playerRef": "demo-player",
+      "excluded": false,
+      "validUntil": "2027-01-01T00:00:00Z",
+      "reason": "No entry on the register"
+    },
+    {
+      "playerRef": "hr-8842-vukovic",
+      "excluded": true,
+      "validUntil": "2027-03-01T00:00:00Z",
+      "reason": "Voluntary self-exclusion, 24 months"
+    },
+    {
+      "playerRef": "hr-1207-babic",
+      "excluded": false,
+      "validUntil": "2026-12-01T00:00:00Z",
+      "reason": "No entry on the register"
+    },
+    {
+      "playerRef": "hr-4419-maric",
+      "excluded": true,
+      "validUntil": "2026-06-30T00:00:00Z",
+      "reason": "Voluntary self-exclusion, 6 months, lapsed"
+    }
+  ]
+}

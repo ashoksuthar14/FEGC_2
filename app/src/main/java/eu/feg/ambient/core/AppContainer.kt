@@ -17,6 +17,16 @@ import eu.feg.ambient.ambient.narrator.TemplateNarrator
 import eu.feg.ambient.ambient.surfaces.AndroidSurfaceController
 import eu.feg.ambient.ambient.surfaces.DemoSurfaceData
 import eu.feg.ambient.ambient.surfaces.SurfaceController
+import eu.feg.ambient.ambient.engine.AmbientEngine
+import eu.feg.ambient.ambient.engine.ledger.Ledger
+import eu.feg.ambient.ambient.engine.moment.DefaultAttentionBudget
+import eu.feg.ambient.ambient.engine.moment.DefaultMomentBuilder
+import eu.feg.ambient.ambient.engine.moment.DefaultRelevanceScorer
+import eu.feg.ambient.ambient.engine.protection.DefaultProtectionEvaluator
+import eu.feg.ambient.ambient.engine.protection.PrefsAgeAssurance
+import eu.feg.ambient.ambient.engine.protection.SyntheticExclusionRegister
+import eu.feg.ambient.ambient.engine.router.BanditRouter
+import eu.feg.ambient.ambient.surfaces.AlertBudget
 import eu.feg.ambient.ambient.surfaces.SurfaceCoordinator
 import eu.feg.ambient.ambient.surfaces.live.LiveUpdateRenderer
 import eu.feg.ambient.ambient.surfaces.widget.WidgetRenderer
@@ -139,13 +149,63 @@ class AppContainer(context: Context) {
      * The renderers are attached here rather than constructed inside the controller, so the
      * controller stays testable and knows nothing about notifications or Glance.
      */
-    val surfaceController: SurfaceController = AndroidSurfaceController(context).apply {
+    val surfaceController: SurfaceController = AndroidSurfaceController(context, AlertBudget(context)).apply {
         liveUpdateRenderer = LiveUpdateRenderer(context)
         widgetRenderer = WidgetRenderer(context)
     }
 
     /** Ready-made slips so the surfaces have something real to show before the engine exists. */
     val demoData = DemoSurfaceData
+
+    // --- engine (Phase 2, step 13) ------------------------------------------------------
+
+    /**
+     * Append-only record of every decision, silences included. File-backed rather than Room:
+     * see the KDoc on Ledger for why KSP was not worth the risk here.
+     */
+    val ledger = Ledger(context)
+
+    val exclusionRegister = SyntheticExclusionRegister(context)
+
+    val ageAssurance = PrefsAgeAssurance(context)
+
+    val protectionEvaluator = DefaultProtectionEvaluator(
+        register = exclusionRegister,
+        ageAssurance = ageAssurance,
+        userStateRepository = userStateRepository,
+        ledger = ledger,
+        scope = appScope,
+    )
+
+    /** One counter, shared with the surface controller, so the two cannot disagree. */
+    private val sharedAlertBudget = AlertBudget(context)
+
+    val relevanceScorer = DefaultRelevanceScorer()
+
+    val router = BanditRouter(ledger)
+
+    private val momentBuilder = DefaultMomentBuilder(betRepository)
+
+    private val attentionBudget = DefaultAttentionBudget(
+        context = context,
+        userStateRepository = userStateRepository,
+        alertBudget = sharedAlertBudget,
+    )
+
+    /**
+     * Replaces a hand on the Surface Lab buttons. The Lab stays as a manual override, but the
+     * engine is what decides whether an event surfaces at all.
+     */
+    val engine = AmbientEngine(
+        protectionEvaluator = protectionEvaluator,
+        momentBuilder = momentBuilder,
+        scorer = relevanceScorer,
+        attentionBudget = attentionBudget,
+        router = router,
+        narrator = narrator,
+        surfaceController = surfaceController,
+        ledger = ledger,
+    )
 
     /**
      * Step 14E: turns ordinary app use into surfaces. Started from the Application so a bet
