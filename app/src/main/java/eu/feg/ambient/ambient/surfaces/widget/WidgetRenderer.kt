@@ -3,6 +3,8 @@ package eu.feg.ambient.ambient.surfaces.widget
 import android.content.Context
 import android.util.Log
 import androidx.glance.appwidget.updateAll
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import eu.feg.ambient.ambient.identity.ClubTheme
 import eu.feg.ambient.ambient.identity.ClubThemes
 import eu.feg.ambient.ambient.surfaces.AndroidSurfaceController
@@ -25,7 +27,15 @@ class WidgetRenderer(
     private val store: WidgetStateStore = WidgetStateStore(context),
 ) : AndroidSurfaceController.WidgetRendering {
 
-    override suspend fun render(state: WidgetState) {
+    /**
+     * One render at a time. A club change and a live slip arriving within the same second
+     * each did save-then-updateAll, and the launcher composed the two updates in the wrong
+     * order: the store held Live while the home screen showed Idle. Serialising the pair
+     * means the last state saved is always the last one the launcher is asked to draw.
+     */
+    private val renders = Mutex()
+
+    override suspend fun render(state: WidgetState) = renders.withLock {
         // Stored next to the state, not read from user preferences at draw time. provideGlance
         // runs in whatever process the launcher wakes — often after a reboot, with nothing
         // else of ours alive — and it must not have to reach across to another store to find
@@ -36,6 +46,7 @@ class WidgetRenderer(
         // ids to update. Failing loudly here would put a crash in the demo's happy path.
         runCatching { AmbientWidget().updateAll(context) }
             .onFailure { Log.w(TAG, "widget update failed", it) }
+        Unit
     }
 
     private companion object {

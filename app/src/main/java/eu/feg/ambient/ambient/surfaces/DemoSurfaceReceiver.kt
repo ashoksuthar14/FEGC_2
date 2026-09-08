@@ -37,6 +37,7 @@ import kotlinx.coroutines.launch
  *   adb shell am broadcast -a eu.feg.ambient.DEMO_SURFACE --es action speak
  *   adb shell am broadcast -a eu.feg.ambient.DEMO_SURFACE --es action club --es id hajduk_split
  *   adb shell am broadcast -a eu.feg.ambient.DEMO_SURFACE --es action exclude --es on true
+ *   adb shell am broadcast -a eu.feg.ambient.DEMO_SURFACE --es action away --ei minutes 90
  *
  * Debug builds only — it is registered behind a manifest flag and does nothing in release.
  */
@@ -140,6 +141,18 @@ class DemoSurfaceReceiver : BroadcastReceiver() {
                         else -> WidgetState.Live(slip)
                     }
                     controller.refreshWidget(state)
+                }
+
+                // Step 16: pretend the customer has been away, then poke the widget. The
+                // widget is the trigger, so its redraw is what turns the away period into a
+                // digest -- this only supplies the away period.
+                "away" -> {
+                    val minutes = intent.getIntExtra("minutes", 90)
+                    app.container.awayTracker.simulateAway(minutes)
+                    controller.refreshWidget(
+                        controller.currentWidgetState() ?: WidgetState.Idle(null, null),
+                    )
+                    Log.i(TAG, "away for " + minutes + " min; widget poked")
                 }
 
                 // The real protection flip: the demo player goes on or off the exclusion

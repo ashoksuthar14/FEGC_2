@@ -283,7 +283,10 @@ class AppContainer(context: Context) {
         val protection = protectionEvaluator.evaluate()
         if (!awayTracker.shouldShowDigest(protection)) return null
         val since = awayTracker.lastInteractionAt() ?: return null
-        val digest = digestBuilder.build(since) ?: return null
+        val digest = digestBuilder.build(since)
+        Log.i("Digest", if (digest == null) "away since " + since + " but nothing worth a card" else
+            "digest drawn: " + digest.headline + " / " + digest.detail + " [" + digest.items.size + " items]")
+        if (digest == null) return null
         awayTracker.markDigestShown()
         return digest
     }
