@@ -120,6 +120,17 @@ internal object SpokenLinesEn : SpokenLines {
             Tone.ONE_LINER -> "${f.badge} earned. ${f.mission} done."
         }
 
+        MomentType.SESSION_LENGTH -> when (tone) {
+            Tone.PLAIN ->
+                "You have been playing for " + f.sessionTime +
+                    (f.game?.let { " on " + it } ?: "") + ". Just so you know."
+            Tone.WITTY ->
+                "That is " + f.sessionTime + " gone. Time has a way of doing that."
+            Tone.STATS ->
+                f.sessionTime + " played this session" + (f.game?.let { " on " + it } ?: "") + "."
+            Tone.ONE_LINER -> f.sessionTime + " played this session."
+        }
+
         MomentType.MISSION_AVAILABLE -> when (tone) {
             Tone.PLAIN ->
                 f.mission + ". " + (f.step?.let { it + ". " } ?: "") +

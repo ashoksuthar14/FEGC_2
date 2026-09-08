@@ -58,6 +58,18 @@ enum class Ownership { ON_MY_SLIP, DECIDES_A_LEG, FOLLOWED_TEAM, MINE, NEITHER }
  * hold a stake, a bonus or the cash value of a perk, which is the same rule MomentFacts
  * follows and for the same reason.
  */
+/**
+ * A gaming session, for the one moment type that is not about a match.
+ *
+ * Minutes and a name. There is no stake here, no spin count, no balance and no result,
+ * because a reality check is about time spent and nothing else -- and a field for any of
+ * those would be the first step toward a card that comments on how the session is going.
+ */
+data class SessionFacts(
+    val minutes: Int,
+    val gameName: String?,
+)
+
 data class LoyaltyFacts(
     val missionTitle: String? = null,
     val badgeName: String? = null,
@@ -88,6 +100,8 @@ data class MatchEvent(
     val kickoffInMinutes: Int? = null,
     /** Set for MISSION_COMPLETE and TIER_REACHED, null for everything else. */
     val loyalty: LoyaltyFacts? = null,
+    /** Set for SESSION_LENGTH. Like [loyalty], it means "this event is not about football". */
+    val session: SessionFacts? = null,
     val at: Instant,
 )
 

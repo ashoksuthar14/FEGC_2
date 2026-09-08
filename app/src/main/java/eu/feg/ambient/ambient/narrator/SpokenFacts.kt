@@ -53,6 +53,24 @@ internal class SpokenFacts(private val f: MomentFacts, private val language: Nar
 
     val leg: String = f.myLegDescription
         ?: if (language == NarratorLanguage.EN) "your pick" else "tvoj izbor"
+    /** The session in words for the ear: "forty five minutes". */
+    val sessionTime: String = (f.sessionMinutes ?: 0).let { m ->
+        if (m < 60) words.of(m) + " " + words.minutes(m)
+        else {
+            val h = m / 60
+            val rest = m % 60
+            val hourWord = if (language == NarratorLanguage.EN) {
+                if (h == 1) "hour" else "hours"
+            } else {
+                if (h == 1) "sat" else "sata"
+            }
+            words.of(h) + " " + hourWord +
+                (if (rest == 0) "" else " " + words.of(rest) + " " + words.minutes(rest))
+        }
+    }
+
+    val game: String? = f.gameName
+
     val followed: String = f.followedTeam ?: home
     val kickoff: String = words.of(f.kickoffInMinutes ?: 0)
     val kickoffMinutes: String = kickoff + " " + words.minutes(f.kickoffInMinutes ?: 0)

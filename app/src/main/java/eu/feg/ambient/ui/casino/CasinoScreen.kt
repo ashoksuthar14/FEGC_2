@@ -125,21 +125,3 @@ fun CasinoScreen(
         }
     }
 }
-
-/** Tapping a tile opens this, never a game (PRD section 5.7). */
-@Composable
-fun GameLoadingScreen(modifier: Modifier = Modifier) {
-    val psk = LocalPskColors.current
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(psk.background),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = "Game loading…",
-            style = MaterialTheme.typography.titleMedium,
-            color = psk.textSecondary,
-        )
-    }
-}

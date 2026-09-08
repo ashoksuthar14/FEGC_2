@@ -104,6 +104,18 @@ internal object TemplateLinesHr : TemplateLines {
 
         // Ponuda, nikad poziv. Kaze se zadatak, dokle je korisnik stigao i sto nosi -- i
         // nista o roku, jer roka nema.
+        // Cinjenica o vremenu i nista drugo. Bez rezultata, bez stanja racuna, bez poticaja
+        // da se nastavi i bez naredbe da se prestane.
+        MomentType.SESSION_LENGTH -> when (tone) {
+            Tone.PLAIN -> "Igras vec " + f.sessionTime to
+                (f.game?.let { it + ". " } ?: "") + "Samo da znas."
+            Tone.WITTY -> "Proslo je " + f.sessionTime to
+                (f.game?.let { it + ". " } ?: "") + "Vrijeme to voli napraviti."
+            Tone.STATS -> "Sesija · " + f.sessionTime to
+                (f.game?.let { it + ". " } ?: "") + "Vrijeme igre u ovoj sesiji."
+            Tone.ONE_LINER -> f.sessionTime + " igre" to "U ovoj sesiji."
+        }
+
         MomentType.MISSION_AVAILABLE -> when (tone) {
             Tone.PLAIN -> f.mission to
                 (f.missionStep?.let { it + ". " } ?: "") + "Nosi znacku " + f.badge + "."

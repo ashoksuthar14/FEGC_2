@@ -56,12 +56,12 @@ class TemplateNarratorTest {
             }
         }
 
-        // Eleven moment types now: N7 added MISSION_COMPLETE and TIER_REACHED, and the demo
-        // trigger added MISSION_AVAILABLE. The count is asserted rather than derived so that
+        // Twelve moment types now: N7 added three, and casino added SESSION_LENGTH -- the
+        // same engine on the other vertical. The count is asserted rather than derived so
         // adding a type without writing its copy fails here loudly, which is this test's job.
-        assertEquals("expected 88 combinations", 88, count)
+        assertEquals("expected 96 combinations", 96, count)
         assertTrue(
-            "guard rejected " + failures.size + " of 88:\n" + failures.joinToString("\n"),
+            "guard rejected " + failures.size + " of 96:\n" + failures.joinToString("\n"),
             failures.isEmpty(),
         )
     }

@@ -53,6 +53,7 @@ import eu.feg.ambient.ambient.surfaces.live.LiveUpdateRenderer
 import eu.feg.ambient.ambient.surfaces.widget.WidgetRenderer
 import eu.feg.ambient.data.clock.MatchClock
 import eu.feg.ambient.data.clock.SystemMatchClock
+import eu.feg.ambient.ambient.gaming.GameSessionTracker
 import eu.feg.ambient.ambient.loyalty.BadgeAwarder
 import eu.feg.ambient.ambient.loyalty.LoyaltyShortcut
 import eu.feg.ambient.ambient.loyalty.BadgeRepository
@@ -365,6 +366,19 @@ class AppContainer(context: Context) {
         // screen; the launcher tells nobody. Asked on each recompute rather than observed.
         widgetPlaced = { WidgetRefresher.anyPlaced(context) },
         now = { clock.now() },
+    )
+
+    /**
+     * Casino's one moment: how long this session has run.
+     *
+     * Declared after the engine because it posts into it. The same pipeline as everything
+     * else -- see GameSessionTracker for why a reality check is the honest thing to raise
+     * here and a nudge to keep playing is not.
+     */
+    val gameSessionTracker = GameSessionTracker(
+        userStateRepository = userStateRepository,
+        clock = clock,
+        raise = { event -> engine.onEvent(event) },
     )
 
     /** How long the customer has been away, and whether that is worth a catch-up. */

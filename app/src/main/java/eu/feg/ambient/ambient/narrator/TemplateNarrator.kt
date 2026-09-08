@@ -74,6 +74,27 @@ internal class Facts(
             f.missionProgress.toString() + " of " + f.missionTarget
         } else null
 
+    /**
+     * "45 minutes", or "1 hour 5 minutes" once it passes the hour.
+     *
+     * Spelled with the unit rather than as a bare number, because this line's whole job is to
+     * be unambiguous to somebody who has lost track of time; "1:05" is a thing to decode.
+     */
+    val sessionTime: String = (f.sessionMinutes ?: 0).let { m ->
+        val hr = if (language == NarratorLanguage.EN) "hour" else "sat"
+        val hrs = if (language == NarratorLanguage.EN) "hours" else "sata"
+        val min = if (language == NarratorLanguage.EN) "minutes" else "minuta"
+        when {
+            m < 60 -> m.toString() + " " + min
+            m % 60 == 0 -> (m / 60).toString() + " " + (if (m / 60 == 1) hr else hrs)
+            else -> (m / 60).toString() + " " + (if (m / 60 == 1) hr else hrs) +
+                " " + (m % 60) + " " + min
+        }
+    }
+
+    /** The game, when the moment names one. Null rather than a stand-in: it is optional. */
+    val game: String? = f.gameName
+
     /** What is still to do: 2 when it is 1 of 3. Never below zero. */
     val missionLeft: Int =
         ((f.missionTarget ?: 0) - (f.missionProgress ?: 0)).coerceAtLeast(0)

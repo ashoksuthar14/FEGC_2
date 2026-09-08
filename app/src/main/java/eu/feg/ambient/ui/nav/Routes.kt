@@ -24,7 +24,13 @@ object Routes {
     const val REWARDS = "rewards"
     const val PROMO = "promo"
     const val SCAN_TICKET = "scan"
-    const val GAME_LOADING = "game"
+    /**
+     * The game session. It carries the game id because the session is ABOUT a game -- the
+     * reality check names it, and a route with no argument would have to guess.
+     */
+    const val GAME_LOADING = "game/{gameId}"
+
+    fun game(gameId: String): String = "game/" + gameId
     const val AI_DIAGNOSTICS = "ai_diagnostics"
     const val NARRATOR_LAB = "narrator_lab"
     const val SURFACE_LAB = "surface_lab"

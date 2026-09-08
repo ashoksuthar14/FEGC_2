@@ -50,7 +50,9 @@ import eu.feg.ambient.ui.arena.ArenaScreen
 import eu.feg.ambient.ui.betslip.BetSlipScreen
 import eu.feg.ambient.ui.betslip.BetSlipViewModel
 import eu.feg.ambient.ui.casino.CasinoScreen
-import eu.feg.ambient.ui.casino.GameLoadingScreen
+import eu.feg.ambient.ui.casino.GameSessionScreen
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
 import eu.feg.ambient.ui.dev.BanditDebugScreen
 import eu.feg.ambient.ui.recap.RecapViewModel
 import eu.feg.ambient.ui.dev.EngineLabViewModel
@@ -247,7 +249,7 @@ fun AppNavHost(
                     games = content.casinoGames,
                     wins = content.recentWins,
                     promos = content.promos,
-                    onGameClick = { navController.navigate(Routes.GAME_LOADING) },
+                    onGameClick = { gameId -> navController.navigate(Routes.game(gameId)) },
                 )
             }
 
@@ -406,7 +408,16 @@ fun AppNavHost(
                     )
                 }
             }
-            composable(Routes.GAME_LOADING) { GameLoadingScreen() }
+            composable(
+                Routes.GAME_LOADING,
+                arguments = listOf(navArgument("gameId") { type = NavType.StringType }),
+            ) { entry ->
+                GameSessionScreen(
+                    container = container,
+                    gameId = entry.arguments?.getString("gameId").orEmpty(),
+                    onLeave = { navController.popBackStack() },
+                )
+            }
         }
     }
 

@@ -118,6 +118,16 @@ internal object SpokenLinesHr : SpokenLines {
             Tone.ONE_LINER -> "Značka ${f.badge} osvojena. ${f.mission} gotovo."
         }
 
+        MomentType.SESSION_LENGTH -> when (tone) {
+            Tone.PLAIN ->
+                "Igras vec " + f.sessionTime + (f.game?.let { ", " + it } ?: "") + ". Samo da znas."
+            Tone.WITTY ->
+                "Proslo je " + f.sessionTime + ". Vrijeme to voli napraviti."
+            Tone.STATS ->
+                f.sessionTime + " igre u ovoj sesiji" + (f.game?.let { ", " + it } ?: "") + "."
+            Tone.ONE_LINER -> f.sessionTime + " igre u ovoj sesiji."
+        }
+
         MomentType.MISSION_AVAILABLE -> when (tone) {
             Tone.PLAIN ->
                 f.mission + ". " + (f.step?.let { it + ". " } ?: "") +

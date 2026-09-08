@@ -82,8 +82,18 @@ class DefaultAttentionBudget(
             allowed.retainAll(setOf(Surface.IN_APP))
         }
 
-        if (protection == ProtectionState.CALM) allowed.remove(Surface.ALERT)
-        if (!alertBudget.canSend()) allowed.remove(Surface.ALERT)
+        // A REALITY CHECK IS NOT MARKETING AND IS NOT SUBJECT TO THE MARKETING BUDGET.
+        //
+        // The one-alert-a-day cap exists so this app cannot badger somebody into opening it.
+        // "You have been playing for an hour" is the opposite transaction: it is the thing a
+        // slot machine never volunteers, several regulators require it, and an operator whose
+        // reality check got swallowed because it had already sent a goal alert would be
+        // hiding behind its own good manners. Calm Mode and Do Not Disturb still apply -- a
+        // customer who has asked for quiet is answered, and this is the one message that
+        // matters most to someone in that state.
+        val realityCheck = moment.type == MomentType.SESSION_LENGTH
+        if (protection == ProtectionState.CALM && !realityCheck) allowed.remove(Surface.ALERT)
+        if (!alertBudget.canSend() && !realityCheck) allowed.remove(Surface.ALERT)
         if (isDoNotDisturb()) allowed.remove(Surface.ALERT)
 
         if (allowed.isNotEmpty()) {

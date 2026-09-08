@@ -106,6 +106,19 @@ internal object TemplateLinesEn : TemplateLines {
 
         // An offer, never a push. It says the task, where the customer has got to, and what
         // it earns -- and nothing about when it ends, because nothing does.
+        // A FACT ABOUT TIME, AND NOTHING ELSE. No result, no balance, no encouragement to
+        // continue and no instruction to stop -- the customer decides, and the app's job is
+        // to make sure they know how long it has been. Every tone says the number.
+        MomentType.SESSION_LENGTH -> when (tone) {
+            Tone.PLAIN -> "You have been playing " + f.sessionTime to
+                (f.game?.let { it + ", " } ?: "") + "since you started. Just so you know."
+            Tone.WITTY -> "That is " + f.sessionTime + " gone" to
+                (f.game?.let { it + ". " } ?: "") + "Time has a way of doing that."
+            Tone.STATS -> "Session · " + f.sessionTime to
+                (f.game?.let { it + ". " } ?: "") + "Time played this session."
+            Tone.ONE_LINER -> f.sessionTime + " played" to "This session so far."
+        }
+
         MomentType.MISSION_AVAILABLE -> when (tone) {
             Tone.PLAIN -> f.mission to
                 (f.missionStep?.let { it + ". " } ?: "") + "Earns you the " + f.badge + " badge."

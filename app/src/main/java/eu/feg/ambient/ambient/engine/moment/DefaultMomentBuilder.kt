@@ -4,6 +4,7 @@ import eu.feg.ambient.ambient.engine.MatchEvent
 import eu.feg.ambient.ambient.engine.Moment
 import eu.feg.ambient.ambient.engine.MomentBuilder
 import eu.feg.ambient.ambient.engine.Ownership
+import eu.feg.ambient.ambient.engine.SessionFacts
 import eu.feg.ambient.ambient.narrator.MomentFacts
 import eu.feg.ambient.ambient.narrator.MomentType
 import eu.feg.ambient.ambient.surfaces.ProtectionState
@@ -49,6 +50,10 @@ class DefaultMomentBuilder(
         // would return NEITHER for an event the app raised about the customer themselves.
         if (event.loyalty != null) return loyaltyMoment(event)
 
+        // Same reasoning: a session is the customer's own by construction and has no fixture
+        // for the ownership join to find.
+        event.session?.let { return sessionMoment(event, it) }
+
         val bet = openBetOn(event.matchId)
         val ownership = ownershipOf(event, bet)
         if (ownership == Ownership.NEITHER) return null
@@ -91,6 +96,21 @@ class DefaultMomentBuilder(
             createdAt = event.at,
         )
     }
+
+    /** A reality check, built from the session and nothing else. */
+    private fun sessionMoment(event: MatchEvent, session: SessionFacts) = Moment(
+        id = idFor(event),
+        type = event.type,
+        facts = MomentFacts(
+            type = event.type,
+            sessionMinutes = session.minutes,
+            gameName = session.gameName,
+        ),
+        slipId = null,
+        matchId = event.matchId,
+        ownership = Ownership.MINE,
+        createdAt = event.at,
+    )
 
     /**
      * The first open slip touching this match. One slip is enough: the surfaces show a single

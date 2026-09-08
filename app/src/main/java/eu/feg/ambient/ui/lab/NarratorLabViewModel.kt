@@ -162,6 +162,9 @@ fun sampleFacts(type: MomentType): MomentFacts = when (type) {
     MomentType.TIER_REACHED -> MomentFacts(
         type = type, badgeCount = 8, tierName = "Gold", badgesToNextTier = 7,
     )
+    MomentType.SESSION_LENGTH -> MomentFacts(
+        type = type, sessionMinutes = 65, gameName = "Book of Ra Deluxe",
+    )
     MomentType.MISSION_AVAILABLE -> MomentFacts(
         type = type, missionTitle = "Follow three teams", badgeName = "Three clubs",
         badgeCount = 4, tierName = "Silver", badgesToNextTier = 4,

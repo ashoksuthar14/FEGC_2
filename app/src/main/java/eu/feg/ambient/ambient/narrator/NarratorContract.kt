@@ -39,6 +39,21 @@ enum class MomentType {
      * NarratorGuard's urgency rules apply to it exactly as they do everywhere else.
      */
     MISSION_AVAILABLE,
+
+    /**
+     * How long this gaming session has been running.
+     *
+     * THE SAME ENGINE, POINTED AT THE OTHER HALF OF THE PRODUCT. Everything above is about
+     * sport, and the obvious way to extend an attention engine into casino is the wrong one:
+     * a nudge to come back and spin is the harm pattern in the highest-harm vertical there
+     * is, and it would take the compliance argument the rest of this app rests on with it.
+     *
+     * So the moment casino gets is the one a slot machine never volunteers -- how long you
+     * have been sitting there. It runs the identical pipeline: protection, relevance, budget,
+     * router, guard, ledger. The interval is the customer's own UserState.realityCheckMinutes,
+     * which until now was a setting on the Responsible Gaming screen that nothing read.
+     */
+    SESSION_LENGTH,
 }
 
 enum class Tone { PLAIN, WITTY, STATS, ONE_LINER }
@@ -111,6 +126,12 @@ data class MomentFacts(
 
     /** What that mission needs in total. */
     val missionTarget: Int? = null,
+
+    /** Minutes this gaming session has run, for SESSION_LENGTH. */
+    val sessionMinutes: Int? = null,
+
+    /** The game being played. A name, never a stake and never a result. */
+    val gameName: String? = null,
 )
 
 data class NarratedText(

@@ -414,6 +414,25 @@ class SurfaceLabViewModel(private val container: AppContainer) : ViewModel() {
         }
     }
 
+    /**
+     * Raises the casino reality check now, at whatever the session has actually reached.
+     *
+     * Through the tracker and the engine, not around them: the moment is scored, budgeted and
+     * written to the ledger exactly as it would be an hour into a real session. Without a
+     * session running it uses the customer's own interval as the figure, which is the
+     * smallest honest thing it can say.
+     */
+    fun realityCheckNow() {
+        viewModelScope.launch {
+            container.gameSessionTracker.checkNow()
+            val minutes = container.gameSessionTracker.session.value.minutes
+            _state.value = _state.value.copy(
+                loyaltyNotice = "Reality check raised at " + minutes + " min of session.",
+                lastAction = "Reality check now",
+            )
+        }
+    }
+
     /** Throws the loyalty file away so the demo can be run twice. */
     fun resetLoyalty() {
         viewModelScope.launch {
