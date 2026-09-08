@@ -1,7 +1,14 @@
 package eu.feg.ambient.core
 
 import android.content.Context
+import android.util.Log
+import eu.feg.ambient.ambient.narrator.EngineState
 import eu.feg.ambient.ambient.narrator.LadderNarrator
+import eu.feg.ambient.ambient.narrator.LiteRtEngineHolder
+import eu.feg.ambient.ambient.narrator.LiteRtNarrator
+import eu.feg.ambient.ambient.narrator.MomentType
+import eu.feg.ambient.ambient.narrator.NarratorLanguage
+import eu.feg.ambient.ambient.narrator.Tone
 import eu.feg.ambient.ambient.narrator.NanoAvailabilityChecker
 import eu.feg.ambient.ambient.narrator.NanoNarrator
 import eu.feg.ambient.ambient.narrator.NanoState
@@ -16,6 +23,8 @@ import eu.feg.ambient.data.repo.UserStateRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import eu.feg.ambient.ambient.narrator.NarratorEngine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 /**
@@ -48,14 +57,27 @@ class AppContainer(context: Context) {
 
     private val nanoNarrator = NanoNarrator(fallback = templateNarrator)
 
+    /** Path B: a Gemma 3 model we ship ourselves, independent of AICore entirely. */
+    val liteRtEngine = LiteRtEngineHolder(context, appScope)
+
+    private val liteRtNarrator = LiteRtNarrator(liteRtEngine, fallback = templateNarrator)
+
     /**
-     * Rebuilt whenever the probe result changes: Nano first once the device says it is
-     * available, templates alone otherwise. `ui/` reaches this through the container and
-     * never imports `ambient/` directly.
+     * Built on every access from the current probe results: Nano first when the OS has it,
+     * then our own Gemma, then templates.
+     *
+     * Computed rather than cached deliberately. A cached field rebuilt by a collector left a
+     * window between "engine became Ready" and "ladder rebuilt", during which the very first
+     * narration silently fell back to templates. Wrapping a list is free; a race is not.
      */
-    @Volatile
-    var narrator: Narrator = LadderNarrator(listOf(templateNarrator))
-        private set
+    val narrator: Narrator
+        get() = LadderNarrator(
+            buildList {
+                if (nanoAvailability.state.value is NanoState.Available) add(nanoNarrator)
+                if (liteRtEngine.state.value is EngineState.Ready) add(liteRtNarrator)
+                add(templateNarrator)
+            },
+        )
 
     /** The template rung alone, for the Narrator Lab's side-by-side comparison. */
     val templateOnly: Narrator = templateNarrator
@@ -64,17 +86,13 @@ class AppContainer(context: Context) {
     val nanoOrNull: Narrator?
         get() = if (nanoAvailability.state.value is NanoState.Available) nanoNarrator else null
 
+    /** Null until the local model is loaded; the Lab shows why in that case. */
+    val localGemmaOrNull: Narrator?
+        get() = if (liteRtEngine.state.value is EngineState.Ready) liteRtNarrator else null
+
     init {
         nanoAvailability.check()
-        appScope.launch {
-            nanoAvailability.state.collect { state ->
-                narrator = if (state is NanoState.Available) {
-                    LadderNarrator(listOf(nanoNarrator, templateNarrator))
-                } else {
-                    LadderNarrator(listOf(templateNarrator))
-                }
-            }
-        }
+        liteRtEngine.initialize()
     }
 
     /**
@@ -89,7 +107,55 @@ class AppContainer(context: Context) {
         }
     }
 
+    /**
+     * Debug-only: once the local model is ready, narrate a few moments and log the result.
+     * The Narrator Lab does this interactively, but a lock screen should not stand between
+     * us and a latency number.
+     */
+    fun logNarratorSelfTest() {
+        appScope.launch {
+            liteRtEngine.state.first { it is EngineState.Ready }
+
+            val cases = listOf(
+                Triple(MomentType.GOAL_ON_SLIP, Tone.PLAIN, NarratorLanguage.EN),
+                Triple(MomentType.GOAL_ON_SLIP, Tone.WITTY, NarratorLanguage.EN),
+                Triple(MomentType.AWAY_DIGEST, Tone.PLAIN, NarratorLanguage.EN),
+            )
+            cases.forEach { (type, tone, language) ->
+                val result = narrator.narrate(eu.feg.ambient.ui.lab.sampleFacts(type), tone, language)
+                Log.i(
+                    SELF_TEST_TAG,
+                    type.name + " / " + tone.name + " / " + language.name +
+                        " | engine=" + result.engine.name + " | " + result.latencyMs + "ms" +
+                        " | H: " + result.headline + " | D: " + result.detail,
+                )
+            }
+
+            // The full sweep, so we can report how often the model actually carried it.
+            var localCount = 0
+            val latencies = mutableListOf<Long>()
+            MomentType.entries.forEach { type ->
+                Tone.entries.forEach { tone ->
+                    NarratorLanguage.entries.forEach { language ->
+                        val r = narrator.narrate(eu.feg.ambient.ui.lab.sampleFacts(type), tone, language)
+                        latencies += r.latencyMs
+                        if (r.engine == NarratorEngine.LOCAL_GEMMA) localCount++
+                    }
+                }
+            }
+            val sorted = latencies.sorted()
+            Log.i(
+                SELF_TEST_TAG,
+                "SWEEP total=" + latencies.size + " localGemma=" + localCount +
+                    " template=" + (latencies.size - localCount) +
+                    " medianMs=" + sorted[sorted.size / 2] +
+                    " maxMs=" + sorted.last(),
+            )
+        }
+    }
+
     companion object {
         const val ML_KIT_GENAI_VERSION = "com.google.mlkit:genai-prompt:1.0.0-beta2"
+        const val SELF_TEST_TAG = "NarratorSelfTest"
     }
 }

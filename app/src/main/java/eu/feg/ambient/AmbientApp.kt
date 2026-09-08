@@ -17,5 +17,6 @@ class AmbientApp : Application() {
         // Off the main thread by construction — the first inference can take many seconds
         // and onCreate must never block on it.
         container.warmUpNarrator()
+        if (BuildConfig.DEBUG) container.logNarratorSelfTest()
     }
 }

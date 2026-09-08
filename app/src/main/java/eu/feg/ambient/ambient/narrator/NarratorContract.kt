@@ -18,8 +18,13 @@ enum class Tone { PLAIN, WITTY, STATS, ONE_LINER }
 
 enum class NarratorLanguage { EN, HR }
 
-/** Which implementation actually produced the text. The demo displays this, so it must be true. */
-enum class NarratorEngine { NANO, TEMPLATE }
+/**
+ * Which implementation actually produced the text. The demo displays this, so it must be true.
+ *
+ * LOCAL_GEMMA is a model we ship ourselves through LiteRT-LM; NANO is the one the OS owns.
+ * They are separate values precisely because the badge must not blur them together.
+ */
+enum class NarratorEngine { NANO, LOCAL_GEMMA, TEMPLATE }
 
 /**
  * Everything the narrator is allowed to know.

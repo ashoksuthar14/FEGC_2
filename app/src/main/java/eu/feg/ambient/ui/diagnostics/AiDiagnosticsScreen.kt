@@ -24,6 +24,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import eu.feg.ambient.ambient.narrator.EngineState
 import eu.feg.ambient.ambient.narrator.NanoState
 import eu.feg.ambient.ui.theme.LocalPskColors
 import eu.feg.ambient.ui.theme.PskShapes
@@ -124,6 +125,55 @@ fun AiDiagnosticsScreen(
                         onClick = viewModel::download,
                     )
                 }
+            }
+        }
+
+        item(key = "local") {
+            val engine by viewModel.engineState.collectAsStateWithLifecycle()
+            Card("Local model (LiteRT-LM)") {
+                Text(
+                    text = engine.label,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = when (engine) {
+                        is EngineState.Ready -> psk.positive
+                        is EngineState.Failed, is EngineState.NotPresent -> psk.negative
+                        else -> psk.jackpotYellow
+                    },
+                    fontWeight = FontWeight.Bold,
+                )
+                KeyValue("Model", "gemma3-270m-it-q8")
+                KeyValue("File present", if (viewModel.modelPresent) "yes" else "no")
+                KeyValue(
+                    "Size",
+                    if (viewModel.modelPresent) viewModel.modelSizeMb.toString() + " MB" else "—",
+                )
+                KeyValue("Backend", viewModel.backendLabel)
+                KeyValue("Runtime", viewModel.liteRtVersion)
+                Text(
+                    text = "Path:",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = psk.textSecondary,
+                )
+                Text(
+                    text = viewModel.modelPath,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = psk.textPrimary,
+                    fontFamily = FontFamily.Monospace,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(PskShapes.oddsButton)
+                        .background(psk.surfaceRaised)
+                        .padding(8.dp),
+                )
+                (engine as? EngineState.Failed)?.let {
+                    Text(
+                        text = it.reason,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = psk.negative,
+                        fontFamily = FontFamily.Monospace,
+                    )
+                }
+                Action("Re-initialize", enabled = true, onClick = viewModel::reinitialize)
             }
         }
 

@@ -95,8 +95,9 @@ fun NarratorLabScreen(viewModel: NarratorLabViewModel, modifier: Modifier = Modi
         }
 
         item(key = "results") {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 ResultCard("Template", state.templateResult, null, Modifier.weight(1f))
+                ResultCard("Local Gemma", state.localResult, state.localNotice, Modifier.weight(1f))
                 ResultCard("Nano", state.nanoResult, state.nanoNotice, Modifier.weight(1f))
             }
         }

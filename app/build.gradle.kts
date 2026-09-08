@@ -38,6 +38,8 @@ android {
 
     buildFeatures {
         compose = true
+        // Needed so the narrator self-test stays out of release builds.
+        buildConfig = true
     }
 
     testOptions {
@@ -65,6 +67,7 @@ dependencies {
     implementation(libs.kotlinx.datetime)
     implementation(libs.coil.compose)
     implementation(libs.mlkit.genai.prompt)
+    implementation(libs.litertlm.android)
 
     debugImplementation(libs.androidx.ui.tooling)
 

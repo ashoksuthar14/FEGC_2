@@ -23,7 +23,7 @@ Ambient v2 keeps the spine and changes what appears on the glass.
 
 ## 2. The idea in one paragraph
 
-Treat a placed bet the way Uber treats a ride and Flighty treats a flight: an ongoing, user-initiated, time-bound journey that the operating system is *designed* to track. A live bet slip becomes an Android 16 **Live Update** — a status chip in the status bar ("2/3 ✓ · 61'"), an un-collapsible card on the lock screen and always-on display, with one progress segment per leg. A small **on-device LLM (Gemini Nano)** narrates each moment in the user's own language from structured facts only — never odds, never a call to action. A **Moment Engine** decides, for every event, which surface (if any) earns it, with silence as the default output and a decision ledger the user can open ("Why am I seeing this?"). And the same surfaces flip into **Calm Mode** for at-risk, limit-approaching or self-excluded players: no money, no odds, only the match — with the Czech-law **panic button** available directly on the widget and the notification, one tap from the lock screen.
+Treat a placed bet the way Uber treats a ride and Flighty treats a flight: an ongoing, user-initiated, time-bound journey that the operating system is *designed* to track. A live bet slip becomes an Android 16 **Live Update** — a status chip in the status bar ("2/3 ✓ · 61'"), an un-collapsible card on the lock screen and always-on display, with one progress segment per leg. A small **on-device LLM (Gemini Nano)** narrates each moment in the user's own language from structured facts only — never odds, never a call to action. A **Moment Engine** decides, for every event, which surface (if any) earns it, with silence as the default output and a decision ledger the user can open ("Why am I seeing this?"). And the same surfaces flip into **Calm Mode** for at-risk, limit-approaching or self-excluded players: no money, no odds, only the match — with the **panic button** available directly on the widget and the notification, one tap from the lock screen.
 
 The reframing does the heavy lifting: the user's *own position* is the only content that is both maximally relevant and compliance-safe. A generic odds push is marketing. "Your Sparta leg is still alive, 18 minutes left" is information about a contract the user already holds — like a delivery status.
 
@@ -38,7 +38,7 @@ On top of that spine sit four things that make the entry hard to copy: an **on-d
 | Widget shows the feed / next matches | Widget is a **moment card** with four states (pre-match, live, settled, idle) driven by the user's own slips and follows |
 | Push with better targeting | **Silence is the default**. Push is the last surface, capped at ≤1 interrupting push/day; most moments render silently on chip, lock screen, widget |
 | Cloud LLM chatbot inside the app | **On-device Gemini Nano** narrates moments in CZ/SK/PL/RO/HR from structured facts. Zero tokens billed, zero personal data leaves the phone |
-| Responsible gambling = a settings page | **Calm Mode** is a rendering mode of every surface; **panic button on the lock screen** (Czech law requires it "permanently accessible in the game interface" — we put it on the OS) |
+| Responsible gambling = a settings page, self-exclusion = a checkbox | **Calm Mode** is a rendering mode of every surface; self-exclusion is a **register check** with a validity window that fails closed, as Croatian law requires; **18+ gating reaches the widget and the lock screen**, not just registration; panic button lives on the OS |
 | Ask for notification permission at first launch | **Earned opt-in**: widget first (needs no permission), permission asked at the moment a live bet is placed ("Track this slip on your lock screen?"), purpose-based channels so users mute a *thing*, not the app |
 | Black-box relevance | **Explainable**: every decision (including "show nothing") is logged on-device; "Why this?" sheet; feedback (tap/dismiss/👍👎) tunes a contextual bandit — honest, small AI that visibly learns during the demo |
 | Same message to everyone | **Personal, not promotional**: tone, length, surface and time are chosen per user by the bandit; content comes from the user's own slips, teams and habits stored locally. Zomato-style voice, never Zomato-style coupons |
@@ -63,7 +63,7 @@ Everything runs on the phone. The only server component in production is FEG's e
                  ▼                                   ▼                     ▼
  ┌───────────────────────────────────────────────────────────────┐
  │ 1. SAFETY GATE  (runs first, always)                          │
- │    self-excluded? · RVO flag · panic button active?           │
+ │    register check (HR excluded-players) · 18+ proof · panic?   │
  │    limit ≥ 80% used? · consent per purpose? · age OK?         │
  │    market × channel rules (see §10) · isPromotional?          │
  │    → CalmMode | Normal | Blocked                              │
@@ -224,15 +224,33 @@ The job is deliberately tiny: take a JSON object of facts and emit `{headline �
 
 **Three ladders, tried in order at runtime.** The app defines one `Narrator` interface and picks the best available implementation on first launch; the rest of the engine never knows which one ran.
 
+> **Tested finding.** On the demo device — a Pixel 10a — `checkStatus()` returns `UNAVAILABLE` (`606-FEATURE_NOT_FOUND`): the budget 10-series part does not carry Gemini Nano v3. The app therefore runs option B, its own Gemma 3 model via LiteRT-LM, and the user sees no difference. This is the case *for* the ladder rather than against it: Nano covers a handful of 2025–26 flagships, while FEG's customers across CZ/SK/PL/RO/HR are mostly on mid-range phones. A model FEG ships themselves reaches all of them, and FEG controls its version, language quality and any later fine-tuning — none of which is possible when the OS owns the model.
+
 | # | Option | What it costs | When it is used |
 |---|---|---|---|
 | **A** | **ML Kit GenAI Prompt API → Gemini Nano** (`com.google.mlkit:genai-prompt`) | **0 MB in the APK**, 0 €, no download you host | First choice. The model already lives in the OS (AICore), so nothing ships with the app. Requires Gemini Nano v3: Pixel 9–10 series and recent flagships. Beta, but zero-integration-cost |
-| **B** | **LiteRT-LM + Gemma 3 270M or Gemma 3 1B** (`com.google.ai.edge.litertlm:litertlm-android`) | ~300 MB (270M int8) or ~529 MB (1B int4 QAT) downloaded on first run, not bundled | Devices without Nano, and any market/OEM where AICore is absent. Fully self-hosted — FEG serves the file from their own CDN, so still no third-party call |
+| **B** | **LiteRT-LM + Gemma 3 270M or Gemma 3 1B** (`com.google.ai.edge.litertlm:litertlm-android`, Apache-2.0, Kotlin API) | ~304 MB (`gemma3-270m-it-q8.litertlm`) or ~584 MB (`gemma3-1b-it-int4.litertlm`), downloaded on first run, not bundled | **The path this build runs.** Devices without Nano, and any market/OEM where AICore is absent. Fully self-hosted — FEG serves the file from their own CDN, so still no third-party call, and no dependency on Play services or a device allowlist |
 | **C** | **Template narrator** (pure Kotlin string templates, four tones, per language) | ~0 MB, 0 ms | Old devices, low storage, model download declined, or model unavailable. Also the demo-day insurance policy |
 
 **Why not MediaPipe.** The older `com.google.mediapipe:tasks-genai` LLM Inference API is now in maintenance-only mode; Google's own docs point Android projects to the LiteRT-LM Kotlin API. Use LiteRT-LM for anything new.
 
 **Model choice inside option B.** Gemma 3 270M is the headline candidate — 270M parameters, INT4-quantised, and Google measured **0.75% battery for 25 conversations on a Pixel 9 Pro**, their most power-efficient Gemma. It is explicitly built for "high-volume, well-defined tasks" like structuring text, which is exactly our job, and explicitly *not* built for open conversation — also fine, because we never expose a chat box. Two caveats: Android GPU acceleration for 270M was still work-in-progress at the time of writing (CPU is adequate for one short sentence), and a 270M model's Czech, Polish and Romanian output is noticeably weaker than a 1B's. Where CEE-language quality matters more than footprint, Gemma 3 1B IT int4-QAT is the step up: 529 MB, and on a Samsung S24 Ultra it benchmarks at ~379 tok/s prefill and ~55 tok/s decode on CPU with ~1 GB memory — far more headroom than a 40-token sentence needs.
+
+**How the model reaches the phone without bloating the app.** The model file is never inside the APK. Google ships a mechanism built for exactly this — **Play for On-device AI** (beta), which packages models as *AI packs* inside the app bundle and lets Play host, target, patch and deliver them at no cost. Three delivery modes matter here:
+
+| Mode | Counts toward the app size shown on Play? | Use |
+|---|---|---|
+| Install-time | Yes | Not for us |
+| Fast-follow | **No** — downloads in the background right after install | Good default for engaged users |
+| On-demand | **No** — downloads only when the feature is first used | Our choice: the model arrives when the user turns on richer updates |
+
+Two properties make this genuinely cheap. Play's **delta patching** means an app update never re-downloads an unchanged model. And **device targeting** — by RAM, SoC, device model or system feature — lets FEG deliver a *different pack, or none at all*, per device class. So the ladder in the table above is also a delivery strategy:
+
+- Phone has Gemini Nano → **0 MB delivered**; the OS already has the model
+- Mid-range phone, user enables richer updates → 304 MB Gemma 3 270M pack, on-demand, on Wi-Fi
+- Low storage, declined, or unsupported → **0 MB**; the template narrator runs
+
+Most of FEG's base therefore downloads nothing. This is the same pattern users already accept from offline maps, offline translation and downloaded music — an opt-in one-time download that buys a feature that then works with no network at all. The alternative, a cloud call per message, costs FEG roughly $110k a year at this volume (§8) and puts user behaviour on someone else's server.
 
 **Making a small model safe and consistent.** Three techniques do most of the work, and they matter more than model size:
 
@@ -248,9 +266,11 @@ A fourth option, if output quality in Czech ever disappoints: **fine-tune Gemma 
 
 Do this before writing any narrator code:
 
-1. Install the **Google AI Edge Gallery** APK on the Pixel and load Gemma 3 270M. If it generates a Czech sentence acceptably, option B is proven on your exact device.
-2. In a scratch activity, call ML Kit's `checkStatus()`. `AVAILABLE` or `DOWNLOADABLE` → option A is live and you ship zero megabytes. `UNAVAILABLE` → your Pixel predates Nano v3; go with option B and say so on the slide (the fallback ladder is a *strength* in the pitch, not an excuse).
-3. Whatever the result, write the template narrator first. It takes 30 minutes, it defines the output contract, and it guarantees the demo runs.
+1. Write the template narrator **first**. Thirty minutes, it defines the output contract, and it guarantees the demo runs whatever the hardware says.
+2. Then call ML Kit's `checkStatus()` from a diagnostics screen. `AVAILABLE` or `DOWNLOADABLE` → option A is live and you ship zero megabytes. `UNAVAILABLE` → the device has no Nano v3; go to option B.
+3. For option B: accept the Gemma licence on Hugging Face, download `gemma3-270m-it-q8.litertlm`, and `adb push` it to the app's external files directory. No download screen needed for the demo; production downloads it once from FEG's CDN.
+
+Keep the diagnostics screen in the build. Showing a real `606-FEATURE_NOT_FOUND` next to a working local model is a stronger technical-feasibility moment than a demo that only runs on one phone.
 
 ### 7.3 What this buys in the pitch
 
@@ -303,7 +323,29 @@ The dollar saving is real but modest; the bigger value is that FEG can ship pers
 
 ## 9. Compliance by design (the 10% that also protects the other 90%)
 
-GDPR: consent per surface purpose (Art. 6/7) captured in-app; data minimisation by architecture (nothing personal leaves the phone); transparency for automated decisions via the "Why this?" ledger; erasure = wipe local store. Czech Gambling Act (2024 amendment): panic button (48h block, offer RVO entry) is mandated "easily and permanently accessible in the game interface" — Ambient exposes it on the widget and the Live Update as well; self-exclusion register check gates every render; approaching self-set limits (bets, losses, time) switches to Calm Mode. Marketing rules across CZ/PL/RO: no bonus, no odds, no "bet now" on any OS surface — the narrator guard enforces it mechanically. Google Play: real-money gambling apps are allowed in CZ, SK, RO, HR with licence proof and RG statements; Poland is not on Google's list, so FEG's Polish distribution stays sideloaded — Ambient has no Play-Services-only dependency on the critical path (Nano and FCM are optional with fallbacks). Android Live Update policy: ongoing, user-initiated, time-bound only — a live slip qualifies; promotions never enter that renderer. Quiet hours: honour system Do Not Disturb and Bedtime plus user quiet hours; frequency caps as a token bucket; lock-screen privacy: notifications use private lock-screen visibility and the widget has a "discreet" toggle that hides all money figures. Personal messaging: it is service information about the user's own selections, not direct marketing, so it does not need a marketing consent — but we still capture a separate "personal messages" toggle, the bandit and habit hints are computed and stored only on the device (no profiling data leaves), the user can wipe them in one tap, and Calm Mode users receive no personal messages at all. The learning loop itself is explained in plain words in "Why this?", which is how we meet GDPR transparency for automated decisions without a legal-text wall.
+The track is FEG's Croatian brand, so Croatian law leads and the EU instruments sit underneath it as the floor.
+
+**Croatia — Act on Games of Chance and its Regulation on Measures on Socially Responsible Organisation of Games of Chance.** This is binding, not soft law: ID/age verification and a check against the **register of excluded players** are required *before play is allowed*. Ambient implements self-exclusion as a **register check, not a settings checkbox** — the app queries a register, the result carries a validity window, a stale or failed result fails closed, and the app can read the register but never write to it. The panic button therefore applies a local 48-hour block *and* raises a request to be added, rather than pretending to enrol anyone itself. Every check is written to the ledger with its reference and timestamp.
+
+**18+ at every entry point, not just registration.** The OS surfaces are entry points, which is the part usually missed: an unverified account gets a neutral "verify to continue" widget card, no Live Update is ever created, and the launcher publishes only *Verify* and *Help*. Verification uses the **eIDAS 2.0 / EUDI Wallet** attribute-proof pattern — the single attribute `age_over_18 = true`, shown to the user before it is shared, with no document image and no ID number stored.
+
+**GDPR.** Synthetic data only. Data minimisation by architecture rather than by policy: slips, interests, bandit counters and the ledger never leave the device, and `MomentFacts` has no field for identity, stake, balance or odds, so the model cannot receive them. Consent is per purpose, unbundled, never pre-ticked, withdrawable in one tap; erasure is a local wipe. Transparency for automated decisions is the "Why this?" sheet.
+
+**ePrivacy.** A push carrying marketing is direct marketing regardless of the OS permission, so *Match updates* and *Offers* are separate opt-ins, captured at different moments.
+
+**EU AI Act.** Article 5 prohibits AI that manipulates or exploits vulnerabilities. Our answer is structural: the learned router sits *after* the safety gate and the attention budget, selects only among arms the rules already permit, and is rewarded for silence. It never chooses who is reached — the rules do — so it cannot reach a protected user however it is trained.
+
+**Digital Services Act.** The bandit is a recommender system, and the DSA expects people to be told why they see what they see. "Why this?" is that explanation, rendered in plain words, on the device.
+
+**Accessibility — EAA / WCAG 2.1 AA.** Contrast verified at 4.5:1 for body text and 3:1 for large and non-text elements; 48 dp touch targets; content descriptions on every icon-only control, so an odds button reads as "Liverpool win, 1.85"; score and minute changes announced through a live region; layouts survive 200% font scale; reduced-motion honoured, so the pulsing live dot has a static alternative; and won/lost legs carry an icon, never colour alone.
+
+**Responsible gambling, beyond the register.** No dark patterns: silence is the default output, caps and quiet hours are rules, and the only deadlines shown are real ones (kickoff, half-time) — §10.5 lists the three tactics we deliberately did not build. No inducements to at-risk or self-excluded customers: the safety gate runs before scoring or routing, so the inducement path does not exist in code, and Calm Mode re-renders every surface without money or odds. Approaching a self-set limit switches to Calm Mode the same way.
+
+**Platform rules.** Android reserves Live Updates for ongoing, user-initiated activities and bans promotions there, so the OS policy and the gambling guardrail point the same way. Google Play permits real-money gambling apps in CZ, SK, RO and HR with licence proof and RG statements; Poland is absent from that list, so FEG's Polish distribution stays sideloaded — Ambient keeps no Play-Services-only dependency on the critical path.
+
+**Other markets, same engine.** The Czech panic-button duty (48-hour block, offer of RVO entry) and the Romanian rule that bonus promotion may not travel by push are configuration in the market × channel matrix (§10.4), not code. That is the portability argument.
+
+**Data rule.** No real player data, no real identity documents, and **no live production feeds or APIs** — the VPN access is for understanding and replicating the interface. The Match Simulator is the compliant event source, and everything demonstrated runs from it.
 
 ---
 
@@ -453,7 +495,7 @@ Voice is dropped to a slide (AppFunctions roadmap). If time slips, cut in this o
 
 ## 14. Risks and fallbacks
 
-Gemini Nano missing on the Pixel (needs Nano v3, i.e. Pixel 9 or 10): drop to LiteRT-LM with Gemma 3 270M, or to the template narrator — all three sit behind one `Narrator` interface, so the story stays "on-device, zero egress" and the fallback ladder itself becomes a production-readiness argument on the slide. Small-model output weak in Czech: raise to Gemma 3 1B int4-QAT (529 MB), or let the guard fall back to templates for that language — quality is checked by a deterministic guard, never by trust. Live Update not promoted by the OS on the day: it still renders as an ongoing notification on the lock screen; keep the debug flag to show `hasPromotableCharacteristics()`. Bandit looks random in a short demo: pre-seed ~10 interactions so two gestures are enough to flip the winner, and always show the debug bars so the judges see the mechanism, not luck. Barcode scan fails under stage lighting: keep a "Enter ticket code" text fallback. Judges challenge "personalised marketing to gamblers": the answer is that every message is about something the user already chose, offers cannot exist in the schema, and Calm Mode users get no personal messages at all. Time overrun: cut ticket scan, then the digest notification, then widget sizes — never the engine, the learning router or Calm Mode. Judges asking "where is the trained model?": the answer is that the safety-critical parts are deterministic by design, the learned part is a small bandit tuned on the user's own taps, and the perceived AI is the on-device narrator.
+Gemini Nano missing on the Pixel (confirmed on the Pixel 10a demo device): drop to LiteRT-LM with Gemma 3 270M, or to the template narrator — all three sit behind one `Narrator` interface, so the story stays "on-device, zero egress" and the fallback ladder itself becomes a production-readiness argument on the slide. Small-model output weak in Czech: raise to Gemma 3 1B int4-QAT (529 MB), or let the guard fall back to templates for that language — quality is checked by a deterministic guard, never by trust. Live Update not promoted by the OS on the day: it still renders as an ongoing notification on the lock screen; keep the debug flag to show `hasPromotableCharacteristics()`. Bandit looks random in a short demo: pre-seed ~10 interactions so two gestures are enough to flip the winner, and always show the debug bars so the judges see the mechanism, not luck. Barcode scan fails under stage lighting: keep a "Enter ticket code" text fallback. Judges challenge "personalised marketing to gamblers": the answer is that every message is about something the user already chose, offers cannot exist in the schema, and Calm Mode users get no personal messages at all. Time overrun: cut ticket scan, then the digest notification, then widget sizes — never the engine, the learning router or Calm Mode. Judges asking "where is the trained model?": the answer is that the safety-critical parts are deterministic by design, the learned part is a small bandit tuned on the user's own taps, and the perceived AI is the on-device narrator.
 
 ---
 

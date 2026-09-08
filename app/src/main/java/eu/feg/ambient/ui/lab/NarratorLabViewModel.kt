@@ -23,6 +23,8 @@ data class LabUiState(
     val language: NarratorLanguage = NarratorLanguage.EN,
     val facts: MomentFacts = sampleFacts(MomentType.GOAL_ON_SLIP),
     val templateResult: NarratedText? = null,
+    val localResult: NarratedText? = null,
+    val localNotice: String? = null,
     val nanoResult: NarratedText? = null,
     val nanoNotice: String? = null,
     val running: Boolean = false,
@@ -59,10 +61,13 @@ class NarratorLabViewModel(private val container: AppContainer) : ViewModel() {
         viewModelScope.launch {
             _state.value = current.copy(running = true)
             val template = container.templateOnly.narrate(current.facts, current.tone, current.language)
+            val local = container.localGemmaOrNull?.narrate(current.facts, current.tone, current.language)
             val nano = container.nanoOrNull?.narrate(current.facts, current.tone, current.language)
             _state.value = _state.value.copy(
                 running = false,
                 templateResult = template,
+                localResult = local,
+                localNotice = if (local == null) container.liteRtEngine.state.value.label else null,
                 nanoResult = nano,
                 nanoNotice = if (nano == null) "Nano unavailable on this device" else null,
             )

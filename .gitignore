@@ -15,3 +15,11 @@ local.properties
 
 # Kotlin compiler scratch output
 .kotlin/
+
+# On-device model weights — pushed to the phone, never committed
+/models/
+*.litertlm
+
+# JVM crash dumps
+hs_err_pid*.log
+replay_pid*.log
