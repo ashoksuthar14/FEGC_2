@@ -65,10 +65,12 @@ internal fun LiveMatchCard(slip: SlipSurfaceState, feedback: FeedbackMark? = nul
         description = SpokenSurface.forSlip(slip) ?: (slip.activeMatch ?: "Match in progress"),
         onClick = openRoute(ROUTE_MY_BETS),
     ) {
+        // Heights are tighter than the mockup's: its zones sum past what a 4x3 widget is
+        // given, and a card whose actions sit below the fold has no actions.
         Header(slip)
-        Spacer(GlanceModifier.height(10.dp))
+        Spacer(GlanceModifier.height(6.dp))
         ScoreRow(slip, teamSp, scoreSp)
-        Spacer(GlanceModifier.height(8.dp))
+        Spacer(GlanceModifier.height(4.dp))
         Timeline(slip, showLegs = !calm)
         Divider()
         if (calm) CalmActions(slip) else Actions(slip, feedback)
@@ -81,10 +83,10 @@ internal fun LiveMatchCard(slip: SlipSurfaceState, feedback: FeedbackMark? = nul
 private fun Header(slip: SlipSurfaceState) {
     val theme = LocalClubTheme.current
     Row(
-        modifier = GlanceModifier.fillMaxWidth().height(56.dp),
+        modifier = GlanceModifier.fillMaxWidth().height(48.dp),
         verticalAlignment = Alignment.Vertical.CenterVertically,
     ) {
-        Crest(theme = theme, size = 52.dp, radius = 14.dp, bordered = true)
+        Crest(theme = theme, size = 44.dp, radius = 12.dp, bordered = true)
         Spacer(GlanceModifier.width(14.dp))
         Column(modifier = GlanceModifier.defaultWeight()) {
             Text(
@@ -141,28 +143,34 @@ private fun LivePill() {
 private fun ScoreRow(slip: SlipSurfaceState, teamSp: androidx.compose.ui.unit.TextUnit, scoreSp: androidx.compose.ui.unit.TextUnit) {
     val home = slip.homeTeam ?: "Home"
     val away = slip.awayTeam ?: "Away"
+    // Two crests, a 50sp score and its padding leave a 4-cell card roughly 60dp per name.
+    // Below a comfortable width the names give way to their codes rather than to "L...".
+    val contentWidthDp = LocalSize.current.width.value - 2 * PAD_H.value
+    val compact = contentWidthDp < 400f
+    val homeLabel = if (compact) ClubThemes.forTeam(home).short else home
+    val awayLabel = if (compact) ClubThemes.forTeam(away).short else away
     Row(
-        modifier = GlanceModifier.fillMaxWidth().height(96.dp),
+        modifier = GlanceModifier.fillMaxWidth().height(80.dp),
         verticalAlignment = Alignment.Vertical.CenterVertically,
     ) {
         Text(
-            text = home,
+            text = homeLabel,
             style = TextStyle(ColorProvider(WHITE), teamSp, FontWeight.Medium, textAlign = TextAlign.End),
             maxLines = 1,
             modifier = GlanceModifier.defaultWeight(),
         )
-        Spacer(GlanceModifier.width(10.dp))
-        Crest(theme = ClubThemes.forTeam(home), size = 54.dp, radius = 14.dp, bordered = false)
+        Spacer(GlanceModifier.width(8.dp))
+        Crest(theme = ClubThemes.forTeam(home), size = 46.dp, radius = 12.dp, bordered = false)
         Text(
             text = (slip.homeScore ?: 0).toString() + " - " + (slip.awayScore ?: 0),
             style = TextStyle(ColorProvider(WHITE), scoreSp, FontWeight.Bold, textAlign = TextAlign.Center),
             maxLines = 1,
-            modifier = GlanceModifier.padding(horizontal = 20.dp),
+            modifier = GlanceModifier.padding(horizontal = 12.dp),
         )
-        Crest(theme = ClubThemes.forTeam(away), size = 54.dp, radius = 14.dp, bordered = false)
-        Spacer(GlanceModifier.width(10.dp))
+        Crest(theme = ClubThemes.forTeam(away), size = 46.dp, radius = 12.dp, bordered = false)
+        Spacer(GlanceModifier.width(8.dp))
         Text(
-            text = away,
+            text = awayLabel,
             style = TextStyle(ColorProvider(WHITE), teamSp, FontWeight.Medium, textAlign = TextAlign.Start),
             maxLines = 1,
             modifier = GlanceModifier.defaultWeight(),
@@ -198,7 +206,7 @@ private fun Timeline(slip: SlipSurfaceState, showLegs: Boolean) {
             modifier = GlanceModifier.fillMaxWidth().height(TimelineBitmap.HEIGHT_DP.dp),
         )
         if (showLegs) {
-            Spacer(GlanceModifier.height(8.dp))
+            Spacer(GlanceModifier.height(4.dp))
             // Legs won on the slip. Never a stake, a return, or any money figure.
             Text(
                 text = slip.legsWon.toString() + " of " + slip.legsTotal + " legs",
@@ -217,15 +225,15 @@ private fun spreadGoals(count: Int, minute: Int): List<Int> =
 
 @Composable
 private fun Divider() {
-    Spacer(GlanceModifier.height(16.dp))
+    Spacer(GlanceModifier.height(10.dp))
     Box(modifier = GlanceModifier.fillMaxWidth().height(1.dp).background(ColorProvider(WHITE_10)), contentAlignment = Alignment.Center) {}
-    Spacer(GlanceModifier.height(16.dp))
+    Spacer(GlanceModifier.height(10.dp))
 }
 
 @Composable
 private fun Actions(slip: SlipSurfaceState, feedback: FeedbackMark?) {
     val match = (slip.homeTeam ?: "the home side") + " versus " + (slip.awayTeam ?: "the away side")
-    Row(modifier = GlanceModifier.fillMaxWidth().height(52.dp), verticalAlignment = Alignment.Vertical.CenterVertically) {
+    Row(modifier = GlanceModifier.fillMaxWidth().height(44.dp), verticalAlignment = Alignment.Vertical.CenterVertically) {
         ActionItem(R.drawable.ic_ball, "Live Updates", "Live updates for " + match, actionRunCallback<ToggleLiveUpdateAction>())
         VDivider()
         if (feedback == null) {
@@ -251,7 +259,7 @@ private fun Actions(slip: SlipSurfaceState, feedback: FeedbackMark?) {
 @Composable
 private fun CalmActions(slip: SlipSurfaceState) {
     val match = (slip.homeTeam ?: "the home side") + " versus " + (slip.awayTeam ?: "the away side")
-    Row(modifier = GlanceModifier.fillMaxWidth().height(52.dp), verticalAlignment = Alignment.Vertical.CenterVertically) {
+    Row(modifier = GlanceModifier.fillMaxWidth().height(44.dp), verticalAlignment = Alignment.Vertical.CenterVertically) {
         ActionItem(R.drawable.ic_ball, "Live Updates", "Live updates for " + match, actionRunCallback<ToggleLiveUpdateAction>())
         VDivider()
         ActionItem(R.drawable.ic_bell_off, "Take a break", "Open protection tools and take a break", actionRunCallback<PanicAction>())
@@ -263,31 +271,31 @@ private fun RowScope.ActionItem(icon: Int, label: String, description: String, a
     Row(
         modifier = GlanceModifier
             .defaultWeight()
-            .height(52.dp)
+            .height(44.dp)
             .clickable(action)
             .semantics { contentDescription = description },
         verticalAlignment = Alignment.Vertical.CenterVertically,
         horizontalAlignment = Alignment.Horizontal.CenterHorizontally,
     ) {
         Box(
-            modifier = GlanceModifier.size(40.dp).background(ColorProvider(WHITE_10)).cornerRadius(20.dp),
+            modifier = GlanceModifier.size(34.dp).background(ColorProvider(WHITE_10)).cornerRadius(17.dp),
             contentAlignment = Alignment.Center,
         ) {
             Image(
                 provider = ImageProvider(icon),
                 contentDescription = null,
-                modifier = GlanceModifier.size(20.dp),
+                modifier = GlanceModifier.size(18.dp),
                 colorFilter = ColorFilter.tint(ColorProvider(WHITE)),
             )
         }
         Spacer(GlanceModifier.width(10.dp))
-        Text(text = label, style = TextStyle(ColorProvider(WHITE), 15.sp), maxLines = 1)
+        Text(text = label, style = TextStyle(ColorProvider(WHITE), 13.sp), maxLines = 1)
     }
 }
 
 @Composable
 private fun VDivider() {
-    Box(modifier = GlanceModifier.width(1.dp).height(31.dp).background(ColorProvider(WHITE_10)), contentAlignment = Alignment.Center) {}
+    Box(modifier = GlanceModifier.width(1.dp).height(26.dp).background(ColorProvider(WHITE_10)), contentAlignment = Alignment.Center) {}
 }
 
 private val WHITE = Color(0xFFFFFFFF)

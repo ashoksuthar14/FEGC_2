@@ -77,7 +77,7 @@ internal fun GlassCard(
 internal val RADIUS = 28.dp
 internal val BORDER_WIDTH = 1.dp
 internal val PAD_H = 22.dp
-internal val PAD_V = 20.dp
+internal val PAD_V = 14.dp
 
 /** White at 14 per cent: enough edge to separate the card from a dark wallpaper, no more. */
 private val BORDER = Color(0x24FFFFFF)

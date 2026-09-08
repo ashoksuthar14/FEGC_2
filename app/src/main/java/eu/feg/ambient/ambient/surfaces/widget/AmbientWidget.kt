@@ -48,7 +48,9 @@ class AmbientWidget : GlanceAppWidget() {
 
     // TODO: SizeMode.Responsive with a 4x2 medium breakpoint that adds the narrated detail
     // line. Small first — a 2x2 that is right beats two sizes that are approximately right.
-    override val sizeMode: SizeMode = SizeMode.Single
+    // Exact, so LocalSize is the size the launcher actually gave us: the match card decides
+    // full names or short codes by width, and draws its timeline bitmap at that width.
+    override val sizeMode: SizeMode = SizeMode.Exact
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val store = WidgetStateStore(context)
