@@ -71,7 +71,13 @@ object DigestRanker {
      */
     private fun isSafeToRecall(entry: LedgerEntry): Boolean =
         entry.protection != ProtectionState.BLOCKED.name &&
-            entry.protection != ProtectionState.UNVERIFIED.name
+            entry.protection != ProtectionState.UNVERIFIED.name &&
+            // The engine records every live score change as a GOAL_ON_SLIP *event* and then
+            // rules on ownership; a row it declined as "Not yours" is a match the customer has
+            // no stake in. Summarising it as "a goal on your slip" would tell them they hold
+            // a bet they do not -- a false statement about their own account. Not theirs then
+            // means not theirs now, so it never enters the catch-up at all.
+            !entry.reason.startsWith(NOT_YOURS)
 
     /**
      * The grouping key is the match, and the match is recovered from the ids we already write.
@@ -162,6 +168,9 @@ object DigestRanker {
             home + " v " + away
         }
     }
+
+    /** AmbientEngine's wording for an ownership rejection; matched on prefix, not equality. */
+    private const val NOT_YOURS = "Not yours"
 
     private const val TIER_SETTLED = 0
     private const val TIER_LEG_DECIDED = 1
