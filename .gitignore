@@ -12,3 +12,6 @@ local.properties
 
 # Reference material — large binaries, kept out of git
 /FEG Website screenshots/
+
+# Kotlin compiler scratch output
+.kotlin/
