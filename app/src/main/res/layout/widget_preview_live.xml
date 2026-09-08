@@ -1,19 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Picker preview for the Live Slip widget. Static on purpose: this is the tile in the widget
-  picker, not the widget. It shows the state the widget is FOR - a slip in flight - because a
-  preview of the idle state is what makes a customer scroll past.
+  Picker preview for the Live Slip widget.
 
-  The five previews exist because without them every entry in the picker is the same grey
-  Glance loading layout, and a customer picking five identical tiles gets five copies of one
-  widget. Ask how we know.
+  IT MIRRORS LiveMatchCard, ZONE FOR ZONE: competition header with the crest, the LIVE pill
+  and the minute; the score row with a club either side of the figure; the timeline and the
+  legs caption; the divider; the action row. An earlier version of this file drew a layout the
+  app no longer has anywhere, which read as the widget having reverted to an older design when
+  in fact only the picker had. A preview that flatters or lags the card is worse than none.
+
+  Static by necessity: the launcher inflates this itself, with no Glance, no bitmaps and no
+  state. So the timeline is a plain filled bar rather than the drawn one, and the crests are
+  flat colours rather than CrestBitmap patterns. Nothing here is a club badge; no logo in this
+  app is licensed.
+
+  The fixture is the one the widget actually opens on, so the tile is a promise the card keeps.
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
     android:background="@drawable/widget_preview_card"
-    android:padding="16dp">
+    android:paddingLeft="18dp"
+    android:paddingRight="18dp"
+    android:paddingTop="12dp"
+    android:paddingBottom="12dp">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -22,74 +32,245 @@
         android:gravity="center_vertical">
 
         <View
-            android:layout_width="22dp"
-            android:layout_height="22dp"
-            android:background="@drawable/widget_preview_crest" />
+            android:layout_width="34dp"
+            android:layout_height="34dp"
+            android:background="@drawable/widget_preview_crest_club" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="11dp"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="ENGLAND 1"
+                android:textColor="#FFFFFFFF"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:maxLines="1" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="England"
+                android:textColor="#FF939AA8"
+                android:textSize="11sp"
+                android:maxLines="1" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="26dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:background="@drawable/widget_preview_pill"
+            android:paddingLeft="9dp"
+            android:paddingRight="9dp">
+
+            <View
+                android:layout_width="7dp"
+                android:layout_height="7dp"
+                android:background="@drawable/widget_preview_dot_live" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:text="LIVE"
+                android:textColor="#FF35D07F"
+                android:textSize="11sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="11dp"
+            android:text="74&#8217;"
+            android:textColor="#FFFFFFFF"
+            android:textSize="17sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
 
         <TextView
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:layout_marginStart="7dp"
-            android:text="LIVE"
+            android:gravity="end"
+            android:text="Ipswich"
             android:textColor="#FFFFFFFF"
-            android:textSize="11sp"
-            android:textStyle="bold" />
+            android:textSize="14sp"
+            android:maxLines="1" />
+
+        <View
+            android:layout_width="34dp"
+            android:layout_height="34dp"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/widget_preview_crest_home" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="67'"
-            android:textColor="#FF35D07F"
-            android:textSize="12sp"
-            android:textStyle="bold" />
+            android:layout_marginStart="10dp"
+            android:layout_marginEnd="10dp"
+            android:text="0 - 2"
+            android:textColor="#FFFFFFFF"
+            android:textSize="36sp"
+            android:textStyle="bold"
+            android:maxLines="1" />
+
+        <View
+            android:layout_width="34dp"
+            android:layout_height="34dp"
+            android:layout_marginEnd="8dp"
+            android:background="@drawable/widget_preview_crest_away" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="start"
+            android:text="Liverpool"
+            android:textColor="#FFFFFFFF"
+            android:textSize="14sp"
+            android:maxLines="1" />
     </LinearLayout>
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        android:text="2 – 1"
-        android:textColor="#FFFFFFFF"
-        android:textSize="40sp"
-        android:textStyle="bold" />
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="2dp"
-        android:text="Hajduk Split v Rijeka"
-        android:textColor="#FF939AA8"
-        android:textSize="12sp" />
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="6dp"
-        android:layout_marginTop="12dp"
+        android:layout_height="5dp"
+        android:layout_marginTop="8dp"
         android:orientation="horizontal">
 
         <View
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:layout_weight="3"
+            android:layout_weight="74"
             android:background="@drawable/widget_preview_track_filled" />
-
-        <View
-            android:layout_width="4dp"
-            android:layout_height="match_parent" />
 
         <View
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:layout_weight="1"
+            android:layout_weight="16"
             android:background="@drawable/widget_preview_track" />
     </LinearLayout>
 
     <TextView
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:text="3 of 4 home"
+        android:layout_marginTop="5dp"
+        android:gravity="center_horizontal"
+        android:text="1 of 3 legs"
         android:textColor="#FF939AA8"
         android:textSize="12sp" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginTop="9dp"
+        android:background="#1AFFFFFF" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="9dp"
+        android:orientation="horizontal">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="horizontal"
+            android:gravity="center">
+
+            <ImageView
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:background="@drawable/widget_preview_action"
+                android:padding="6dp"
+                android:src="@drawable/ic_ball"
+                android:tint="#FFFFFFFF"
+                android:contentDescription="@null" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="5dp"
+                android:text="Live"
+                android:textColor="#FFFFFFFF"
+                android:textSize="11sp" />
+        </LinearLayout>
+
+        <View
+            android:layout_width="1dp"
+            android:layout_height="22dp"
+            android:layout_gravity="center_vertical"
+            android:background="#1AFFFFFF" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="horizontal"
+            android:gravity="center">
+
+            <ImageView
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:background="@drawable/widget_preview_action"
+                android:padding="6dp"
+                android:src="@drawable/ic_thumb_up"
+                android:tint="#FFFFFFFF"
+                android:contentDescription="@null" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="5dp"
+                android:text="Like"
+                android:textColor="#FFFFFFFF"
+                android:textSize="11sp" />
+        </LinearLayout>
+
+        <View
+            android:layout_width="1dp"
+            android:layout_height="22dp"
+            android:layout_gravity="center_vertical"
+            android:background="#1AFFFFFF" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="horizontal"
+            android:gravity="center">
+
+            <ImageView
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:background="@drawable/widget_preview_action"
+                android:padding="6dp"
+                android:src="@drawable/ic_bell_off"
+                android:tint="#FFFFFFFF"
+                android:contentDescription="@null" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="5dp"
+                android:text="Mute"
+                android:textColor="#FFFFFFFF"
+                android:textSize="11sp" />
+        </LinearLayout>
+    </LinearLayout>
 </LinearLayout>

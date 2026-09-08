@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The header crest on the Live Slip preview: a rounded square with a hairline, matching the
+  bordered crest LiveMatchCard draws. Flat colour, never a club badge: no logo in this app is
+  licensed, and a preview is the one place a scraped one would be most visible.
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="#FF0E4C96" />
+    <corners android:radius="10dp" />
+    <stroke android:width="1dp" android:color="#24FFFFFF" />
+</shape>

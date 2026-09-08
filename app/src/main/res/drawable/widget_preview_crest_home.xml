@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ipswich has no theme, so ClubThemes.forTeam falls back to neutral: psk.surfaceRaised. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="#FF3B3B43" />
+    <corners android:radius="9dp" />
+</shape>
