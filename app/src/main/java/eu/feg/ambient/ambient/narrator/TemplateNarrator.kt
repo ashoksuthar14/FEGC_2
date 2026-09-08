@@ -1,5 +1,7 @@
 package eu.feg.ambient.ambient.narrator
 
+import eu.feg.ambient.ambient.loyalty.LoyaltyTier
+
 /**
  * The pre-rendered view of [MomentFacts] the line tables read from. Every value is already
  * a string with a sensible stand-in, so a table entry never has to handle a null.
@@ -26,6 +28,30 @@ internal class Facts(private val f: MomentFacts) {
         ?.joinToString(", ")
         ?.let { if (it.endsWith(".")) it else it + "." }
         ?: "Nothing new since you left."
+
+    // N7. Counts and names only, like everything above. The count is exposed as an Int as
+    // well as digits because the Croatian table has to agree a noun with it.
+    val mission: String = f.missionTitle ?: "Mission"
+    val badge: String = f.badgeName ?: "Badge"
+    val badgeCount: Int = (f.badgeCount ?: 0).coerceAtLeast(0)
+    val badges: String = badgeCount.toString()
+    val tier: String = f.tierName ?: "Bronze"
+    /** Null at the top tier, or when the facts did not say. The tables read null as "top". */
+    val toNext: Int? = f.badgesToNextTier?.takeIf { it > 0 }
+    val nextTier: String? = nextTierName(tier)
+}
+
+/**
+ * The tier above the named one, by the order LoyaltyTier declares.
+ *
+ * Derived here rather than carried in MomentFacts: the next tier's name is a function of the
+ * current one, and a second name field would be one more thing a model could get wrong. The
+ * narrator learns nothing about money from the enum — it holds a badge threshold and a name.
+ */
+internal fun nextTierName(tier: String): String? {
+    val current = LoyaltyTier.entries.firstOrNull { it.name.equals(tier, ignoreCase = true) }
+        ?: return null
+    return LoyaltyTier.after(current)?.name?.lowercase()?.replaceFirstChar { it.uppercase() }
 }
 
 internal interface TemplateLines {

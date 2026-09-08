@@ -47,7 +47,35 @@ class UserStateRepository(private val prefs: SharedPreferences?) {
      * preference through SharedPreferences with a StateFlow on top — which is exactly the
      * shape the surfaces need in order to re-theme the moment it changes.
      */
-    fun setMyClub(clubId: String?) = update { it.copy(myClubId = clubId) }
+    /**
+     * Picking a club to theme by also follows it.
+     *
+     * Otherwise a customer who chose their club would be told they follow nobody, which is
+     * both wrong and the kind of thing that makes a mission look broken. Un-picking leaves
+     * the follow in place: they still care about the club, they just wanted different
+     * colours.
+     */
+    fun setMyClub(clubId: String?) = update { state ->
+        state.copy(
+            myClubId = clubId,
+            followedClubIds = if (clubId.isNullOrBlank()) {
+                state.followedClubIds
+            } else {
+                state.followedClubIds + clubId
+            },
+        )
+    }
+
+    /** Follows or unfollows a club, leaving the themed club alone. */
+    fun toggleFollow(clubId: String) = update { state ->
+        state.copy(
+            followedClubIds = if (clubId in state.followedClubIds) {
+                state.followedClubIds - clubId
+            } else {
+                state.followedClubIds + clubId
+            },
+        )
+    }
 
     private fun update(block: (UserState) -> UserState) {
         val next = block(_state.value)

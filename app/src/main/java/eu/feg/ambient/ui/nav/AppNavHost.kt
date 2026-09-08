@@ -75,13 +75,17 @@ import eu.feg.ambient.ui.ticket.ScanTicketViewModel
 import eu.feg.ambient.ambient.surfaces.ProtectionState
 import androidx.compose.runtime.LaunchedEffect
 import eu.feg.ambient.ui.promo.PromoScreen
+import eu.feg.ambient.ui.loyalty.LoyaltyViewModel
+import eu.feg.ambient.ui.loyalty.MissionsScreen
+import eu.feg.ambient.ui.loyalty.RewardsScreen
 import eu.feg.ambient.ui.rg.ResponsibleGamingScreen
 import eu.feg.ambient.ui.rg.ResponsibleGamingViewModel
 import eu.feg.ambient.ui.theme.LocalPskColors
 
 private val MORE_ITEMS = listOf(
     "Lotto", "Promo", "Forum", "Results", "Statistics", "News",
-    "Champions Club", "Branches", "Help", "Responsible gaming", "Settings",
+    "Champions Club", "Branches", "Help", "Missions", "My rewards",
+    "Responsible gaming", "Settings",
 )
 
 /** Phase 2 test benches, kept under their own heading so they read as developer tools. */
@@ -292,6 +296,33 @@ fun AppNavHost(
                 }
             }
 
+            // N7. Two routes rather than one screen with tabs: the loyalty shortcut deep-links
+            // straight to rewards, and a tab index inside a deep link is the kind of thing that
+            // silently stops matching. Each screen offers the other, so the pair still reads as
+            // one place.
+            composable(Routes.MISSIONS) {
+                val vm: LoyaltyViewModel = viewModel(
+                    factory = PskViewModelFactory(container) { LoyaltyViewModel(it) },
+                )
+                MissionsScreen(
+                    viewModel = vm,
+                    // The deposit-limit mission is completed by actually setting a limit, so
+                    // its card opens the tool rather than explaining where to find it.
+                    onSetLimit = { navController.navigate(Routes.RESPONSIBLE_GAMING) },
+                    onOpenRewards = { navController.navigate(Routes.REWARDS) },
+                )
+            }
+
+            composable(Routes.REWARDS) {
+                val vm: LoyaltyViewModel = viewModel(
+                    factory = PskViewModelFactory(container) { LoyaltyViewModel(it) },
+                )
+                RewardsScreen(
+                    viewModel = vm,
+                    onOpenMissions = { navController.navigate(Routes.MISSIONS) },
+                )
+            }
+
             composable(Routes.RESPONSIBLE_GAMING) {
                 val vm: ResponsibleGamingViewModel = viewModel(
                     factory = PskViewModelFactory(container) { ResponsibleGamingViewModel(it) },
@@ -394,6 +425,8 @@ fun AppNavHost(
                             .clickable {
                                 showMore = false
                                 when (item) {
+                                    "Missions" -> navController.navigate(Routes.MISSIONS)
+                                    "My rewards" -> navController.navigate(Routes.REWARDS)
                                     "Responsible gaming" ->
                                         navController.navigate(Routes.RESPONSIBLE_GAMING)
                                     "Promo" -> navController.navigate(Routes.PROMO)

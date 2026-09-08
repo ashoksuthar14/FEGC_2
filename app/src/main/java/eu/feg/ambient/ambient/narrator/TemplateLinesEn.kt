@@ -89,5 +89,44 @@ internal object TemplateLinesEn : TemplateLines {
             Tone.STATS -> f.won + " won · " + f.lost + " lost" to f.digest
             Tone.ONE_LINER -> "Catch up" to f.digest
         }
+
+        // N7. A badge is a count and a name, and the line says exactly that. There is no
+        // "claim", no "unlock" and no next thing to do, because the moment is over: the
+        // customer did the thing, and this is the receipt. The next tier is named as a
+        // distance, never as a goal.
+        MomentType.MISSION_COMPLETE -> when (tone) {
+            Tone.PLAIN -> "Badge earned · " + f.mission to
+                f.badge + ". That's " + badges(f) + ". " + nextTier(f, "more for ")
+            Tone.WITTY -> "One for the shelf · " + f.badge to
+                f.mission + ", done. " + badges(f).replaceFirstChar { it.uppercase() } + " and counting."
+            Tone.STATS -> badges(f) + " · " + f.tier to
+                f.mission + " complete. " + f.badge + " earned. " + nextTier(f, "to ")
+            Tone.ONE_LINER -> f.badge + " ✓" to f.mission + " done."
+        }
+
+        MomentType.TIER_REACHED -> when (tone) {
+            Tone.PLAIN -> f.tier + " reached" to
+                badges(f).replaceFirstChar { it.uppercase() } + " got you there. " + nextTier(f, "more for ")
+            Tone.WITTY -> "Well, look at that · " + f.tier to
+                badges(f).replaceFirstChar { it.uppercase() } + " in and you've made " + f.tier + ". Kettle on."
+            Tone.STATS -> f.tier + " · " + badges(f) to
+                "Tier reached with " + badges(f) + ". " + nextTier(f, "to ")
+            Tone.ONE_LINER -> f.tier + " ✓" to badges(f).replaceFirstChar { it.uppercase() } + "."
+        }
+    }
+
+    /** "5 badges", "1 badge". */
+    private fun badges(f: Facts): String =
+        f.badges + if (f.badgeCount == 1) " badge" else " badges"
+
+    /**
+     * "2 more for Gold." / "2 to Gold." — or "That's the top." when there is no tier above.
+     * Nothing at all when the facts did not carry the distance: a sentence about the next
+     * tier with no number in it would be an invitation, not a fact.
+     */
+    private fun nextTier(f: Facts, joiner: String): String {
+        val next = f.nextTier ?: return "That's the top."
+        val toNext = f.toNext ?: return ""
+        return toNext.toString() + " " + joiner + next + "."
     }
 }

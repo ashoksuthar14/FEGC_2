@@ -15,6 +15,7 @@ import eu.feg.ambient.MainActivity
 import eu.feg.ambient.ambient.identity.ClubTheme
 import eu.feg.ambient.ambient.identity.ClubThemes
 import eu.feg.ambient.ambient.identity.CrestBitmap
+import eu.feg.ambient.ambient.loyalty.LoyaltyShortcut
 import eu.feg.ambient.ambient.surfaces.AndroidSurfaceController
 import eu.feg.ambient.ambient.surfaces.ProtectionState
 import eu.feg.ambient.data.model.BetStatus
@@ -44,6 +45,14 @@ class AmbientShortcuts(
     private val matchRepository: MatchRepository,
     private val betRepository: BetRepository,
     private val clubTheme: () -> ClubTheme = { ClubThemes.Default },
+    /**
+     * N7. Whether the rewards door belongs in the menu right now.
+     *
+     * Passed in rather than read here, because the rule ("NORMAL, and at least one badge")
+     * lives in LoyaltyShortcut.visible where the loyalty package can test it. Defaults to
+     * false so a caller that has not wired loyalty gets the menu it had before.
+     */
+    private val showRewards: () -> Boolean = { false },
 ) : AndroidSurfaceController.ShortcutRendering {
 
     /** What a shortcut is before it becomes a launcher object, so [publish] can rank the set. */
@@ -116,9 +125,18 @@ class AmbientShortcuts(
         // MAX_SHORTCUTS is not a style choice: getMaxShortcutCountPerActivity is commonly four
         // or five and is the OEM's to decide, and a set over the limit is rejected whole rather
         // than trimmed. Four is the number every launcher we have tried accepts.
-        val shortcuts = specsFor(protection)
-            .take(MAX_SHORTCUTS)
-            .mapIndexed { rank, spec -> spec.toShortcut(rank) }
+        val specs = specsFor(protection).take(MAX_SHORTCUTS)
+        val shortcuts = specs.mapIndexed { rank, spec -> spec.toShortcut(rank) }.toMutableList()
+
+        // Rewards goes LAST and only in NORMAL, and it displaces the least likely tap rather
+        // than being dropped: the set is capped, and a door the customer earned should not be
+        // silently absent because a fixture happened to fill the fourth slot. specsFor already
+        // returns the protected sets without it -- CALM, UNVERIFIED and BLOCKED never reach
+        // this branch, which is the rule, not an optimisation.
+        if (protection == ProtectionState.NORMAL && showRewards()) {
+            if (shortcuts.size >= MAX_SHORTCUTS) shortcuts.removeAt(shortcuts.lastIndex)
+            shortcuts += LoyaltyShortcut.toShortcut(context, shortcuts.size)
+        }
 
         // setDynamicShortcuts replaces the set in one call. Remove-all-then-add, which this
         // class replaces, leaves the old set live between the two calls and leaves it there for

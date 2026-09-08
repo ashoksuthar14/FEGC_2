@@ -53,6 +53,15 @@ import eu.feg.ambient.ambient.surfaces.live.LiveUpdateRenderer
 import eu.feg.ambient.ambient.surfaces.widget.WidgetRenderer
 import eu.feg.ambient.data.clock.MatchClock
 import eu.feg.ambient.data.clock.SystemMatchClock
+import eu.feg.ambient.ambient.loyalty.BadgeAwarder
+import eu.feg.ambient.ambient.loyalty.LoyaltyShortcut
+import eu.feg.ambient.ambient.loyalty.BadgeRepository
+import eu.feg.ambient.ambient.loyalty.MissionTracker
+import eu.feg.ambient.ambient.surfaces.widget.WidgetRefresher
+import eu.feg.ambient.ambient.loyalty.LoyaltyCatalogue
+import eu.feg.ambient.ambient.loyalty.LoyaltyRepository
+import eu.feg.ambient.ambient.loyalty.MissionRepository
+import eu.feg.ambient.ambient.loyalty.store.LoyaltyStore
 import eu.feg.ambient.data.mock.MockDataSource
 import eu.feg.ambient.data.repo.BetRepository
 import eu.feg.ambient.data.repo.MatchRepository
@@ -75,7 +84,14 @@ import kotlinx.coroutines.launch
  */
 class AppContainer(context: Context) {
 
-    private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    /**
+     * The container's own scope.
+     *
+     * Public because AmbientApp starts the mission tracker with it: a subscriber that must
+     * live exactly as long as the process belongs on the process's scope, not on a second one
+     * created at the call site that nobody would remember to cancel.
+     */
+    val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     // --- club identity (N6) --------------------------------------------------------------
 
@@ -196,6 +212,11 @@ class AppContainer(context: Context) {
             matchRepository = matchRepository,
             betRepository = betRepository,
             clubTheme = { _myClubTheme.value },
+            // Read through the lambda, not captured: loyaltyRepository is declared further
+            // down this file and the menu is not built during construction.
+            showRewards = {
+                LoyaltyShortcut.visible(loyaltyRepository.snapshot(), protectionEvaluator.state.value)
+            },
         )
     }
 
@@ -282,6 +303,69 @@ class AppContainer(context: Context) {
     )
 
     // --- digest (step 16) ---------------------------------------------------------------
+
+    // --- N7 loyalty ---------------------------------------------------------------------
+
+    /**
+     * Missions, badges and perks.
+     *
+     * The catalogue reads the same assets folder as everything else; the store is one JSON
+     * file behind a StateFlow, the Ledger's pattern rather than Room -- see LoyaltyStore for
+     * why. start() is called once below, because the flows are shared and a second instance
+     * of the tracker would double-count every mission.
+     */
+    val loyaltyCatalogue = LoyaltyCatalogue { path -> source.read(path) }
+
+    val loyaltyStore = LoyaltyStore(context)
+
+    val missionRepository = MissionRepository(loyaltyCatalogue, loyaltyStore)
+
+    val badgeRepository = BadgeRepository(loyaltyCatalogue, loyaltyStore)
+
+    val loyaltyRepository = LoyaltyRepository(
+        catalogue = loyaltyCatalogue,
+        store = loyaltyStore,
+        missionRepository = missionRepository,
+        badgeRepository = badgeRepository,
+        protection = protectionEvaluator.state,
+        now = { clock.now() },
+    ).also {
+        missionRepository.start(appScope)
+        badgeRepository.start(appScope)
+        it.start(appScope)
+    }
+
+    /**
+     * The one place mission progress is computed.
+     *
+     * ONE INSTANCE, started once from AmbientApp. Two trackers would award nothing twice --
+     * the store forbids that -- but would recompute the whole set on every change for no
+     * reason, and "mission progress jumps" is the symptom of a second subscriber.
+     *
+     * Declared after the engine because the awarder posts into it: a completed mission is an
+     * event through AmbientEngine.onEvent like any other, never a notification of its own.
+     */
+    val badgeAwarder = BadgeAwarder(
+        badgeRepository = badgeRepository,
+        raise = { event -> engine.onEvent(event) },
+        now = { clock.now() },
+    )
+
+    val missionTracker = MissionTracker(
+        missionRepository = missionRepository,
+        badgeAwarder = badgeAwarder,
+        userStateRepository = userStateRepository,
+        betRepository = betRepository,
+        ledger = ledger,
+        protection = protectionEvaluator.state,
+        // Wired to the repository rather than repeated, so the tracker and the screens'
+        // "paused" flag cannot disagree about what CALM means.
+        accrues = { loyaltyRepository.accrues(it) },
+        // AppWidgetManager is the only party that knows whether a widget is on a home
+        // screen; the launcher tells nobody. Asked on each recompute rather than observed.
+        widgetPlaced = { WidgetRefresher.anyPlaced(context) },
+        now = { clock.now() },
+    )
 
     /** How long the customer has been away, and whether that is worth a catch-up. */
     val awayTracker = AwayTracker(context)

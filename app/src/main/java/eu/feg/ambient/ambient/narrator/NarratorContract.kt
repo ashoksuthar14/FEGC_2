@@ -12,6 +12,20 @@ enum class MomentType {
     HALFTIME,
     MINUTES_REMAINING,
     AWAY_DIGEST,
+
+    /**
+     * N7. A mission finished and a badge was earned.
+     *
+     * A MOMENT LIKE ANY OTHER, and that is the design. Missions do not get their own push
+     * channel: this goes through AmbientEngine.onEvent, gets scored, and competes for the
+     * same one-alert-a-day budget as a goal on the customer's slip. Usually that means the
+     * widget, occasionally an alert, and often nothing at all -- which is the correct
+     * outcome for a badge and the reason mission nagging cannot happen here.
+     */
+    MISSION_COMPLETE,
+
+    /** N7. Enough badges for the next tier. Rarer than MISSION_COMPLETE, same rules. */
+    TIER_REACHED,
 }
 
 enum class Tone { PLAIN, WITTY, STATS, ONE_LINER }
@@ -57,6 +71,27 @@ data class MomentFacts(
     val digestItems: List<String> = emptyList(),
     /** "follows Sparta for 6 weeks" — behaviour, not identity. */
     val habitHints: List<String> = emptyList(),
+
+    // --- N7 loyalty ---------------------------------------------------------------------
+    //
+    // Counts and names, exactly like the rest of this class, and for the same reason: there
+    // is no field here that could carry a stake, a bonus or the value of a perk, so no
+    // template and no model can write one into a mission line.
+
+    /** "Follow three teams" — the mission, in the words the customer already read. */
+    val missionTitle: String? = null,
+
+    /** "Three clubs" — the badge just earned. */
+    val badgeName: String? = null,
+
+    /** Total badges held, by weight. A count, never a currency. */
+    val badgeCount: Int? = null,
+
+    /** "Silver". The tier's own name, never a rank against other customers. */
+    val tierName: String? = null,
+
+    /** How many more badges the next tier needs, for TIER_REACHED and the widget line. */
+    val badgesToNextTier: Int? = null,
 )
 
 data class NarratedText(

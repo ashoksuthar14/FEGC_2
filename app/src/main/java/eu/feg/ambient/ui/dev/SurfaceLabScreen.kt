@@ -243,6 +243,27 @@ fun SurfaceLabScreen(viewModel: SurfaceLabViewModel, modifier: Modifier = Modifi
             }
         }
 
+        item(key = "loyalty") {
+            LabCard("Missions and badges (N7)") {
+                ActionGrid(
+                    listOf(
+                        "Complete next mission" to { viewModel.completeNextMission() },
+                        "Follow two more clubs" to { viewModel.followTwoMoreClubs() },
+                        "Grant 5 badges" to { viewModel.grantFiveBadges() },
+                        "Reset loyalty" to { viewModel.resetLoyalty() },
+                    ),
+                    perRow = 2,
+                )
+                Text(
+                    text = state.loyaltyNotice
+                        ?: "Completion runs the real path: the tracker awards the badge and " +
+                        "the engine decides whether it is worth a surface.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = psk.textSecondary,
+                )
+            }
+        }
+
         item(key = "recap") {
             LabCard("Season recap (N5)") {
                 ActionGrid(

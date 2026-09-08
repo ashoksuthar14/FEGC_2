@@ -104,5 +104,62 @@ internal object SpokenLinesHr : SpokenLines {
             Tone.STATS -> "${f.won} prošlo, ${f.lost} palo dok te nije bilo. ${f.digest}"
             Tone.ONE_LINER -> "Ukratko. ${f.digest}"
         }
+
+        // N7. "pet znački", "dvije značke", "jednu značku" dolaze iz CroatianWords već u
+        // ženskom rodu i u akuzativu, pa je svaki okvir ovdje "imaš …" ili "trebaš …" —
+        // rečenica u kojoj taj padež sjeda. Razine su prevedene u [TierHr].
+        MomentType.MISSION_COMPLETE -> when (tone) {
+            Tone.PLAIN ->
+                "Značka osvojena: ${f.mission}. Sad imaš ${f.badges}. ${nextTier(f)}"
+            Tone.WITTY ->
+                "Jedna za policu. ${f.mission}, gotovo, i sad imaš ${f.badges}."
+            Tone.STATS ->
+                "${f.mission} dovršeno. Osvojena značka ${f.badge}, ukupno imaš ${f.badges}. ${nextTier(f)}"
+            Tone.ONE_LINER -> "Značka ${f.badge} osvojena. ${f.mission} gotovo."
+        }
+
+        MomentType.TIER_REACHED -> when (tone) {
+            Tone.PLAIN ->
+                "${TierHr.level(f.tier)} dosegnuta. Imaš ${f.badges}. ${nextTier(f)}"
+            Tone.WITTY ->
+                "Gle ti to. Imaš ${f.badges} i stigao si do ${TierHr.toward(f.tier)}. Stavi vodu za kavu."
+            Tone.STATS ->
+                "${TierHr.level(f.tier)} dosegnuta, imaš ${f.badges}. ${nextTier(f)}"
+            Tone.ONE_LINER -> "${TierHr.level(f.tier)}, imaš ${f.badges}."
+        }
+    }
+
+    /** "Do zlatne razine trebaš još dvije značke.", "To je najviša razina.", ili ništa. */
+    private fun nextTier(f: SpokenFacts): String {
+        val next = f.nextTier ?: return "To je najviša razina."
+        val toNext = f.toNext ?: return ""
+        return "Do ${TierHr.toward(next)} trebaš još $toNext."
+    }
+}
+
+/**
+ * The tier names in Croatian.
+ *
+ * MomentFacts carries the enum's English name ("Silver") because that is what the loyalty
+ * model is written in, and translating it here rather than in the facts keeps the facts
+ * language-neutral. Two forms are needed: the level as a subject ("Srebrna razina") and the
+ * level as a destination after "do" ("do zlatne razine", genitive). An unknown name falls
+ * through unchanged, so a tier added to the enum reads oddly rather than crashing.
+ */
+internal object TierHr {
+    fun level(tier: String): String = when (tier.lowercase()) {
+        "bronze" -> "Brončana razina"
+        "silver" -> "Srebrna razina"
+        "gold" -> "Zlatna razina"
+        "platinum" -> "Platinasta razina"
+        else -> tier
+    }
+
+    fun toward(tier: String): String = when (tier.lowercase()) {
+        "bronze" -> "brončane razine"
+        "silver" -> "srebrne razine"
+        "gold" -> "zlatne razine"
+        "platinum" -> "platinaste razine"
+        else -> tier
     }
 }

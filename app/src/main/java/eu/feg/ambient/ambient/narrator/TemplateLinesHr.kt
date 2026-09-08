@@ -86,5 +86,44 @@ internal object TemplateLinesHr : TemplateLines {
             Tone.STATS -> f.won + " prošlo · " + f.lost + " palo" to f.digest
             Tone.ONE_LINER -> "Ukratko" to f.digest
         }
+
+        // N7. Brojevi se slažu s imenicom ("5 znački", "2 značke", "1 značka") preko
+        // CroatianWords, a razine su prevedene u TierHr jer MomentFacts nosi englesko ime.
+        // Okviri rečenica su birani tako da broj ostaje u nominativu ("ukupno 1 značka",
+        // "još 1 značka do…"), jer bi "imaš 1 značka" bio točno onaj strojni hrvatski
+        // koji ova značajka postoji da izbjegne.
+        MomentType.MISSION_COMPLETE -> when (tone) {
+            Tone.PLAIN -> "Značka osvojena · " + f.mission to
+                f.badge + ". Ukupno " + badges(f) + ". " + nextTier(f)
+            Tone.WITTY -> "Jedna za policu · " + f.badge to
+                f.mission + ", gotovo. Ukupno " + badges(f) + " i broji se dalje."
+            Tone.STATS -> badges(f) + " · " + TierHr.level(f.tier) to
+                f.mission + " dovršeno. Osvojena značka " + f.badge + ". " + nextTier(f)
+            Tone.ONE_LINER -> f.badge + " ✓" to f.mission + " gotovo."
+        }
+
+        MomentType.TIER_REACHED -> when (tone) {
+            Tone.PLAIN -> TierHr.level(f.tier) to
+                "Ukupno " + badges(f) + " i " + TierHr.level(f.tier).lowercase() + " je tvoja. " + nextTier(f)
+            Tone.WITTY -> "Gle ti to · " + TierHr.level(f.tier) to
+                "Ukupno " + badges(f) + " i stigao si do " + TierHr.toward(f.tier) + ". Stavi vodu za kavu."
+            Tone.STATS -> TierHr.level(f.tier) + " · " + badges(f) to
+                "Razina dosegnuta, ukupno " + badges(f) + ". " + nextTier(f)
+            Tone.ONE_LINER -> TierHr.level(f.tier) + " ✓" to "Ukupno " + badges(f) + "."
+        }
+    }
+
+    /** "5 znački", "2 značke", "1 značka" — nominativ, uz "ukupno" i "još". */
+    private fun badges(f: Facts): String = f.badges + " " + CroatianWords.badges(f.badgeCount)
+
+    /**
+     * "Još 2 značke do zlatne razine." ili "Najviša razina." kad iznad nema ničega — a ništa
+     * kad činjenice nisu donijele broj, jer je rečenica o sljedećoj razini bez broja poziv,
+     * a ne činjenica.
+     */
+    private fun nextTier(f: Facts): String {
+        val next = f.nextTier ?: return "Najviša razina."
+        val toNext = f.toNext ?: return ""
+        return "Još " + toNext + " " + CroatianWords.badges(toNext) + " do " + TierHr.toward(next) + "."
     }
 }

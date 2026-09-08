@@ -35,6 +35,15 @@ class MockDataSource(private val assets: AssetReader) {
 
     fun arenaTips(): List<ArenaTip> = json.decodeFromString(assets.read("mock/arena_tips.json"))
 
+    /**
+     * The raw text of a fixture file.
+     *
+     * For catalogues that live outside `data/model` and parse themselves -- the loyalty
+     * missions and perks. Routed through here rather than reaching for context.assets
+     * directly, because this class is documented as the only place data enters the app.
+     */
+    fun read(path: String): String = assets.read(path)
+
     /** Indirection so unit tests can feed the same JSON without an Android Context. */
     fun interface AssetReader {
         fun read(path: String): String

@@ -154,4 +154,12 @@ fun sampleFacts(type: MomentType): MomentFacts = when (type) {
         type = type, legsTotal = 3, legsWon = 2, legsLost = 0,
         digestItems = listOf("2 legs won", "Betis drew", "Sparta kick off in 40 min"),
     )
+    // N7: names and counts from mock/missions.json, so the sweep narrates the real titles.
+    MomentType.MISSION_COMPLETE -> MomentFacts(
+        type = type, missionTitle = "Follow three teams", badgeName = "Three clubs",
+        badgeCount = 5, tierName = "Silver", badgesToNextTier = 3,
+    )
+    MomentType.TIER_REACHED -> MomentFacts(
+        type = type, badgeCount = 8, tierName = "Gold", badgesToNextTier = 7,
+    )
 }

@@ -14,6 +14,14 @@ object Routes {
     const val MATCH = "match/{matchId}"
     const val BET_SLIP = "betslip"
     const val RESPONSIBLE_GAMING = "rg"
+
+    /**
+     * N7. Two routes, not one tabbed screen: missions are what you have done and rewards are
+     * what that is worth, and the loyalty shortcut deep-links straight to the second. A tab
+     * index in a deep link is the kind of thing that silently stops matching.
+     */
+    const val MISSIONS = "missions"
+    const val REWARDS = "rewards"
     const val PROMO = "promo"
     const val SCAN_TICKET = "scan"
     const val GAME_LOADING = "game"

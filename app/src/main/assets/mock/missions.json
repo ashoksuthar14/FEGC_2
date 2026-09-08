@@ -1,0 +1,90 @@
+[
+  {
+    "id": "m_pick_club",
+    "title": "Pick your club",
+    "description": "Choose the club you follow. Everything on your home screen takes its colours.",
+    "type": "FOLLOW_TEAMS",
+    "target": 1,
+    "badgeId": "b_pick_club",
+    "badgeName": "Colours on",
+    "icon": "crest",
+    "weight": 1
+  },
+  {
+    "id": "m_follow_three",
+    "title": "Follow three teams",
+    "description": "Follow three clubs and we will tell you when any of them kick off.",
+    "type": "FOLLOW_TEAMS",
+    "target": 3,
+    "badgeId": "b_follow_three",
+    "badgeName": "Three clubs",
+    "icon": "crest",
+    "weight": 1
+  },
+  {
+    "id": "m_watch_live",
+    "title": "Watch a match live",
+    "description": "Open a match while it is being played.",
+    "type": "CHECK_IN_LIVE",
+    "target": 1,
+    "badgeId": "b_watch_live",
+    "badgeName": "First whistle",
+    "icon": "ball",
+    "weight": 1
+  },
+  {
+    "id": "m_five_checkins",
+    "title": "Five live check-ins",
+    "description": "Look in on five matches while they are in play.",
+    "type": "CHECK_IN_LIVE",
+    "target": 5,
+    "badgeId": "b_five_checkins",
+    "badgeName": "Regular",
+    "icon": "ball",
+    "weight": 2
+  },
+  {
+    "id": "m_use_widget",
+    "title": "Put us on your home screen",
+    "description": "Add any PSK widget, so your matches reach you without opening the app.",
+    "type": "USE_WIDGET",
+    "target": 1,
+    "badgeId": "b_use_widget",
+    "badgeName": "On the home screen",
+    "icon": "widget",
+    "weight": 1
+  },
+  {
+    "id": "m_scan_slip",
+    "title": "Scan a shop slip",
+    "description": "Scan a slip you already hold, and follow it here like any other.",
+    "type": "SCAN_SHOP_SLIP",
+    "target": 1,
+    "badgeId": "b_scan_slip",
+    "badgeName": "Paper and glass",
+    "icon": "ticket",
+    "weight": 2
+  },
+  {
+    "id": "m_streak_three",
+    "title": "Three days in a row",
+    "description": "Check in on three separate days. No hurry, and nothing expires.",
+    "type": "KEEP_STREAK",
+    "target": 3,
+    "badgeId": "b_streak_three",
+    "badgeName": "Three days",
+    "icon": "star",
+    "weight": 2
+  },
+  {
+    "id": "m_set_limit",
+    "title": "Set a deposit limit",
+    "description": "Decide your own ceiling before anything else does. You can change it whenever you like.",
+    "type": "SET_A_LIMIT",
+    "target": 1,
+    "badgeId": "b_set_limit",
+    "badgeName": "Limit set",
+    "icon": "shield",
+    "weight": 3
+  }
+]

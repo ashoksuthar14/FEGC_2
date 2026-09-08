@@ -75,6 +75,7 @@ class DefaultRelevanceScorer(
         parts += when (moment.ownership) {
             Ownership.DECIDES_A_LEG, Ownership.ON_MY_SLIP -> "it is on your slip (" + two(b.base) + ")"
             Ownership.FOLLOWED_TEAM -> "you follow a team in it (" + two(b.base) + ")"
+            Ownership.MINE -> "it is about you rather than a match (" + two(b.base) + ")"
             Ownership.NEITHER -> "you own no part of it (0.00)"
         }
         if (b.decides > 0.0) {
@@ -97,6 +98,7 @@ class DefaultRelevanceScorer(
         val base = when (moment.ownership) {
             Ownership.ON_MY_SLIP, Ownership.DECIDES_A_LEG -> BASE_ON_SLIP
             Ownership.FOLLOWED_TEAM -> BASE_FOLLOWED
+            Ownership.MINE -> BASE_MINE
             Ownership.NEITHER -> 0.0
         }
         val decides = if (decidesALeg(moment)) DECIDES_BONUS else 0.0
@@ -168,6 +170,17 @@ class DefaultRelevanceScorer(
     private companion object {
         const val BASE_ON_SLIP = 0.6
         const val BASE_FOLLOWED = 0.3
+
+        /**
+         * Loyalty, below a followed club's match and well below the customer's own slip.
+         *
+         * Deliberate. A badge is worth telling someone about and is never worth interrupting
+         * them for, so at this base it reaches the widget and only clears the bar for an
+         * alert on a quiet day when the budget has gone unspent. That is the whole of the
+         * "missions do not get their own push channel" promise, expressed as a number rather
+         * than as a rule somebody has to remember.
+         */
+        const val BASE_MINE = 0.25
         const val DECIDES_BONUS = 0.3
 
         /** The closing stretch. Before this, urgency contributes nothing. */

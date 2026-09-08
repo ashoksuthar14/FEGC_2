@@ -25,6 +25,10 @@ class AmbientApp : Application() {
         // Bet placement, the match clock and protection changes now drive the surfaces.
         container.surfaceCoordinator.start()
         container.kickoffMomentSource.start()
+        // N7. One tracker, started once: it recomputes mission progress from the ledger and
+        // the repositories rather than from tracking calls sprinkled through the UI, and a
+        // second instance would recompute everything twice for nothing.
+        container.missionTracker.start(container.appScope)
         // Registered from the Application because ACTION_USER_PRESENT cannot be declared in
         // the manifest. It only reaches us while this process happens to be alive, which is
         // why it is an enhancement and the widget is the trigger.

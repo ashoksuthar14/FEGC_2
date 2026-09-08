@@ -107,6 +107,38 @@ internal object SpokenLinesEn : SpokenLines {
             Tone.STATS -> "${f.won} won, ${f.lost} lost while you were away. ${f.digest}"
             Tone.ONE_LINER -> "Catching up. ${f.digest}"
         }
+
+        // N7. The count is already "five badges" from EnglishWords, so nothing here has a
+        // digit in it. The next tier is a distance, never an instruction — see TemplateLinesEn.
+        MomentType.MISSION_COMPLETE -> when (tone) {
+            Tone.PLAIN ->
+                "Badge earned: ${f.mission}. That is ${f.badges}. ${nextTier(f)}"
+            Tone.WITTY ->
+                "One for the shelf. ${f.mission}, done, and ${f.badges} on it now."
+            Tone.STATS ->
+                "${f.mission} complete. ${f.badge} earned, ${f.badges} in total. ${nextTier(f)}"
+            Tone.ONE_LINER -> "${f.badge} earned. ${f.mission} done."
+        }
+
+        MomentType.TIER_REACHED -> when (tone) {
+            Tone.PLAIN ->
+                "${f.tier} reached. ${f.badges} got you there. ${nextTier(f)}"
+            Tone.WITTY ->
+                "Well, look at that. ${f.badges} in and you have made ${f.tier}. Kettle on."
+            Tone.STATS ->
+                "${f.tier} reached with ${f.badges}. ${nextTier(f)}"
+            Tone.ONE_LINER -> "${f.tier} reached, ${f.badges}."
+        }
+    }
+
+    /**
+     * "Two badges to go for Gold." or "That is the top." when nothing sits above — and nothing
+     * when the distance is unknown, for the reason TemplateLinesEn gives.
+     */
+    private fun nextTier(f: SpokenFacts): String {
+        val next = f.nextTier ?: return "That is the top."
+        val toNext = f.toNext ?: return ""
+        return "$toNext to go for $next."
     }
 
     /**

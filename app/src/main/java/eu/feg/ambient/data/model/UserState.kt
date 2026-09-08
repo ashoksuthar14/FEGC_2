@@ -57,4 +57,17 @@ data class UserState(
      * UserState only because that is where the app already keeps one persisted preference.
      */
     val myClubId: String? = null,
+    /**
+     * Every club the customer follows, by id.
+     *
+     * SEPARATE FROM [myClubId] ON PURPOSE. myClubId is the one club whose colours theme the
+     * OS surfaces -- a cosmetic choice, and there can only be one of it. Following is a
+     * different question: which clubs' kick-offs are worth telling this customer about, and
+     * the answer is a set. Collapsing the two would mean picking a second club silently
+     * repainted the widget, which is not what "follow" means to anyone.
+     *
+     * Like myClubId it is cosmetic and informational: no offer, no limit and no protection
+     * decision reads this field, and none may start to.
+     */
+    val followedClubIds: Set<String> = emptySet(),
 )

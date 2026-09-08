@@ -1,0 +1,68 @@
+[
+  {
+    "id": "p_scarf",
+    "name": "Fortuna scarf",
+    "description": "The club scarf, posted to you. One per customer per season.",
+    "category": "MERCHANDISE",
+    "badgeCost": 2,
+    "tierRequired": "BRONZE",
+    "termsUrl": "https://www.psk.hr/uvjeti",
+    "terms": "We post it to the address on your account within 21 days. One per customer per season. If it does not arrive, tell us and we will send another. It cannot be exchanged for money.",
+    "stock": 40
+  },
+  {
+    "id": "p_early_access",
+    "name": "Early access to new features",
+    "description": "New parts of the app reach you before everyone else.",
+    "category": "FEATURE_ACCESS",
+    "badgeCost": 3,
+    "tierRequired": "SILVER",
+    "termsUrl": "https://www.psk.hr/uvjeti",
+    "terms": "You get new features while they are still being tested, which means they may change or be withdrawn. You can turn this off at any time and nothing else changes.",
+    "stock": 500
+  },
+  {
+    "id": "p_coffee",
+    "name": "Coffee voucher, 5 EUR",
+    "description": "Five euros at any partner cafe. Spend it on coffee, not on betting.",
+    "category": "PARTNER_VOUCHER",
+    "badgeCost": 4,
+    "tierRequired": "SILVER",
+    "termsUrl": "https://www.psk.hr/uvjeti",
+    "terms": "A code for five euros at partner cafes, valid for six months. It cannot be used anywhere in this app, it cannot be staked, and it cannot be turned into account credit.",
+    "stock": 200
+  },
+  {
+    "id": "p_charity",
+    "name": "5 EUR to grassroots football",
+    "description": "We donate five euros in your name to a Croatian youth club.",
+    "category": "CHARITY_DONATION",
+    "badgeCost": 5,
+    "tierRequired": "SILVER",
+    "termsUrl": "https://www.psk.hr/uvjeti",
+    "terms": "We pay five euros to a registered Croatian youth football club and send you the receipt. Nothing comes back to your account. You are not making the donation yourself, so it is not tax deductible for you.",
+    "stock": 1000
+  },
+  {
+    "id": "p_tickets",
+    "name": "Two HNL match tickets",
+    "description": "A pair of tickets to a Croatian first division fixture of your choosing.",
+    "category": "MATCH_TICKET",
+    "badgeCost": 8,
+    "tierRequired": "GOLD",
+    "termsUrl": "https://www.psk.hr/uvjeti",
+    "terms": "Two tickets to one HNL fixture, subject to the club releasing them. You pick the match and we confirm within five days. If it cannot be arranged, your badges are returned. Travel is not included.",
+    "stock": 12
+  },
+  {
+    "id": "p_stadium_tour",
+    "name": "Stadium tour for two",
+    "description": "A guided tour of Poljud or Maksimir, for you and one guest.",
+    "category": "EXPERIENCE",
+    "badgeCost": 12,
+    "tierRequired": "PLATINUM",
+    "termsUrl": "https://www.psk.hr/uvjeti",
+    "terms": "One tour for two people on a date we agree with the ground. Over 18s only, because it is a stadium tour arranged through a betting account. Travel is not included, and your badges are returned if we cannot arrange a date.",
+    "stock": 6
+  }
+]

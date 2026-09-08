@@ -44,6 +44,11 @@ class DefaultMomentBuilder(
     override suspend fun build(event: MatchEvent, protection: ProtectionState): Moment? {
         if (mutedMatches().contains(event.matchId)) return null
 
+        // A loyalty moment is the customer's by construction: there is no fixture to hold a
+        // leg on and no club to follow, so the ownership join below has nothing to join and
+        // would return NEITHER for an event the app raised about the customer themselves.
+        if (event.loyalty != null) return loyaltyMoment(event)
+
         val bet = openBetOn(event.matchId)
         val ownership = ownershipOf(event, bet)
         if (ownership == Ownership.NEITHER) return null
@@ -55,6 +60,34 @@ class DefaultMomentBuilder(
             slipId = bet?.id,
             matchId = event.matchId,
             ownership = ownership,
+            createdAt = event.at,
+        )
+    }
+
+    /**
+     * A badge or a tier, built straight from the event.
+     *
+     * No bet lookup, no team match, and no scores: MomentFacts is given the loyalty counts
+     * and nothing else, so a template for these types cannot reach for a scoreline that does
+     * not exist. Ownership is MINE, which the scorer bases low on purpose -- see
+     * DefaultRelevanceScorer.BASE_MINE.
+     */
+    private fun loyaltyMoment(event: MatchEvent): Moment {
+        val loyalty = event.loyalty
+        return Moment(
+            id = idFor(event),
+            type = event.type,
+            facts = MomentFacts(
+                type = event.type,
+                missionTitle = loyalty?.missionTitle,
+                badgeName = loyalty?.badgeName,
+                badgeCount = loyalty?.badgeCount,
+                tierName = loyalty?.tierName,
+                badgesToNextTier = loyalty?.badgesToNextTier,
+            ),
+            slipId = null,
+            matchId = event.matchId,
+            ownership = Ownership.MINE,
             createdAt = event.at,
         )
     }

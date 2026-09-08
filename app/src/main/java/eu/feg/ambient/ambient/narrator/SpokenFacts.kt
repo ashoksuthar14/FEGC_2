@@ -68,6 +68,17 @@ internal class SpokenFacts(private val f: MomentFacts, private val language: Nar
             "Ništa novo otkad si otišao."
         }
 
+    // N7. The badge count arrives as one phrase, numeral and noun together, because in
+    // Croatian the numeral has a gender ("dvije značke", not "dva značke") and a case, and
+    // only the words object knows both.
+    val mission: String = f.missionTitle ?: if (language == NarratorLanguage.EN) "a mission" else "misija"
+    val badge: String = f.badgeName ?: if (language == NarratorLanguage.EN) "a badge" else "značka"
+    val badges: String = words.countBadges((f.badgeCount ?: 0).coerceAtLeast(0))
+    val tier: String = f.tierName ?: "Bronze"
+    val nextTier: String? = nextTierName(tier)
+    /** Null at the top tier. */
+    val toNext: String? = f.badgesToNextTier?.takeIf { it > 0 }?.let { words.countBadges(it) }
+
     private companion object {
         const val MATCH_MINUTES = 90
     }
@@ -91,6 +102,15 @@ internal interface NumberWords {
 
     /** The noun that follows a count of legs on a slip. */
     fun legs(n: Int): String
+
+    /** The noun that follows a count of badges, in the form a headline can use after digits. */
+    fun badges(n: Int): String
+
+    /**
+     * Numeral and noun together — "five badges". The default is the pattern every other count
+     * uses; Croatian overrides it because the numeral itself changes with the noun.
+     */
+    fun countBadges(n: Int): String = of(n) + " " + badges(n)
 }
 
 internal object EnglishWords : NumberWords {
@@ -117,6 +137,8 @@ internal object EnglishWords : NumberWords {
     override fun minutes(n: Int): String = if (n == 1) "minute" else "minutes"
 
     override fun legs(n: Int): String = if (n == 1) "leg" else "legs"
+
+    override fun badges(n: Int): String = if (n == 1) "badge" else "badges"
 }
 
 /**
@@ -156,6 +178,42 @@ internal object CroatianWords : NumberWords {
         Form.ONE -> "izbor"
         Form.FEW -> "izbora"
         Form.MANY -> "izbora"
+    }
+
+    /** Nominative: "1 značka", "2 značke", "5 znački" — the form the visual lines use. */
+    override fun badges(n: Int): String = when (form(n)) {
+        Form.ONE -> "značka"
+        Form.FEW -> "značke"
+        Form.MANY -> "znački"
+    }
+
+    /**
+     * "Značka" is feminine, so the numeral agrees too: "jednu značku", "dvije značke", "pet
+     * znački" — never "jedan značka" or "dva značke". The ONE form is accusative because every
+     * spoken frame it lands in is "imaš …" or "trebaš …", and the plural forms are the same
+     * in both cases so no other frame needs a second variant.
+     */
+    override fun countBadges(n: Int): String {
+        val noun = when (form(n)) {
+            Form.ONE -> "značku"
+            Form.FEW -> "značke"
+            Form.MANY -> "znački"
+        }
+        return feminine(n) + " " + noun
+    }
+
+    /** The numeral with a feminine head noun: "jednu", "dvije", "dvadeset dvije". */
+    private fun feminine(n: Int): String {
+        if (n < 0 || n > 99) return n.toString()
+        val last = n % 10
+        val lastTwo = n % 100
+        val feminineOnes = when {
+            lastTwo in 11..14 -> null
+            last == 1 -> "jednu"
+            last == 2 -> "dvije"
+            else -> null
+        } ?: return of(n)
+        return if (n < 10) feminineOnes else tens[n / 10] + " " + feminineOnes
     }
 
     private enum class Form { ONE, FEW, MANY }

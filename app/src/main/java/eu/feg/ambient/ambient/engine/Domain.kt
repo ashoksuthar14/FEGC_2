@@ -38,7 +38,33 @@ enum class TimeBucket {
  * scorer at all — a moment the user does not own is not built.
  */
 @Serializable
-enum class Ownership { ON_MY_SLIP, DECIDES_A_LEG, FOLLOWED_TEAM, NEITHER }
+/**
+ * Whose the moment is.
+ *
+ * MINE is the odd one out and is meant to be: every other case is a claim about a match --
+ * the customer holds a leg on it, or follows a club in it. A badge is about the customer
+ * themselves and there is no fixture to own, so ownership is settled by construction rather
+ * than by a join. Without it a mission completion resolves to NEITHER and the engine drops
+ * its own event as "not yours", which is both wrong and very hard to see.
+ */
+enum class Ownership { ON_MY_SLIP, DECIDES_A_LEG, FOLLOWED_TEAM, MINE, NEITHER }
+
+/**
+ * What a loyalty event carries, for the two moment types that are not about football.
+ *
+ * Kept as one nested value rather than five more nullable columns on [MatchEvent], because
+ * [MatchEvent] is a football event and five loyalty fields sitting beside `homeScore` would
+ * make it look like something else. Counts and names only -- there is nothing here that could
+ * hold a stake, a bonus or the cash value of a perk, which is the same rule MomentFacts
+ * follows and for the same reason.
+ */
+data class LoyaltyFacts(
+    val missionTitle: String? = null,
+    val badgeName: String? = null,
+    val badgeCount: Int? = null,
+    val tierName: String? = null,
+    val badgesToNextTier: Int? = null,
+)
 
 /** What the simulator emits. Raw, before anything decides whether it matters. */
 data class MatchEvent(
@@ -60,6 +86,8 @@ data class MatchEvent(
      * customer can check against their own clock.
      */
     val kickoffInMinutes: Int? = null,
+    /** Set for MISSION_COMPLETE and TIER_REACHED, null for everything else. */
+    val loyalty: LoyaltyFacts? = null,
     val at: Instant,
 )
 

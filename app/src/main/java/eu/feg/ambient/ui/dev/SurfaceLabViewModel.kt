@@ -64,6 +64,8 @@ data class SurfaceLabUiState(
     val digestNotice: String? = null,
     /** 17B: the recap the Lab last generated, with its raw counts. */
     val recapNotice: String? = null,
+    /** N7: badges, tier and what the last loyalty action did. */
+    val loyaltyNotice: String? = null,
     val running: Boolean = false,
 )
 
@@ -325,6 +327,101 @@ class SurfaceLabViewModel(private val container: AppContainer) : ViewModel() {
                         " \u00b7 streak " + recap.longestStreak
                 },
                 lastAction = "Generate recap (" + period.name.lowercase() + ")",
+            )
+        }
+    }
+
+    // --- N7 loyalty ---------------------------------------------------------------------
+
+    /**
+     * Completes the nearest unfinished mission, through the real path.
+     *
+     * It writes progress to target and lets the tracker notice, rather than awarding a badge
+     * directly: the badge, the tier recomputation and the MISSION_COMPLETE moment then happen
+     * exactly as they would on a real completion, engine and attention budget included. A Lab
+     * button that granted a badge straight into the store would demo a code path the product
+     * does not have.
+     */
+    fun completeNextMission() {
+        viewModelScope.launch {
+            val next = container.loyaltyRepository.state.value.nearest
+            if (next == null) {
+                _state.value = _state.value.copy(
+                    loyaltyNotice = "Every mission is already complete.",
+                    lastAction = "Complete next mission",
+                )
+                return@launch
+            }
+            container.missionRepository.record(next.id, next.target, container.clock.now())
+            container.missionTracker.recompute()
+            val after = container.loyaltyRepository.state.value
+            _state.value = _state.value.copy(
+                loyaltyNotice = "Completed \"" + next.title + "\" — " +
+                    after.badgeWeight + " badges, " + after.tier.name.lowercase() +
+                    (after.toNextTier?.let { ", " + it + " to next tier" } ?: ", top tier"),
+                lastAction = "Complete next mission",
+            )
+        }
+    }
+
+    /**
+     * Completes missions until the customer holds five badges' worth.
+     *
+     * Five, because that is one past Silver and one short of the eight-badge match tickets:
+     * it is the state the Rewards screen is most worth looking at, with something unlocked,
+     * something visibly close, and something plainly out of reach.
+     */
+    fun grantFiveBadges() {
+        viewModelScope.launch {
+            var guard = 0
+            while (container.loyaltyRepository.state.value.badgeWeight < 5 && guard < 12) {
+                val next = container.loyaltyRepository.state.value.nearest ?: break
+                container.missionRepository.record(next.id, next.target, container.clock.now())
+                container.missionTracker.recompute()
+                guard++
+            }
+            val after = container.loyaltyRepository.state.value
+            _state.value = _state.value.copy(
+                loyaltyNotice = after.badgeWeight.toString() + " badges · " + after.tier.name.lowercase() +
+                    " · " + after.spendableBadges + " spendable",
+                lastAction = "Grant 5 badges",
+            )
+        }
+    }
+
+    /**
+     * Follows two clubs besides the themed one, so "Follow three teams" can be demonstrated.
+     *
+     * The app has a club PICKER but no follow list yet -- N6 themes by a single club, and a
+     * second club to follow has nowhere to be chosen. This writes through
+     * UserStateRepository.toggleFollow, the same door a follow list would use, so the mission
+     * completes by the real path rather than by the Lab poking the store.
+     */
+    fun followTwoMoreClubs() {
+        viewModelScope.launch {
+            val picked = container.userStateRepository.state.value.myClubId
+            ClubThemes.all
+                .map { it.clubId }
+                .filter { it.isNotBlank() && it != picked }
+                .take(2)
+                .forEach { container.userStateRepository.toggleFollow(it) }
+            container.missionTracker.recompute()
+            val follows = container.userStateRepository.state.value.followedClubIds.size
+            _state.value = _state.value.copy(
+                loyaltyNotice = "Following " + follows + " clubs.",
+                lastAction = "Follow two more clubs",
+            )
+        }
+    }
+
+    /** Throws the loyalty file away so the demo can be run twice. */
+    fun resetLoyalty() {
+        viewModelScope.launch {
+            container.loyaltyStore.clear()
+            container.missionTracker.recompute()
+            _state.value = _state.value.copy(
+                loyaltyNotice = "Missions and badges cleared.",
+                lastAction = "Reset loyalty",
             )
         }
     }

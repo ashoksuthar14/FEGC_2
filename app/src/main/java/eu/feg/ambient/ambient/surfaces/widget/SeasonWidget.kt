@@ -25,6 +25,7 @@ import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import eu.feg.ambient.AmbientApp
+import eu.feg.ambient.ambient.loyalty.LoyaltyState
 import eu.feg.ambient.ambient.recap.Recap
 import eu.feg.ambient.ambient.recap.RecapPeriod
 import eu.feg.ambient.ambient.recap.windowDays
@@ -58,6 +59,13 @@ class SeasonWidget : GlanceAppWidget() {
             val now = c.clock.now()
             c.recapBuilder.build(RecapPeriod.SEASON, now) ?: c.recapBuilder.build(RecapPeriod.MONTH, now)
         }
+        // N7, read the same way and reduced to counts before it reaches a composable. The
+        // launcher can ask for this widget in a process where the Application has not run
+        // onCreate yet, so the container is reached defensively and a missing one simply
+        // means the card draws without its third row.
+        val loyalty = runCatching {
+            (context.applicationContext as? AmbientApp)?.container?.loyaltyRepository?.state?.value
+        }.getOrNull()?.let { LoyaltyLine.from(it) }
         provideContent {
             // Keyed on the store's version, like AmbientWidget: Glance keeps a composition
             // alive between updates, so anything read once before provideContent stays frozen
@@ -67,7 +75,7 @@ class SeasonWidget : GlanceAppWidget() {
             CompositionLocalProvider(
                 LocalClubTheme provides remember(version) { WidgetStateStore(context).club() },
             ) {
-                SeasonWidgetBody(recap)
+                SeasonWidgetBody(recap, loyalty)
             }
         }
     }
@@ -109,13 +117,42 @@ private data class SeasonCounts(
     }
 }
 
+/**
+ * The third row, reduced to what a home screen may show: a tier name, a badge count and one
+ * mission's progress. Built from [LoyaltyState] here and handed on as strings and integers
+ * for the same reason [SeasonCounts] exists — the composable never sees the state, so a
+ * perk's cost or a redemption code cannot be drawn by accident. Both are counts of badges
+ * rather than money, but a widget is read by whoever picks up the phone, and a redemption
+ * code on it is a voucher on a lock screen.
+ */
+internal data class LoyaltyLine(
+    val tier: String,
+    val badgeCount: Int,
+    val missionTitle: String?,
+    val missionProgress: Int,
+    val missionTarget: Int,
+) {
+    companion object {
+        fun from(state: LoyaltyState): LoyaltyLine {
+            val nearest = state.nearest
+            return LoyaltyLine(
+                tier = state.tier.name.lowercase().replaceFirstChar { it.uppercase() },
+                badgeCount = state.badgeWeight,
+                missionTitle = nearest?.title,
+                missionProgress = nearest?.progress ?: 0,
+                missionTarget = nearest?.target ?: 0,
+            )
+        }
+    }
+}
+
 @Composable
-internal fun SeasonWidgetBody(recap: Recap?) {
+internal fun SeasonWidgetBody(recap: Recap?, loyalty: LoyaltyLine? = null) {
     if (recap == null) {
         EmptySeasonCard()
         return
     }
-    SeasonCard(SeasonCounts.from(recap))
+    SeasonCard(SeasonCounts.from(recap), loyalty)
 }
 
 /** The same card on sample counts, for the Surface Lab and a future glance preview. */
@@ -134,18 +171,28 @@ internal fun SeasonWidgetPreviewBody() {
             topTeam = "Sparta",
             topTeamCount = 6,
         ),
+        LoyaltyLine(
+            tier = "Silver",
+            badgeCount = 5,
+            missionTitle = "Follow three teams",
+            missionProgress = 2,
+            missionTarget = 3,
+        ),
     )
 }
 
 // ---- the card --------------------------------------------------------------------------
 
 /**
- * Header, then the hero count with the two secondary counts beside it, then the top team and
- * the share control on one line. Side by side rather than stacked because a 4x2 is about
- * 110dp tall and a stacked version put the Share button below the fold.
+ * Header, then the hero count with the two secondary counts beside it, then the loyalty
+ * line, then the top team and the share control on one line. Side by side rather than
+ * stacked because a 4x2 is about 110dp tall and a stacked version put the Share button
+ * below the fold. The loyalty line is the one addition N7 makes to this card, and it is one
+ * line at the small size for the same reason: a seventh widget was not worth a home-screen
+ * slot, and a fourth row was not worth the Share button.
  */
 @Composable
-private fun SeasonCard(counts: SeasonCounts) {
+private fun SeasonCard(counts: SeasonCounts, loyalty: LoyaltyLine? = null) {
     val club = LocalClubTheme.current
     val title = when (counts.period) {
         RecapPeriod.SEASON -> "Your season"
@@ -162,7 +209,8 @@ private fun SeasonCard(counts: SeasonCounts) {
         counts.matchesFollowed + " matches followed" +
         (predictions?.let { ", " + it } ?: "") +
         (streak?.let { ", a " + it } ?: "") +
-        (topTeam?.let { ". " + it } ?: "") + "."
+        (topTeam?.let { ". " + it } ?: "") + "." +
+        (loyalty?.let { " " + loyaltySpoken(it) } ?: "")
 
     GlassCard(description = spoken) {
         WidgetHeader(
@@ -182,6 +230,10 @@ private fun SeasonCard(counts: SeasonCounts) {
                 if (predictions != null) SecondaryLine(predictions)
                 if (streak != null) SecondaryLine(streak)
             }
+        }
+        if (loyalty != null) {
+            Spacer(GlanceModifier.height(4.dp))
+            LoyaltyRow(loyalty)
         }
         Spacer(GlanceModifier.defaultWeight())
         Row(modifier = GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.Vertical.CenterVertically) {
@@ -207,6 +259,44 @@ private fun SeasonCard(counts: SeasonCounts) {
 @Composable
 private fun SecondaryLine(text: String) {
     Text(text = text, style = TextStyle(ColorProvider(WHITE), 12.sp), maxLines = 1)
+}
+
+/**
+ * `Silver · 5 badges   ·   Follow three teams  2/3`, on one line.
+ *
+ * The tier and count are fixed-width and come first; the mission title takes the weight
+ * and is the part that truncates, because "Silver · 5 badges" is the fact and the mission
+ * is the footnote. No mission (everything done, or the mechanic paused with nothing active)
+ * leaves the tier and count on their own rather than an empty separator.
+ */
+@Composable
+private fun LoyaltyRow(loyalty: LoyaltyLine) {
+    val badges = loyalty.badgeCount.toString() + (if (loyalty.badgeCount == 1) " badge" else " badges")
+    Row(modifier = GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.Vertical.CenterVertically) {
+        Text(
+            text = loyalty.tier + " · " + badges,
+            style = TextStyle(ColorProvider(WHITE), 11.sp, FontWeight.Medium),
+            maxLines = 1,
+        )
+        if (loyalty.missionTitle != null) {
+            Text(
+                text = "   ·   " + loyalty.missionTitle + "  " +
+                    loyalty.missionProgress + "/" + loyalty.missionTarget,
+                style = TextStyle(ColorProvider(GREY), 11.sp),
+                maxLines = 1,
+                modifier = GlanceModifier.defaultWeight(),
+            )
+        }
+    }
+}
+
+/** The same line for the card's description, as a sentence rather than separators. */
+private fun loyaltySpoken(loyalty: LoyaltyLine): String {
+    val badges = loyalty.badgeCount.toString() + (if (loyalty.badgeCount == 1) " badge" else " badges")
+    val mission = loyalty.missionTitle?.let {
+        " Nearest mission: " + it + ", " + loyalty.missionProgress + " of " + loyalty.missionTarget + "."
+    } ?: ""
+    return loyalty.tier + " tier, " + badges + "." + mission
 }
 
 /** Nothing to count yet: the card says where the counts come from and offers the first step. */

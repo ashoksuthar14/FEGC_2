@@ -56,9 +56,12 @@ class TemplateNarratorTest {
             }
         }
 
-        assertEquals("expected 64 combinations", 64, count)
+        // Ten moment types now, not eight: N7 added MISSION_COMPLETE and TIER_REACHED. The
+        // count is asserted rather than derived so that adding a type without writing its
+        // copy fails here loudly, which is the whole job of this test.
+        assertEquals("expected 80 combinations", 80, count)
         assertTrue(
-            "guard rejected " + failures.size + " of 64:\n" + failures.joinToString("\n"),
+            "guard rejected " + failures.size + " of 80:\n" + failures.joinToString("\n"),
             failures.isEmpty(),
         )
     }

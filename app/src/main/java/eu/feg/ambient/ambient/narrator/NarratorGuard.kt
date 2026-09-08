@@ -44,6 +44,14 @@ object NarratorGuard {
      *
      * "bet now" is already caught by the "bet" word rule; it is listed anyway so the reason
      * the guard reports names the inducement, not merely the noun.
+     *
+     * The urgency group exists for N7. A mission with a countdown is a pressure mechanic, and
+     * the copy that sells the countdown — "expires soon", "hurry" — is the tell. Missions
+     * never expire today (Mission.isUrgent is always false), so this group is the rule that
+     * keeps that true in the text even if the model grows an expiry. NOT in the list, on
+     * purpose: "soon", "today", "now", "last" and "expires" on their own. "Kick-off in 40
+     * min, soon" and "three days in a row" are streaks and schedules, and a guard that
+     * rejects a legitimate line is worse than one that lets a mild one through.
      */
     private val BLOCKED_PHRASES = listOf(
         // Money
@@ -58,6 +66,35 @@ object NarratorGuard {
         // chance"; "kladi se"/"kladite se" is the imperative "place a bet", which is both
         // "bet now" and "back them" in one verb.
         "ne propusti", "propuštaš", "zadnja prilika", "posljednja prilika", "kladi se", "kladite se",
+        // Urgency, English. "hurry" is a bare word here because it has no innocent use in a
+        // moment; the one it does have, "no hurry", is listed in [SAFE_PHRASES].
+        "expires soon", "hurry", "act now", "don't wait", "don’t wait", "do not wait",
+        "ends today", "only today", "while it lasts",
+        // Urgency, Croatian. "požuri"/"požurite" is the imperative "hurry" (tu and vi forms —
+        // the app speaks informally, but a model might not). "istječe" is "is expiring", the
+        // verb every countdown is built from ("ponuda istječe", "vrijeme istječe"); the stem
+        // is matched alone because there is no moment in which a thing running out is a fact
+        // rather than a push. The colloquial spelling "ističe" is only matched with "uskoro"
+        // (soon) beside it, because on its own it is also "stands out" and "points out" —
+        // "Salah se ističe" is commentary, not a countdown. "samo danas" is "only today".
+        // "ne čekaj"/"ne čekajte" is "don't wait". "odmah" (right away) is deliberately
+        // absent: "odmah nakon poluvremena" is a schedule, not a nudge.
+        "požuri", "požurite", "istječe", "ističe uskoro", "uskoro ističe",
+        "samo danas", "ne čekaj", "ne čekajte",
+    )
+
+    /**
+     * Phrases lifted out of the text before the word and phrase rules run.
+     *
+     * Each one contains a blocked word and is the opposite of what that word is blocked for.
+     * "deposit limit" is the responsible-gambling tool the SET_A_LIMIT mission is named
+     * after, and its title has to be narratable when the badge is earned; "deposit" alone
+     * stays blocked because "make a deposit" is the inducement. "no hurry" is the same shape
+     * for the urgency group. The list is short on purpose: every entry here is a hole in the
+     * guard, so it has to be a phrase that cannot be read as the thing the rule forbids.
+     */
+    private val SAFE_PHRASES = listOf(
+        "deposit limit", "deposit limits", "no hurry",
     )
 
     private val CURRENCY = Regex("[€$£]|EUR", RegexOption.IGNORE_CASE)
@@ -79,6 +116,10 @@ object NarratorGuard {
 
     private val phrasePatterns: List<Pair<String, Regex>> = BLOCKED_PHRASES.map { phrase ->
         phrase to Regex("(?<![\\p{L}])" + Regex.escape(phrase) + "(?![\\p{L}])", RegexOption.IGNORE_CASE)
+    }
+
+    private val safePatterns: List<Regex> = SAFE_PHRASES.map { phrase ->
+        Regex("(?<![\\p{L}])" + Regex.escape(phrase) + "(?![\\p{L}])", RegexOption.IGNORE_CASE)
     }
 
     fun check(text: NarratedText): Boolean = violation(text) == null
@@ -105,11 +146,15 @@ object NarratorGuard {
 
         CURRENCY.find(body)?.let { return "currency symbol: " + it.value }
         TWO_DECIMALS.find(body)?.let { return "two-decimal number: " + it.value }
+
+        // Safe phrases are removed only for the vocabulary rules, after the currency and
+        // decimal rules have seen the whole text: "deposit limit €50" is still a price.
+        val vocabulary = safePatterns.fold(body) { acc, pattern -> pattern.replace(acc, " ") }
         phrasePatterns.forEach { (phrase, pattern) ->
-            if (pattern.containsMatchIn(body)) return "blocked phrase: " + phrase
+            if (pattern.containsMatchIn(vocabulary)) return "blocked phrase: " + phrase
         }
         wordPatterns.forEach { (word, pattern) ->
-            if (pattern.containsMatchIn(body)) return "blocked word: " + word
+            if (pattern.containsMatchIn(vocabulary)) return "blocked word: " + word
         }
         return null
     }

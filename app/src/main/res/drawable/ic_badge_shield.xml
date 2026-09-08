@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Shield: the deposit-limit badge. Tinted at the call site; the badge's own colour is never baked in. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24"
+    android:tint="#FFFFFFFF">
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M12,2L4,5v6c0,5 3.4,9.4 8,11c4.6,-1.6 8,-6 8,-11V5L12,2zM12,4.2l6,2.2v4.6c0,3.9 -2.5,7.4 -6,8.8c-3.5,-1.4 -6,-4.9 -6,-8.8V6.4L12,4.2z" />
+</vector>
