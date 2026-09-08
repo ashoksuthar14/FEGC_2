@@ -136,6 +136,17 @@ interface SurfaceController {
 
     suspend fun refreshWidget(state: WidgetState)
 
+    /**
+     * Redraws the widget family without deciding what it should say.
+     *
+     * The difference from [refreshWidget] is the whole point: that one sets the card's state,
+     * this one only asks the widgets to read again. It exists for changes that happen
+     * underneath a widget rather than to it -- a badge is written to the loyalty store, the
+     * season card reads that store, and nothing about the customer's live slip has changed.
+     * Pushing a WidgetState for a badge would replace a running score with a blank slip card.
+     */
+    suspend fun refreshWidgets()
+
     /** Returns false when the 24h budget is spent — never silently swallowed. */
     suspend fun postAlert(headline: String, detail: String, deepLink: String): Boolean
 

@@ -51,6 +51,10 @@ class EnginePipelineTest {
         override suspend fun updateLiveUpdate(state: SlipSurfaceState) { started += state }
         override suspend fun endLiveUpdate(slipId: String, settled: Boolean) = Unit
         override suspend fun refreshWidget(state: WidgetState) { widgets += state }
+
+        /** Counted, not recorded as a state: a redraw carries nothing to record. */
+        var widgetRedraws = 0
+        override suspend fun refreshWidgets() { widgetRedraws++ }
         override suspend fun postAlert(headline: String, detail: String, deepLink: String): Boolean {
             alertsAttempted++
             if (alertsAllowed <= 0) return false

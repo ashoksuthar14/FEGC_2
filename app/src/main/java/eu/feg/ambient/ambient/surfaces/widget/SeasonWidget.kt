@@ -63,6 +63,15 @@ class SeasonWidget : GlanceAppWidget() {
         // launcher can ask for this widget in a process where the Application has not run
         // onCreate yet, so the container is reached defensively and a missing one simply
         // means the card draws without its third row.
+        // A widget being PLACED fires no broadcast and writes nothing, so the tracker's flows
+        // never see it and "Put us on your home screen" would sit unfinished until something
+        // unrelated happened. A compose is the first moment we can know, and this is the card
+        // that shows mission progress, so it is also the one a customer is most likely to be
+        // looking at when the answer changes. Cheap: recompute reads five flow values and a
+        // small file, and awarding is idempotent.
+        runCatching {
+            (context.applicationContext as? AmbientApp)?.container?.missionTracker?.recompute()
+        }
         val loyalty = runCatching {
             (context.applicationContext as? AmbientApp)?.container?.loyaltyRepository?.state?.value
         }.getOrNull()?.let { LoyaltyLine.from(it) }
@@ -259,44 +268,6 @@ private fun SeasonCard(counts: SeasonCounts, loyalty: LoyaltyLine? = null) {
 @Composable
 private fun SecondaryLine(text: String) {
     Text(text = text, style = TextStyle(ColorProvider(WHITE), 12.sp), maxLines = 1)
-}
-
-/**
- * `Silver · 5 badges   ·   Follow three teams  2/3`, on one line.
- *
- * The tier and count are fixed-width and come first; the mission title takes the weight
- * and is the part that truncates, because "Silver · 5 badges" is the fact and the mission
- * is the footnote. No mission (everything done, or the mechanic paused with nothing active)
- * leaves the tier and count on their own rather than an empty separator.
- */
-@Composable
-private fun LoyaltyRow(loyalty: LoyaltyLine) {
-    val badges = loyalty.badgeCount.toString() + (if (loyalty.badgeCount == 1) " badge" else " badges")
-    Row(modifier = GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.Vertical.CenterVertically) {
-        Text(
-            text = loyalty.tier + " · " + badges,
-            style = TextStyle(ColorProvider(WHITE), 11.sp, FontWeight.Medium),
-            maxLines = 1,
-        )
-        if (loyalty.missionTitle != null) {
-            Text(
-                text = "   ·   " + loyalty.missionTitle + "  " +
-                    loyalty.missionProgress + "/" + loyalty.missionTarget,
-                style = TextStyle(ColorProvider(GREY), 11.sp),
-                maxLines = 1,
-                modifier = GlanceModifier.defaultWeight(),
-            )
-        }
-    }
-}
-
-/** The same line for the card's description, as a sentence rather than separators. */
-private fun loyaltySpoken(loyalty: LoyaltyLine): String {
-    val badges = loyalty.badgeCount.toString() + (if (loyalty.badgeCount == 1) " badge" else " badges")
-    val mission = loyalty.missionTitle?.let {
-        " Nearest mission: " + it + ", " + loyalty.missionProgress + " of " + loyalty.missionTarget + "."
-    } ?: ""
-    return loyalty.tier + " tier, " + badges + "." + mission
 }
 
 /** Nothing to count yet: the card says where the counts come from and offers the first step. */

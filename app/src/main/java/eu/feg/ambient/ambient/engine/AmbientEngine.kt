@@ -4,6 +4,7 @@ import android.util.Log
 import eu.feg.ambient.ambient.engine.ledger.Ledger
 import eu.feg.ambient.ambient.engine.ledger.LedgerEntry
 import eu.feg.ambient.ambient.narrator.NarratorLanguage
+import eu.feg.ambient.ambient.narrator.MomentType
 import eu.feg.ambient.ambient.narrator.Narrator
 import eu.feg.ambient.ambient.surfaces.LegState
 import eu.feg.ambient.ambient.surfaces.LegStatus
@@ -68,12 +69,23 @@ class AmbientEngine(
         }.getOrNull()
 
         val state = surfaceState(moment, protection, text)
+        // A LOYALTY MOMENT IS NOT A SLIP. surfaceState builds a SlipSurfaceState out of the
+        // facts, and a badge has no teams, no score and no leg -- so pushing it as
+        // WidgetState.Live would replace whatever the customer had on their home screen with
+        // a card reading "Your pick" over " - ". The badge is already written to the loyalty
+        // store, which the season widget reads, so the right action is a redraw and not a
+        // state change. Its alert goes to the missions screen, because "mybets" would open
+        // the slip list to explain a badge.
+        val loyalty = moment.type == MomentType.MISSION_COMPLETE || moment.type == MomentType.TIER_REACHED
+        val deepLink = if (loyalty) DEEP_LINK_MISSIONS else DEEP_LINK_MY_BETS
         when (decision.surface) {
             Surface.LIVE_UPDATE -> surfaceController.startLiveUpdate(state)
-            Surface.WIDGET -> surfaceController.refreshWidget(WidgetState.Live(state))
+            Surface.WIDGET ->
+                if (loyalty) surfaceController.refreshWidgets()
+                else surfaceController.refreshWidget(WidgetState.Live(state))
             Surface.ALERT -> {
                 val sent = text?.let {
-                    surfaceController.postAlert(it.headline, it.detail, "mybets")
+                    surfaceController.postAlert(it.headline, it.detail, deepLink)
                 } ?: false
                 if (!sent) {
                     // The budget said no after the bandit chose it. Record the truth rather
@@ -83,7 +95,9 @@ class AmbientEngine(
                 }
             }
             // In-app moments land in the inbox, which the widget already reflects.
-            Surface.IN_APP -> surfaceController.refreshWidget(WidgetState.Live(state))
+            Surface.IN_APP ->
+                if (loyalty) surfaceController.refreshWidgets()
+                else surfaceController.refreshWidget(WidgetState.Live(state))
             Surface.NOTHING -> Unit
         }
 
@@ -223,6 +237,10 @@ class AmbientEngine(
     )
 
     companion object {
+        /** Where an alert lands. The loyalty types get their own screen; see the dispatch. */
+        private const val DEEP_LINK_MY_BETS = "mybets"
+        private const val DEEP_LINK_MISSIONS = "missions"
+
         private const val TAG = "AmbientEngine"
 
         fun contextBucket(momentType: String, at: Instant): String {

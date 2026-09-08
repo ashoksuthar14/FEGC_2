@@ -17,6 +17,23 @@ class ResponsibleGamingViewModel(private val container: AppContainer) : ViewMode
 
     fun setRealityCheck(minutes: Int) = container.userStateRepository.setRealityCheck(minutes)
 
+    /**
+     * Sets the customer's own deposit ceiling.
+     *
+     * This screen drew three limit bars and had no way to change any of them, so the limits
+     * were decoration: UserStateRepository.setLimits had no caller anywhere in the app. A
+     * responsible-gambling tool that cannot be operated is worse than an absent one, and the
+     * N7 mission that rewards setting a limit could never have completed without this.
+     *
+     * The used figure is left alone. Lowering a ceiling below what has already gone through
+     * is the customer's business and is exactly what someone cutting down would do; rewriting
+     * their history to make the bar look tidy would be us editing their record.
+     */
+    fun setDepositLimit(amount: Double) {
+        val current = container.userStateRepository.state.value.limits
+        container.userStateRepository.setLimits(current.copy(depositLimit = amount))
+    }
+
     fun setQuietHours(quietHours: QuietHours?) =
         container.userStateRepository.setQuietHours(quietHours)
 

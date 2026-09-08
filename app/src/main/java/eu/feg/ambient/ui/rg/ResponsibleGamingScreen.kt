@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -29,6 +30,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -82,6 +85,11 @@ fun ResponsibleGamingScreen(
                     state.limits.timeUsed.toDouble(),
                     state.limits.timeLimit.toDouble(),
                     money = false,
+                )
+                Spacer(Modifier.height(12.dp))
+                DepositLimitPicker(
+                    current = state.limits.depositLimit,
+                    onPick = { viewModel.setDepositLimit(it) },
                 )
             }
         }
@@ -262,6 +270,52 @@ private fun Card(title: String, content: @Composable () -> Unit) {
         content()
     }
 }
+
+/**
+ * The deposit ceiling, and a way to change it.
+ *
+ * WHY THIS EXISTS AT ALL: this screen drew three limit bars and offered no way to move any of
+ * them, so the app's central responsible-gambling control was a picture of a control. Setting
+ * a limit is also the one mission in N7 that rewards protecting yourself, and it could not be
+ * completed by a customer until something here actually wrote to UserState.
+ *
+ * Presets rather than a text field, because a number pad is a decision with friction in it and
+ * this is the one setting where friction should be on the way UP. Lower amounts come first for
+ * the same reason. Nothing is preselected beyond what is already set, and there is no
+ * recommendation: an operator nudging a customer toward a higher ceiling is the whole problem.
+ */
+@Composable
+private fun DepositLimitPicker(current: Double, onPick: (Double) -> Unit) {
+    val psk = LocalPskColors.current
+    Text(
+        text = "Your daily deposit limit",
+        style = MaterialTheme.typography.labelLarge,
+        color = psk.textSecondary,
+    )
+    Spacer(Modifier.height(8.dp))
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        DEPOSIT_PRESETS.forEach { amount ->
+            PskChip(
+                label = formatMoney(amount),
+                selected = current == amount,
+                onClick = { onPick(amount) },
+                modifier = Modifier.semantics {
+                    contentDescription = "Set the daily deposit limit to " + formatMoney(amount) +
+                        if (current == amount) ", currently selected" else ""
+                },
+            )
+        }
+    }
+    Spacer(Modifier.height(6.dp))
+    Text(
+        text = "You can change this whenever you like. Lowering it takes effect at once.",
+        style = MaterialTheme.typography.bodySmall,
+        color = psk.textSecondary,
+    )
+}
+
+/** Deliberately modest and deliberately ascending. See [DepositLimitPicker]. */
+private val DEPOSIT_PRESETS = listOf(50.0, 100.0, 200.0, 500.0)
 
 @Composable
 private fun LimitBar(label: String, used: Double, limit: Double, money: Boolean) {

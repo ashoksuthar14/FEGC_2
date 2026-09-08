@@ -3,6 +3,7 @@ package eu.feg.ambient.ambient.surfaces
 import android.app.NotificationManager
 import android.content.Context
 import android.util.Log
+import eu.feg.ambient.ambient.surfaces.widget.WidgetRefresher
 import eu.feg.ambient.ambient.surfaces.notifications.Channels
 import eu.feg.ambient.ambient.surfaces.notifications.NotificationPermission
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -80,6 +81,12 @@ class AndroidSurfaceController(
         liveUpdateRenderer?.end(slipId, settled)
         if (!settled) LiveSlipService.stop(context)
         _diagnostics.value = _diagnostics.value.copy(activeLiveUpdateSlipId = null)
+    }
+
+    override suspend fun refreshWidgets() {
+        // No stored state is touched: each widget re-reads what it draws from. WidgetRenderer
+        // is not involved, because there is nothing new for it to write down.
+        WidgetRefresher.refreshAll(context)
     }
 
     override suspend fun refreshWidget(state: WidgetState) {
