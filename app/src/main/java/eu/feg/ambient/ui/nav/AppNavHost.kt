@@ -70,7 +70,10 @@ import eu.feg.ambient.ui.match.MatchDetailScreen
 import eu.feg.ambient.ui.match.MatchDetailViewModel
 import eu.feg.ambient.ui.mybets.MyBetsScreen
 import eu.feg.ambient.ui.mybets.MyBetsViewModel
-import eu.feg.ambient.ui.mybets.ScanTicketScreen
+import eu.feg.ambient.ui.ticket.ScanTicketScreen
+import eu.feg.ambient.ui.ticket.ScanTicketViewModel
+import eu.feg.ambient.ambient.surfaces.ProtectionState
+import androidx.compose.runtime.LaunchedEffect
 import eu.feg.ambient.ui.promo.PromoScreen
 import eu.feg.ambient.ui.rg.ResponsibleGamingScreen
 import eu.feg.ambient.ui.rg.ResponsibleGamingViewModel
@@ -250,7 +253,12 @@ fun AppNavHost(
                 val vm: MyBetsViewModel = viewModel(
                     factory = PskViewModelFactory(container) { MyBetsViewModel(it) },
                 )
-                MyBetsScreen(vm, onScanTicket = { navController.navigate(Routes.SCAN_TICKET) })
+                val protection by container.protectionEvaluator.state.collectAsStateWithLifecycle()
+                MyBetsScreen(
+                    vm,
+                    onScanTicket = { navController.navigate(Routes.SCAN_TICKET) },
+                    canScan = protection == ProtectionState.NORMAL,
+                )
             }
 
             composable(Routes.MATCH) { entry ->
@@ -340,7 +348,25 @@ fun AppNavHost(
                 BanditDebugScreen(vm)
             }
 
-            composable(Routes.SCAN_TICKET) { ScanTicketScreen() }
+            composable(Routes.SCAN_TICKET) {
+                // Belt and braces: the chip is hidden under protection, and the shortcut
+                // still exists, so the route refuses on its own as well.
+                val protection by container.protectionEvaluator.state.collectAsStateWithLifecycle()
+                if (protection != ProtectionState.NORMAL) {
+                    LaunchedEffect(protection) { navController.popBackStack() }
+                } else {
+                    val vm: ScanTicketViewModel = viewModel(
+                        factory = PskViewModelFactory(container) { ScanTicketViewModel(it) },
+                    )
+                    ScanTicketScreen(
+                        viewModel = vm,
+                        onOpenMyBets = {
+                            navController.navigate(Routes.MY_BETS) { launchSingleTop = true }
+                        },
+                        onBack = { navController.popBackStack() },
+                    )
+                }
+            }
             composable(Routes.GAME_LOADING) { GameLoadingScreen() }
         }
     }

@@ -84,6 +84,13 @@ dependencies {
     implementation(libs.kotlinx.datetime)
     implementation(libs.coil.compose)
     implementation(libs.mlkit.genai.prompt)
+    // Step 18: the barcode on a paper slip. The scanner is PSK's existing feature; what we
+    // add is the surface it feeds, and the camera is the only new code on the way there.
+    implementation(libs.mlkit.barcode)
+    implementation(libs.camerax.core)
+    implementation(libs.camerax.camera2)
+    implementation(libs.camerax.lifecycle)
+    implementation(libs.camerax.view)
     implementation(libs.litertlm.android)
     implementation(libs.glance.appwidget)
     implementation(libs.glance.material3)

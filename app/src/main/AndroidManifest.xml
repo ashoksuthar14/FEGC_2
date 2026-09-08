@@ -7,6 +7,10 @@
     <uses-permission android:name="android.permission.POST_PROMOTED_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <!-- Step 18: scanning a paper slip. Asked for at the scan screen with a rationale, never at
+         launch; not required, because manual code entry is the fallback and the demo insurance. -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera.any" android:required="false" />
 
     <!-- Package visibility, not a permission. Since API 30 an app cannot see the installed
          speech engine unless it declares that it looks for one, and TextToSpeech simply

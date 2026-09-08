@@ -11,6 +11,14 @@ enum class SlipType { PLAIN, SYSTEM }
 @Serializable
 enum class BetStatus { OPEN, WON, LOST, VOID }
 
+/**
+ * Where a slip was placed. RETAIL is a paper slip from a branch, scanned in; everything
+ * downstream treats the two identically, and this field exists so the ledger and the metrics
+ * can tell them apart -- not so any surface can.
+ */
+@Serializable
+enum class BetSource { APP, RETAIL }
+
 @Serializable
 enum class LegStatus { PENDING, WON, LOST, VOID }
 
@@ -53,6 +61,7 @@ data class PlacedBet(
     val totalOdds: Double,
     val placedAt: Instant,
     val status: BetStatus = BetStatus.OPEN,
+    val source: BetSource = BetSource.APP,
 ) {
     val possiblePayout: Double get() = stake * totalOdds
     val settledLegs: Int get() = legs.count { it.status != LegStatus.PENDING }

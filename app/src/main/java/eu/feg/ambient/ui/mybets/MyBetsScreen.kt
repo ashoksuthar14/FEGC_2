@@ -45,6 +45,7 @@ fun MyBetsScreen(
     viewModel: MyBetsViewModel,
     modifier: Modifier = Modifier,
     onScanTicket: () -> Unit = {},
+    canScan: Boolean = true,
 ) {
     val psk = LocalPskColors.current
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -64,7 +65,9 @@ fun MyBetsScreen(
                     color = psk.textPrimary,
                     modifier = Modifier.weight(1f),
                 )
-                PskChip("Scan a branch ticket", onClick = onScanTicket)
+                // Hidden in CALM, absent in UNVERIFIED and BLOCKED: a scanned slip is a bet
+                // like any other, and the way in is gated the way placing one is.
+                if (canScan) PskChip("Scan a branch ticket", onClick = onScanTicket)
             }
         }
 
@@ -227,20 +230,3 @@ private fun spokenProgress(progress: String): String {
     return settled + " of " + total + " legs settled, " + minute + " minutes played"
 }
 
-/** Phase 1 stub — ML Kit barcode scanning arrives in Phase 2. */
-@Composable
-fun ScanTicketScreen(modifier: Modifier = Modifier) {
-    val psk = LocalPskColors.current
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(psk.background),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = "Ticket scanning — Phase 2",
-            style = MaterialTheme.typography.titleMedium,
-            color = psk.textSecondary,
-        )
-    }
-}

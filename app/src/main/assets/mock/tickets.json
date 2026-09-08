@@ -1,0 +1,43 @@
+{
+  "tickets": [
+    {
+      "code": "PSK-DEMO-0001",
+      "legs": [
+        { "matchId": "lv004", "description": "GrIFK to win", "odds": 1.97, "status": "PENDING" },
+        { "matchId": "lv008", "description": "FC Prishtina to win", "odds": 1.86, "status": "PENDING" },
+        { "matchId": "pm008", "description": "Port to win", "odds": 1.44, "status": "PENDING" }
+      ],
+      "stake": 5.0,
+      "status": "OPEN",
+      "placedAt": "2026-09-08T17:00:00Z"
+    },
+    {
+      "code": "PSK-DEMO-0002",
+      "legs": [
+        { "matchId": "lv003", "description": "FC Gabala to win", "odds": 1.10, "status": "WON" },
+        { "matchId": "lv006", "description": "Karbala to win", "odds": 1.49, "status": "PENDING" }
+      ],
+      "stake": 10.0,
+      "status": "OPEN",
+      "placedAt": "2026-09-08T16:20:00Z"
+    },
+    {
+      "code": "PSK-DEMO-0003",
+      "legs": [
+        { "matchId": "lv007", "description": "Shabab Al Ordon to win", "odds": 2.45, "status": "WON" }
+      ],
+      "stake": 2.0,
+      "status": "WON",
+      "placedAt": "2026-09-08T15:30:00Z"
+    },
+    {
+      "code": "PSK-DEMO-0004",
+      "legs": [
+        { "matchId": "pm999", "description": "Nowhere FC to win", "odds": 2.10, "status": "PENDING" }
+      ],
+      "stake": 1.0,
+      "status": "OPEN",
+      "placedAt": "2026-09-08T17:05:00Z"
+    }
+  ]
+}

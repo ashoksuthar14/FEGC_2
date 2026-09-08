@@ -98,6 +98,24 @@ class BetRepository(private val clock: MatchClock) {
     }
 
     /** Live legs settle as their match finishes; My bets shows the progress meanwhile. */
+    /**
+     * Tracks a slip that was built elsewhere -- a scanned retail ticket -- exactly as [place]
+     * tracks one from the app: it joins [placedBets] and [betPlaced] fires, so the coordinator,
+     * the engine and every surface pick it up with no idea it was ever paper. That single
+     * emission is the whole integration; nothing here calls a surface.
+     *
+     * Returns false, and changes nothing, if a slip with this id is already tracked. Scanning
+     * the same paper twice must never make two slips.
+     */
+    suspend fun track(bet: PlacedBet): Boolean {
+        if (_placedBets.value.any { it.id == bet.id }) return false
+        _placedBets.value = _placedBets.value + bet
+        _betPlaced.emit(bet.id)
+        return true
+    }
+
+    fun isTracked(betId: String): Boolean = _placedBets.value.any { it.id == betId }
+
     fun updateLegStatus(betId: String, matchId: String, status: LegStatus) {
         _placedBets.value = _placedBets.value.map { bet ->
             if (bet.id != betId) return@map bet

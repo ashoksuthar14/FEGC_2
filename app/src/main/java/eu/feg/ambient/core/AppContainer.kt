@@ -41,6 +41,9 @@ import eu.feg.ambient.ambient.engine.protection.PrefsAgeAssurance
 import eu.feg.ambient.ambient.engine.protection.SyntheticExclusionRegister
 import eu.feg.ambient.ambient.engine.router.BanditRouter
 import eu.feg.ambient.ambient.surfaces.MomentSpeaker
+import eu.feg.ambient.ambient.ticket.MockTicketLookup
+import eu.feg.ambient.ambient.ticket.TicketLookup
+import eu.feg.ambient.ambient.ticket.TicketTracker
 import eu.feg.ambient.ambient.surfaces.SpokenMoments
 import eu.feg.ambient.ambient.surfaces.AlertBudget
 import eu.feg.ambient.ambient.surfaces.SurfaceCoordinator
@@ -295,6 +298,13 @@ class AppContainer(context: Context) {
         awayTracker.markDigestShown()
         return digest
     }
+
+    // --- retail slip (step 18) ------------------------------------------------------------
+
+    /** INTEGRATION SEAM: FEG's retail ticket API in production; tickets.json for the demo. */
+    val ticketLookup: TicketLookup = MockTicketLookup(context, matchRepository, betRepository) { clock.now() }
+
+    val ticketTracker = TicketTracker(betRepository, ledger, clock)
 
     // --- recap (N5, step 17B) ------------------------------------------------------------
 
