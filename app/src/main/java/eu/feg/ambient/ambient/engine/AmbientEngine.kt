@@ -82,15 +82,26 @@ class AmbientEngine(
         // state change. Its alert goes to the missions screen, because "mybets" would open
         // the slip list to explain a badge.
         val loyalty = moment.type == MomentType.MISSION_COMPLETE || moment.type == MomentType.TIER_REACHED
-        val deepLink = if (loyalty) DEEP_LINK_MISSIONS else DEEP_LINK_MY_BETS
+        // Same reason the budget refuses these the Live Update: surfaceState builds a slip out
+        // of facts that have no match, so pushing it as WidgetState.Live would replace a
+        // running score with "Your pick" over " - ".
+        val matchless = moment.type in NOT_ABOUT_A_MATCH
+        // A reality check is the one message this app sends that is not competing for
+        // attention with anything -- see DefaultAttentionBudget and SurfaceController.
+        val essential = moment.type == MomentType.SESSION_LENGTH
+        val deepLink = when {
+            loyalty -> DEEP_LINK_MISSIONS
+            essential -> DEEP_LINK_RG
+            else -> DEEP_LINK_MY_BETS
+        }
         when (decision.surface) {
             Surface.LIVE_UPDATE -> surfaceController.startLiveUpdate(state)
             Surface.WIDGET ->
-                if (loyalty) surfaceController.refreshWidgets()
+                if (matchless) surfaceController.refreshWidgets()
                 else surfaceController.refreshWidget(WidgetState.Live(state))
             Surface.ALERT -> {
                 val sent = text?.let {
-                    surfaceController.postAlert(it.headline, it.detail, deepLink, entryId)
+                    surfaceController.postAlert(it.headline, it.detail, deepLink, entryId, essential)
                 } ?: false
                 if (!sent) {
                     // The budget said no after the bandit chose it. Record the truth rather
@@ -101,7 +112,7 @@ class AmbientEngine(
             }
             // In-app moments land in the inbox, which the widget already reflects.
             Surface.IN_APP ->
-                if (loyalty) surfaceController.refreshWidgets()
+                if (matchless) surfaceController.refreshWidgets()
                 else surfaceController.refreshWidget(WidgetState.Live(state))
             Surface.NOTHING -> Unit
         }
@@ -249,6 +260,9 @@ class AmbientEngine(
         /** Where an alert lands. The loyalty types get their own screen; see the dispatch. */
         private const val DEEP_LINK_MY_BETS = "mybets"
         private const val DEEP_LINK_MISSIONS = "missions"
+
+        /** A reality check opens the tools, not the slip list. */
+        private const val DEEP_LINK_RG = "rg"
 
         private const val TAG = "AmbientEngine"
 

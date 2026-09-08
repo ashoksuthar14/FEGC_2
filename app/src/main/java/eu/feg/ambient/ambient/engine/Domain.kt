@@ -50,6 +50,24 @@ enum class TimeBucket {
 enum class Ownership { ON_MY_SLIP, DECIDES_A_LEG, FOLLOWED_TEAM, MINE, NEITHER }
 
 /**
+ * Moment types with no fixture behind them.
+ *
+ * A Live Update is built from a SlipSurfaceState -- teams, score, legs -- and these three have
+ * none of those, so the card would be blank and would sit on the lock screen in place of a
+ * slip that is actually running. The same reasoning stops the engine pushing them as a
+ * WidgetState.Live.
+ *
+ * IT LIVES HERE, next to the types, because it grew by one twice and the second time the new
+ * type was added to the moment builder and to the scorer and not to the list -- which is a
+ * bug with no symptom except a blank card on somebody's lock screen.
+ */
+val NOT_ABOUT_A_MATCH: Set<MomentType> = setOf(
+    MomentType.MISSION_COMPLETE,
+    MomentType.TIER_REACHED,
+    MomentType.SESSION_LENGTH,
+)
+
+/**
  * What a loyalty event carries, for the two moment types that are not about football.
  *
  * Kept as one nested value rather than five more nullable columns on [MatchEvent], because

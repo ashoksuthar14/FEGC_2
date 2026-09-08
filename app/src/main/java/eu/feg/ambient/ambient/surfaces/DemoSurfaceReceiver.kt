@@ -32,6 +32,7 @@ import kotlinx.coroutines.launch
  * phone, and awkward when someone else is using the device. This receiver exposes the same
  * SurfaceController calls to:
  *
+ *   adb shell am broadcast -a eu.feg.ambient.DEMO_SURFACE --es action reality
  *   adb shell am broadcast -a eu.feg.ambient.DEMO_SURFACE --es action stage
  *   adb shell am broadcast -a eu.feg.ambient.DEMO_SURFACE --es action start
  *   adb shell am broadcast -a eu.feg.ambient.DEMO_SURFACE --es action goal
@@ -66,6 +67,14 @@ class DemoSurfaceReceiver : BroadcastReceiver() {
                 // Re-arms the whole stage: a slip, its Live Update, and real ledger rows
                 // for the catch-up. This is what AmbientApp runs on a cold start, exposed
                 // here so a demo can be reset without force-stopping the app.
+                // The casino reality check, without sitting through an hour of session. It
+                // goes through the tracker and the engine, so what is demonstrated is the
+                // real pipeline and not a notification posted for the occasion.
+                "reality" -> {
+                    app.container.gameSessionTracker.checkNow()
+                    Log.i(TAG, "reality check raised")
+                }
+
                 "stage" -> {
                     val armed = DemoStage.arm(app.container)
                     DemoStage.armAwayPeriod(app.container)

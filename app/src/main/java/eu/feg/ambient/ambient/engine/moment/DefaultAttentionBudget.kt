@@ -4,6 +4,7 @@ import android.app.NotificationManager
 import android.content.Context
 import eu.feg.ambient.ambient.engine.AttentionBudget
 import eu.feg.ambient.ambient.engine.Moment
+import eu.feg.ambient.ambient.engine.NOT_ABOUT_A_MATCH
 import eu.feg.ambient.ambient.engine.Surface
 import eu.feg.ambient.ambient.narrator.MomentType
 import eu.feg.ambient.ambient.surfaces.AlertBudget
@@ -62,7 +63,8 @@ class DefaultAttentionBudget(
             Surface.ALERT,
         )
 
-        // A BADGE IS NOT AN ONGOING THING, so it may not take the ongoing surface.
+        // A BADGE IS NOT AN ONGOING THING, and neither is a reality check, so neither may take
+        // the ongoing surface.
         //
         // A Live Update is a promoted, persistent lock-screen card with a progress state; it
         // exists for a slip that is still being decided. A mission completion is an instant
@@ -71,7 +73,7 @@ class DefaultAttentionBudget(
         // with a blank one and then sit there. The engine's own dispatch already refuses to
         // overwrite the WIDGET this way; the eligibility belongs here, where "which surfaces
         // may this kind of moment ever use" is decided, rather than as a second guard.
-        if (moment.type == MomentType.MISSION_COMPLETE || moment.type == MomentType.TIER_REACHED) {
+        if (moment.type in NOT_ABOUT_A_MATCH) {
             allowed.remove(Surface.LIVE_UPDATE)
         }
 
@@ -153,6 +155,7 @@ class DefaultAttentionBudget(
 
     private companion object {
         val DEDUPE_WINDOW = 60.seconds
+
         const val MAX_DEDUPE_ENTRIES = 64
     }
 }

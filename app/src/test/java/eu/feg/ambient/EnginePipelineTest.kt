@@ -62,6 +62,7 @@ class EnginePipelineTest {
             detail: String,
             deepLink: String,
             entryId: String?,
+            essential: Boolean,
         ): Boolean {
             lastAlertEntryId = entryId
             alertsAttempted++

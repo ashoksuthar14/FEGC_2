@@ -63,6 +63,7 @@ class FeedbackLearningTest {
             detail: String,
             deepLink: String,
             entryId: String?,
+            essential: Boolean,
         ): Boolean {
             lastAlertEntryId = entryId
             return true

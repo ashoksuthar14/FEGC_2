@@ -159,6 +159,17 @@ interface SurfaceController {
         detail: String,
         deepLink: String,
         entryId: String? = null,
+        /**
+         * True for a message that is not marketing and must not be silenced by the marketing
+         * budget -- today, only the casino reality check.
+         *
+         * IT IS A SEPARATE FLAG FROM THE BUDGET'S OWN EXEMPTION FOR A REASON: the budget
+         * decides which surfaces are OFFERED, and this decides whether the post goes through.
+         * Getting only the first half right meant the router happily chose an alert for a
+         * reality check and the controller then refused to send it -- a bug with no symptom
+         * except a line in the log, which is the worst kind.
+         */
+        essential: Boolean = false,
     ): Boolean
 
     suspend fun refreshShortcuts(protection: ProtectionState)

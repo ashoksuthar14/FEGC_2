@@ -109,6 +109,13 @@ class DefaultRelevanceScorer(
         val since = lastScoredAt[key(moment)]
         val elapsed = if (since == null) null else (now - since)
         val decay = when {
+            // A REALITY CHECK IS NOT REPETITION. The decay exists so the app cannot say the
+            // same thing about the same match twice in ten minutes; a session check at sixty
+            // minutes and again at a hundred and twenty is not the app repeating itself, it
+            // is the check doing the only thing it is for. In normal use they are an hour
+            // apart and the decay would never bite -- but "never in practice" is how a demo
+            // trigger ends up silently scoring 0.16 and saying nothing, which is what it did.
+            moment.type == MomentType.SESSION_LENGTH -> 1.0
             elapsed == null -> 1.0
             elapsed >= REPEAT_WINDOW -> 1.0
             // Linear from REPEAT_FLOOR at zero elapsed back to 1.0 at the window's edge.

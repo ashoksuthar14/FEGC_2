@@ -101,8 +101,13 @@ class AndroidSurfaceController(
         detail: String,
         deepLink: String,
         entryId: String?,
+        essential: Boolean,
     ): Boolean {
-        if (!alertBudget.tryConsume()) {
+        // An essential message still SPENDS from the budget where it can, so a reality check
+        // followed by a goal alert does not add up to two interruptions; it simply is not
+        // blocked when the budget has already gone.
+        if (essential) alertBudget.tryConsume()
+        if (!essential && !alertBudget.tryConsume()) {
             Log.i(TAG, "postAlert refused: budget spent")
             refreshBudgetDiagnostics()
             return false
