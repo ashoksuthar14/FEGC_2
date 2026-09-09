@@ -30,8 +30,11 @@ replay_pid*.log
 .env.*
 !.env.example
 
-# Submission binaries: held by the team, referenced from demo/, not stored in git.
+# Submission binaries. The video stays out; the deck under demo/presentation is
+# committed on purpose, because that is where the guide expects a reviewer to
+# find it.
 *.pptx
+!demo/presentation/*.pptx
 *.mp4
 
 # AI assistant working material. Kept on the developer's machine, out of the

@@ -2,12 +2,15 @@
 
 | | |
 |---|---|
-| **Link** | https://youtu.be/aLRzElPIAgY _<!-- TODO: paste the video URL here before submitting -->_ |
+| **Link** | <https://youtu.be/aLRzElPIAgY> |
 | **Length** | ~60 seconds |
 | **Access** | Ensure the link is viewable by the designated T-Hub / FEG reviewer accounts |
 
 A local copy (`Ambient_60s.mp4`) is held by the team. It is intentionally not
 committed to git — see the note on binaries in the README.
+
+**Before submitting:** confirm the link is viewable by the designated reviewer
+accounts. An unlisted video is fine; a private one is not.
 
 ## Demo flow shown
 
