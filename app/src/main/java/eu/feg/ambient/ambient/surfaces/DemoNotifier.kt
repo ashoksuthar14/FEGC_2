@@ -56,6 +56,12 @@ object DemoNotifier {
      * kick-off if it is not.
      */
     suspend fun general(container: AppContainer): String? {
+        // ON MOCK DATA, AN EMPTY ANSWER IS A BUG. The button dead-ended when the customer held
+        // no leg on a live match -- which happens the moment their slip settles. Arming the
+        // stage places a real slip on real live fixtures through the real path, so the retry
+        // is not a fallback message, it is the same answer arriving a beat later.
+        if (!hasSomethingToSay(container)) DemoStage.arm(container)
+
         val n = turn.getAndIncrement()
         val matches = container.matchRepository.matches.value
         val followed = followedNames(container)
@@ -185,6 +191,18 @@ object DemoNotifier {
             ),
         )
         return id
+    }
+
+    /** Whether there is a live match the customer holds a leg on, or a followed fixture to come. */
+    private fun hasSomethingToSay(container: AppContainer): Boolean {
+        val matches = container.matchRepository.matches.value
+        val legs = openLegs(container)
+        val followed = followedNames(container)
+        return matches.any { it.state == MatchState.LIVE && legs.containsKey(it.id) } ||
+            matches.any {
+                it.state == MatchState.PREMATCH &&
+                    (it.home.name in followed || it.away.name in followed)
+            }
     }
 
     /** Match id to the description of the customer's own leg on it, for open slips only. */

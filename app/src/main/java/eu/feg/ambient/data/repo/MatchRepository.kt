@@ -125,10 +125,27 @@ class MatchRepository(
     /**
      * Keeps the Live screen populated for as long as the demo runs: every match that reaches
      * full time hands off to the next prematch fixture, which kicks off at minute 1.
+     *
+     * THE FIXTURE LIST IS A LOOP, NOT A QUEUE, and it had to become one. Forty-seven fixtures
+     * sounds like plenty until you notice the arithmetic: the clock retires a match every
+     * ninety match-minutes and promotes one to replace it, so a session long enough burns
+     * through the whole file and ends with nothing live at all. That is not hypothetical --
+     * an app left running an afternoon reached exactly that state, and the symptom was not an
+     * empty Live tab but everything downstream of it going quiet at once: widgets with nothing
+     * to show, DemoStage refusing to arm for want of three live fixtures, and the demo bubble
+     * answering "nothing live to report". On mock data, an empty surface is always a bug.
+     *
+     * So when there is nothing left to promote, the oldest finished match is put back to
+     * PREMATCH with its score cleared and its markets unlocked, and the ordinary promotion
+     * below picks it up on the next tick. The fixtures recycle rather than run out.
      */
     private fun promoteKickoffs() {
         val live = _matches.value.count { it.state == MatchState.LIVE }
         if (live >= TARGET_LIVE) return
+
+        if (_matches.value.none { it.state == MatchState.PREMATCH }) {
+            recycleFinished()
+        }
 
         val next = _matches.value
             .filter { it.state == MatchState.PREMATCH }
@@ -145,6 +162,38 @@ class MatchRepository(
                     period = "1. poluvrijeme",
                     homeScore = 0,
                     awayScore = 0,
+                )
+            }
+        }
+    }
+
+    /**
+     * Finished matches go back on the fixture list.
+     *
+     * A batch rather than one at a time, because promoteKickoffs runs once per tick and
+     * recycling singly would drip the live screen back up over a minute of real time from an
+     * empty start. Everything a played match accumulated is cleared: score, minute, period,
+     * and the market locks that full time applied, or the fixture would return as an
+     * unbettable 3-1.
+     */
+    private fun recycleFinished() {
+        val finished = _matches.value.filter { it.state == MatchState.FINISHED }
+        if (finished.isEmpty()) return
+        val recycled = finished.take(TARGET_LIVE).map { it.id }.toSet()
+
+        _matches.value = _matches.value.map { match ->
+            if (match.id !in recycled) {
+                match
+            } else {
+                match.copy(
+                    state = MatchState.PREMATCH,
+                    minute = null,
+                    period = null,
+                    homeScore = null,
+                    awayScore = null,
+                    markets = match.markets.map { market ->
+                        market.copy(outcomes = market.outcomes.map { it.copy(locked = false) })
+                    },
                 )
             }
         }
