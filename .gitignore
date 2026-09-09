@@ -23,3 +23,13 @@ local.properties
 # JVM crash dumps
 hs_err_pid*.log
 replay_pid*.log
+
+# Secrets. There are none in this project, and this is how it stays that way.
+# .env.example is committed on purpose and documents the absence.
+.env
+.env.*
+!.env.example
+
+# Submission binaries: held by the team, referenced from demo/, not stored in git.
+*.pptx
+*.mp4

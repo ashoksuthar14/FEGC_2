@@ -2,6 +2,19 @@
 
 **A betting app that is paid to stay quiet.**
 
+> **FEG Hackathon 2026 submission**
+>
+> | | |
+> |---|---|
+> | **Team** | _<!-- TODO: team name -->_ |
+> | **Team lead** | _<!-- TODO: name, email -->_ |
+> | **Members** | _<!-- TODO: names -->_ |
+> | **Challenge** | Responsible engagement / player experience |
+> | **Solution title** | Ambient — an attention engine that is rewarded for staying quiet |
+> | **Submitted commit** | _<!-- TODO: record the final commit hash here -->_ |
+>
+> **Reviewer documents:** [impact case](docs/impact-case.md) · [compliance note](docs/compliance-note.md) · [architecture](docs/architecture.md) · [dependencies & licences](docs/dependencies.md) · [demo](demo/demo-video-link.md)
+
 A native Android replica of [PSK](https://www.psk.hr), FEG's Croatian sportsbook — plus *Ambient*, a moment engine that decides when the app is allowed to interrupt you, writes the words itself on an on-device LLM, and records why it made every choice.
 
 Built for a 24-hour FEG hackathon.
@@ -123,6 +136,22 @@ The obvious way to extend an attention engine into casino is the wrong one. So t
 
 ---
 
+## System requirements
+
+| | |
+|---|---|
+| **JDK** | 17 or newer |
+| **Android SDK** | Platform 36 (Android 16) + build-tools; `ANDROID_SDK_ROOT` set, or open once in Android Studio |
+| **Device** | Android 8.0 (API 26) or newer. **Android 16 recommended** — Live Updates are an Android 16 feature and degrade to ordinary ongoing notifications below it. Developed against a Pixel 10a. |
+| **Gradle** | None to install; the wrapper is committed |
+| **Network** | Not required at runtime. Only for the initial dependency download. |
+
+## Configuration and environment variables
+
+**There are none, and that is deliberate.** No backend, no network calls, no API keys, no tokens. See [`.env.example`](.env.example), which exists to document the absence. Nothing needs configuring to build or run.
+
+The only optional artefact is the on-device model — not a secret, not in the repo — described below.
+
 ## Getting started
 
 ```bash
@@ -131,6 +160,10 @@ cd FEGC_2
 ./gradlew assembleDebug
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 ```
+
+On first launch the app seeds itself: it places a demo slip on live mock
+fixtures, raises the Live Update, and populates the widgets. **No sign-in, no
+setup, no data entry.** A reviewer sees a working product immediately.
 
 ### The model is not in the repo
 
@@ -199,10 +232,11 @@ Two boundaries are load-bearing: **`data/` never imports `ui/`**, and the engine
 
 ---
 
-## Tests
+## How to test and validate
 
 ```bash
-./gradlew test
+./gradlew test          # 103 JVM unit tests, no device needed
+./gradlew assembleDebug # a reviewer can confirm it builds clean
 ```
 
 **101 tests.** The interesting ones assert claims rather than code:
@@ -227,6 +261,62 @@ Being straight about this matters more than the demo looking good.
 **Known limits:** Croatian copy is model-checked, not native-checked. A Live Update swipe suppresses reposting but does not yet feed the router. Club colours are approximations, not licensed brand values, and no club badge is used.
 
 ---
+
+## Known limitations, assumptions and future work
+
+Stated plainly, because a demo that oversells is one sharp question away from
+losing the room. The fuller list is in
+[compliance-note.md §9](docs/compliance-note.md) and
+[impact-case.md §7](docs/impact-case.md).
+
+**Limitations**
+
+- Effectiveness is **argued, not measured.** A prototype cannot produce an A/B
+  result. What is demonstrated is that the mechanism exists, runs, and records
+  enough to be measured properly.
+- **Croatian copy is model-checked, not native-checked.** It needs a Croatian
+  speaker before any real use.
+- **Club colours are unlicensed approximations.** No club logo is used — crests
+  are generated at runtime.
+- A **Live Update swipe** suppresses reposting but does not yet feed the
+  learning router. Alert swipes do.
+- Below **Android 16**, Live Updates render as ordinary ongoing notifications.
+
+**Assumptions**
+
+- All fixtures, odds, results, tickets and games are **synthetic**. No real
+  customer or player data exists anywhere in this repository.
+- The exclusion register is synthetic and age assurance is stubbed to
+  "verified" so the demo shows anything at all. Both sit behind interfaces
+  (`ExclusionRegister`, `AgeAssurance`) that are the seams for real integration.
+- No real money is handled. This is a replica.
+
+**Future work**
+
+- Implement the production seams: national exclusion register, real age
+  assurance, live fixture feed. The interfaces already exist.
+- Move the ledger to Room — it is deliberately shaped like a DAO.
+- Feed Live Update dismissals to the router.
+- Leaderboards were **deliberately deferred**: social comparison is a pressure
+  mechanic and deserves thought rather than a rushed build.
+
+## Repository structure
+
+Mostly the FEG recommended layout. One deviation, forced by the platform:
+
+| FEG guide | Here | Why |
+|---|---|---|
+| `src/` | `app/src/main/` | The Android Gradle Plugin fixes the module layout; moving it breaks the build |
+| `tests/` | `app/src/test/` | Same. `./gradlew test` runs them |
+| `assets/` | `app/src/main/assets/` | Packaged into the APK by the build |
+| `config/` | `gradle/libs.versions.toml`, `app/build.gradle.kts` | Version catalogue and build config. No secret configuration exists |
+
+`README.md`, `LICENSE`, `.gitignore`, `.env.example`, `docs/` and `demo/` are
+where the guide expects them.
+
+**Binaries are not committed.** The pitch deck, the 60-second video and the
+304 MB model weights are held by the team and referenced from
+[`demo/`](demo/demo-video-link.md) rather than stored in git.
 
 ## Licence & credit
 

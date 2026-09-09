@@ -1,0 +1,36 @@
+Copyright (c) 2026 the submitting team. All rights reserved.
+
+FEG HACKATHON 2026 SUBMISSION — EVALUATION LICENCE
+
+This repository is a hackathon submission and is not open-source software.
+
+1. GRANT FOR EVALUATION
+   T-Hub and Fortuna Entertainment Group (FEG), and reviewers they designate,
+   are granted a non-exclusive, non-transferable, royalty-free right to access,
+   clone, build, run and evaluate this software solely for the purpose of
+   judging and administering FEG Hackathon 2026.
+
+2. RESERVATION
+   All other rights are reserved by the submitting team. No ownership is
+   transferred by submission, review or evaluation. No right is granted to
+   redistribute, sublicense or use this software commercially.
+
+3. THIRD-PARTY COMPONENTS
+   This software incorporates third-party libraries under their own licences,
+   disclosed in docs/dependencies.md. Those licences govern those components
+   and are unaffected by this file.
+
+   Note in particular: the Gemma 3 model weights are NOT contained in this
+   repository and are NOT redistributed by it. They are obtained separately by
+   the developer under the Gemma Terms of Use.
+
+4. TRADEMARKS
+   PSK, Fortuna Entertainment Group, and all club names, colours and marks
+   referenced are the property of their respective owners. This prototype is a
+   replica built for a hackathon challenge and asserts no rights over them. No
+   club logo is bundled or redistributed; crests are generated at runtime.
+
+5. NO WARRANTY
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED. IT IS A PROTOTYPE FOR EVALUATION. IT IS NOT CERTIFIED, NOT SECURITY
+   AUDITED, HANDLES NO REAL CUSTOMER DATA AND TAKES NO REAL MONEY.
