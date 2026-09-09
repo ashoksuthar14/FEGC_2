@@ -433,6 +433,15 @@ class SurfaceLabViewModel(private val container: AppContainer) : ViewModel() {
         }
     }
 
+    /** Puts the marketing consent dialog back on the next app open. */
+    fun askMarketingAgain() {
+        container.userStateRepository.resetMarketingConsent()
+        _state.value = _state.value.copy(
+            loyaltyNotice = "Marketing consent reset. It will ask again on the next launch.",
+            lastAction = "Ask consent again",
+        )
+    }
+
     /** Throws the loyalty file away so the demo can be run twice. */
     fun resetLoyalty() {
         viewModelScope.launch {

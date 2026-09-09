@@ -251,6 +251,7 @@ fun SurfaceLabScreen(viewModel: SurfaceLabViewModel, modifier: Modifier = Modifi
                         "Follow two more clubs" to { viewModel.followTwoMoreClubs() },
                         "Grant 5 badges" to { viewModel.grantFiveBadges() },
                         "Reality check now" to { viewModel.realityCheckNow() },
+                        "Ask consent again" to { viewModel.askMarketingAgain() },
                         "Reset loyalty" to { viewModel.resetLoyalty() },
                     ),
                     perRow = 2,

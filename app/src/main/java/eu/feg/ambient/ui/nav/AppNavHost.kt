@@ -78,6 +78,7 @@ import eu.feg.ambient.ambient.surfaces.ProtectionState
 import androidx.compose.runtime.LaunchedEffect
 import eu.feg.ambient.ui.promo.PromoScreen
 import eu.feg.ambient.ui.loyalty.LoyaltyViewModel
+import eu.feg.ambient.ui.consent.MarketingConsentDialog
 import eu.feg.ambient.ui.demo.DemoBubble
 import eu.feg.ambient.BuildConfig
 import eu.feg.ambient.ui.loyalty.MissionsScreen
@@ -120,6 +121,14 @@ fun AppNavHost(
 
     val slip by container.betRepository.slip.collectAsStateWithLifecycle()
     var showMore by remember { mutableStateOf(false) }
+
+    // AFTER THE SYSTEM PERMISSION, NEVER BEFORE IT. Two dialogs stacked on launch is how a
+    // customer learns to dismiss both without reading, and the system one has to come first
+    // because there is no point asking to send offers to somebody who has not let us send
+    // anything. permissionWanted is non-null only while that ask is outstanding.
+    val userState by container.userStateRepository.state.collectAsStateWithLifecycle()
+    val permissionPending by container.surfaceCoordinator.permissionWanted.collectAsStateWithLifecycle()
+    val askMarketing = !userState.marketingConsentAsked && permissionPending == null
 
     // Content files are read once; they never change in Phase 1.
     val content = remember { StaticContent(container) }
@@ -419,6 +428,13 @@ fun AppNavHost(
                 )
             }
         }
+    }
+
+    if (askMarketing) {
+        MarketingConsentDialog(
+            onAccept = { container.userStateRepository.answerMarketingConsent(true) },
+            onDecline = { container.userStateRepository.answerMarketingConsent(false) },
+        )
     }
 
     if (showMore) {

@@ -56,6 +56,16 @@ data class UserState(
     val panicUntil: Instant? = null,
     val limits: Limits = Limits(),
     val consents: Consents = Consents(),
+    /**
+     * Whether the marketing question has been PUT, which is not the same as answered yes.
+     *
+     * Without it the only way to know is that [Consents.offers] is false, and false is also
+     * what "no" looks like -- so a customer who declined would be asked again on the next
+     * launch, and again after that. Re-asking a settled no is nagging, and under GDPR it also
+     * undermines the consent it collects: a yes given to make a dialog stop appearing is not
+     * freely given.
+     */
+    val marketingConsentAsked: Boolean = false,
     /** PRD types this as ClosedRange<LocalTime>, which has no serializer; same two bounds. */
     val quietHours: QuietHours? = null,
     val realityCheckMinutes: Int = 60,

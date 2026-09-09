@@ -31,6 +31,30 @@ class UserStateRepository(private val prefs: SharedPreferences?) {
 
     fun setConsents(consents: Consents) = update { it.copy(consents = consents) }
 
+    /**
+     * Records the answer to the marketing question, whichever way it went.
+     *
+     * Both outcomes mark it asked. A decline is an answer and is respected as one -- the
+     * customer can still turn offers on later under Responsible gaming, on their own initiative
+     * rather than ours.
+     */
+    /**
+     * Puts the marketing question back, for the Surface Lab.
+     *
+     * Demo affordance and labelled as one. It clears the answer as well as the flag, because
+     * re-asking while quietly keeping the previous yes would be the worst of both.
+     */
+    fun resetMarketingConsent() = update {
+        it.copy(consents = it.consents.copy(offers = false), marketingConsentAsked = false)
+    }
+
+    fun answerMarketingConsent(accepted: Boolean) = update {
+        it.copy(
+            consents = it.consents.copy(offers = accepted),
+            marketingConsentAsked = true,
+        )
+    }
+
     fun setLimits(limits: Limits) = update { it.copy(limits = limits) }
 
     fun setRealityCheck(minutes: Int) = update { it.copy(realityCheckMinutes = minutes) }
