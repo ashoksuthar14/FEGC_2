@@ -33,3 +33,11 @@ replay_pid*.log
 # Submission binaries: held by the team, referenced from demo/, not stored in git.
 *.pptx
 *.mp4
+
+# AI assistant working material. Kept on the developer's machine, out of the
+# submission: these are the prompts used to drive the build, not the build.
+# The AI-assistance disclosure the submission requires lives in
+# docs/dependencies.md, which is the right place for it.
+CLAUDE.md
+CLAUDE_CODE_PROMPT*.md
+/Claude outputs/
