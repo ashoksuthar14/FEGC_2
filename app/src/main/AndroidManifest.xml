@@ -63,6 +63,22 @@
         </receiver>
 
 
+        <!--
+          The sixth widget: the same score, dressed entirely in the customer's club. It lives
+          beside the five rather than replacing one of them - see ClubMatchWidget.
+        -->
+        <receiver
+            android:name=".ambient.surfaces.widget.ClubMatchWidgetReceiver"
+            android:exported="false"
+            android:label="@string/widget_club_match_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_club_match_info" />
+        </receiver>
+
         <receiver
             android:name=".ambient.surfaces.widget.ClubWidgetReceiver"
             android:exported="false"

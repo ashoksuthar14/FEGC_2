@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Taller and wider than the other five by default. This card is a poster rather than a
+  readout: at 4x2 the score has to share a cramped box with the header and the timeline, and
+  the whole point of it is the space around the figure.
+-->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="250dp"
+    android:minHeight="150dp"
+    android:targetCellWidth="4"
+    android:targetCellHeight="3"
+    android:resizeMode="horizontal|vertical"
+    android:updatePeriodMillis="0"
+    android:widgetCategory="home_screen"
+    android:description="@string/widget_club_match_description"
+    android:previewLayout="@layout/widget_preview_club_match"
+    android:initialLayout="@layout/glance_default_loading_layout" />

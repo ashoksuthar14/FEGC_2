@@ -19,6 +19,7 @@ enum class AmbientWidgetKind(val receiver: Class<out android.content.BroadcastRe
     DIGEST(DigestWidgetReceiver::class.java),
     SEASON(SeasonWidgetReceiver::class.java),
     PROTECTION(ProtectionWidgetReceiver::class.java),
+    CLUB_MATCH(ClubMatchWidgetReceiver::class.java),
 }
 
 /**
@@ -62,6 +63,7 @@ object WidgetRefresher {
             AmbientWidgetKind.DIGEST -> DigestWidget()
             AmbientWidgetKind.SEASON -> SeasonWidget()
             AmbientWidgetKind.PROTECTION -> ProtectionWidget()
+            AmbientWidgetKind.CLUB_MATCH -> ClubMatchWidget()
         }
         runCatching { widget.updateAll(context) }
             .onFailure { Log.w(TAG, "could not refresh " + which, it) }

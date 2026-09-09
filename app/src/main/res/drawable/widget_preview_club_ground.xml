@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The picker tile's ground, standing in for ClubBackdrop.
+
+  The real card paints a blurred crest into the club's colours at runtime; the launcher
+  inflates this itself, with no Glance and no bitmaps, so the closest honest approximation is
+  a diagonal gradient in the same darkened club hue. Hajduk's blue, because that is the club
+  the preview names.
+-->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:startColor="#FF14284B"
+                android:endColor="#FF0B0B0E"
+                android:angle="315" />
+            <corners android:radius="26dp" />
+        </shape>
+    </item>
+</layer-list>

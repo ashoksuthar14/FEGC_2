@@ -4,6 +4,8 @@
     <!-- Widget picker: the label and the one line under it are all a customer reads before
          deciding, so they say what the widget does rather than naming a feature. -->
     <string name="widget_live_label">PSK · Live slip</string>
+    <string name="widget_club_match_label">PSK · My club, live</string>
+    <string name="widget_club_match_description">The match your club is playing, in its own colours.</string>
     <string name="widget_club_label">PSK · My club</string>
     <string name="widget_club_description">Your club, its next fixture and last result.</string>
     <string name="widget_digest_label">PSK · While you were away</string>
