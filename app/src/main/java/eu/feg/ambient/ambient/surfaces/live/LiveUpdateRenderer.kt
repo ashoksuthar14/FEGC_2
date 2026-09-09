@@ -68,6 +68,9 @@ class LiveUpdateRenderer(
             ProtectionState.CALM -> buildCalm(state)
             else -> buildNormal(state)
         }
+        // Attached on every post, not once: the score changes, and a public version frozen at
+        // kick-off would show 0-0 on the lock screen for ninety minutes.
+        builder.setPublicVersion(publicVersion(Channels.LIVE_SLIP, state))
         notify(LiveSlipService.NOTIFICATION_ID, builder)
     }
 
@@ -86,6 +89,7 @@ class LiveUpdateRenderer(
             .setOngoing(false)
             .setRequestPromotedOngoing(false)
             .setAutoCancel(true)
+            .setPublicVersion(publicVersion(Channels.LIVE_SLIP, state))
         // TODO(step 14E): auto-dismiss the settled card after 30s instead of leaving it until
         //  the user swipes. Needs a scheduled cancel that survives process death.
         notify(LiveSlipService.NOTIFICATION_ID, builder)
@@ -274,6 +278,19 @@ class LiveUpdateRenderer(
         return NotificationCompat.Builder(context, channelId)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setCategory(NotificationCompat.CATEGORY_EVENT)
+            // PRIVATE, WITH A PUBLIC VERSION SUPPLIED. The two halves have to go together.
+            //
+            // VISIBILITY_PRIVATE means "show this on every lock screen, but conceal the
+            // sensitive part on a secure one". Without a public version the system has
+            // nothing to substitute and falls back to its own redacted placeholder -- the app
+            // name and no card -- which is why the Live Update was not appearing on the lock
+            // screen. It looked correct in the shade and vanished exactly where the product
+            // most needs it.
+            //
+            // The fix is not to make it PUBLIC. A score on a locked phone is fine; the slip
+            // is not, and "1/3 legs home" tells anyone who picks the phone up that its owner
+            // has money on the game. So the public version keeps the football and drops the
+            // bet -- see [publicVersion].
             .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
             .setOnlyAlertOnce(true)
             // N6: the accent, and the crest. setColor tints the small icon and the accent
@@ -285,6 +302,32 @@ class LiveUpdateRenderer(
             // meant to decorate.
             .setColor(theme.primary.toArgb())
             .setLargeIcon(CrestBitmap.of(theme))
+    }
+
+    /**
+     * What a secure lock screen shows instead: the match, and nothing about the slip.
+     *
+     * Deliberately plain. No ProgressStyle, no actions, no narration -- the segments encode
+     * how many legs are home, the Listen button reads a sentence about the customer's picks,
+     * and the narrator's line is written to somebody who has a bet on. All three are the
+     * private half. What survives is the fixture and the score, which is a fact about a
+     * football match and belongs to nobody.
+     *
+     * The same channel and the same small icon, so the two cards read as one thing seen at
+     * two levels of trust rather than as two different notifications.
+     */
+    private fun publicVersion(channelId: String, state: SlipSurfaceState): android.app.Notification {
+        val theme = clubTheme()
+        val score = scoreLine(state)
+        return NotificationCompat.Builder(context, channelId)
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setCategory(NotificationCompat.CATEGORY_EVENT)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setOnlyAlertOnce(true)
+            .setColor(theme.primary.toArgb())
+            .setContentTitle(score ?: (state.activeMatch ?: "Match in progress"))
+            .setContentText(state.minute?.let { it.toString() + "'" } ?: "")
+            .build()
     }
 
     private fun notify(id: Int, builder: NotificationCompat.Builder) {
