@@ -13,25 +13,26 @@ import eu.feg.ambient.ambient.identity.ClubTheme
 import eu.feg.ambient.ambient.identity.CrestBitmap
 
 /**
- * The ground the club card sits on: the club's own crest, blurred into a wash of its colours.
+ * The ground the club card sits on: the club's own crest, over a wash of its colours.
  *
  * WHY A BITMAP. Glance has no blur, no gradient and no layering worth the name -- a widget's
  * background is one drawable and nothing else. So the whole ground is painted here in three
  * passes and handed over as a single image: the club's colour as a diagonal gradient, its
- * crest blown up past the edges and blurred until it reads as texture rather than as a badge,
- * and a vignette that pulls the corners down so white text stays legible over the bright half.
+ * crest blown up past the right edge, and a vignette that pulls the corners down so white
+ * text stays legible over the bright half.
  *
- * WHY BLURRED RATHER THAN PLACED. A crest at full strength behind a scoreline is a sticker on
- * a window: the eye keeps trying to read it and the score has to fight it. Blurred to a
- * suggestion, it stops competing and becomes what it should have been all along, which is
- * atmosphere. It is also the honest use of a GENERATED crest -- see CrestBitmap, which draws
- * a badge rather than shipping a trademark, and a drawn badge survives being enlarged eight
- * times precisely because it has no fine detail to lose.
+ * THE CREST IS SHARP, and that is a deliberate reversal. It was blurred first, on the theory
+ * that a badge at full strength behind a scoreline is a sticker on a window the eye keeps
+ * trying to read. That is true of a photograph; it is not true of THIS badge. CrestBitmap
+ * draws a flat shield -- two colours, one pattern, two initials, no gradients and no fine
+ * detail -- so enlarged it stays a clean shape rather than becoming noise, and blurring it
+ * only threw away the one thing that identifies the club: the pattern. Slavia's halves and a
+ * checkerboard are indistinguishable once smeared.
  *
- * BLUR WITHOUT A BLUR API. RenderEffect is API 31 and RenderScript is deprecated, so this
- * does the old trick instead: scale the crest down to a thumbnail and back up with bilinear
- * filtering, twice. Two passes of that is a box blur in everything but name, it runs in a
- * millisecond, and it works on every device this app supports.
+ * So the crest is drawn at the size it appears, from CrestBitmap's own cache, and held back
+ * with alpha rather than with blur. Alpha keeps the edges honest; blur destroyed the content.
+ * The score stays dominant because the crest is anchored off-centre and bleeds out of frame,
+ * not because it has been made illegible.
  *
  * Cached per club and size, like CrestBitmap and for the same reason: the widget redraws on
  * every tick of a live match, and a fresh 400x200 bitmap each time is a steady drip of
@@ -81,7 +82,7 @@ object ClubBackdrop {
     }
 
     /**
-     * The crest, enlarged past the right edge and blurred.
+     * The crest, enlarged past the right edge.
      *
      * Off-centre and bleeding out of frame on purpose: a crest centred behind a centred score
      * fights it for the same axis, and one that fits inside the card reads as a watermark
@@ -89,15 +90,16 @@ object ClubBackdrop {
      * home team's name is in front of it.
      */
     private fun paintCrestWash(canvas: Canvas, theme: ClubTheme, w: Int, h: Int) {
-        val crest = CrestBitmap.of(theme, CREST_SOURCE_PX)
-        val blurred = blur(crest)
-        val size = (h * CREST_SCALE).toInt()
+        val size = (h * CREST_SCALE).toInt().coerceIn(MIN_PX, MAX_PX)
+        // Asked for at the size it will be drawn, so no scaling happens at all. CrestBitmap
+        // caches per club AND size, so this costs one badge per widget geometry.
+        val crest = CrestBitmap.of(theme, size)
         val left = (w * CREST_ANCHOR_X).toInt()
         val top = ((h - size) / 2f).toInt()
         val paint = Paint(Paint.FILTER_BITMAP_FLAG).apply { alpha = CREST_ALPHA }
         canvas.drawBitmap(
-            blurred,
-            Rect(0, 0, blurred.width, blurred.height),
+            crest,
+            Rect(0, 0, crest.width, crest.height),
             Rect(left, top, left + size, top + size),
             paint,
         )
@@ -106,10 +108,10 @@ object ClubBackdrop {
     /**
      * A radial darkening from the centre out.
      *
-     * The blurred crest leaves bright patches wherever the club's lighter colour landed, and
-     * text over those loses contrast in exactly the unpredictable way a generated background
-     * always does. The vignette is the cheap insurance: it costs the design nothing and takes
-     * the worst case off the table.
+     * The crest's lighter colour still lands wherever the pattern puts it, and white text over
+     * Varazdin's yellow or Hajduk's white would lose contrast. Lighter than it was when the
+     * crest was a blur, because a sharp badge at a known alpha is a predictable background
+     * rather than an unpredictable one -- but not gone, because the clubs are not all dark.
      */
     private fun paintVignette(canvas: Canvas, w: Int, h: Int) {
         val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -121,16 +123,6 @@ object ClubBackdrop {
             )
         }
         canvas.drawRect(0f, 0f, w.toFloat(), h.toFloat(), paint)
-    }
-
-    /** Down to a thumbnail and back up, twice. See the class note on why this and not RenderEffect. */
-    private fun blur(source: Bitmap): Bitmap {
-        var out = source
-        repeat(BLUR_PASSES) {
-            val small = Bitmap.createScaledBitmap(out, THUMB_PX, THUMB_PX, true)
-            out = Bitmap.createScaledBitmap(small, source.width, source.height, true)
-        }
-        return out
     }
 
     /** Toward black by [amount], keeping the hue. */
@@ -146,16 +138,28 @@ object ClubBackdrop {
     private const val GROUND_TOP = 0.62f
     private const val GROUND_BOTTOM = 0.86f
 
-    private const val CREST_SOURCE_PX = 192
-    private const val CREST_SCALE = 1.45f
-    private const val CREST_ANCHOR_X = 0.58f
-    private const val CREST_ALPHA = 56
+    private const val CREST_SCALE = 1.35f
+    private const val CREST_ANCHOR_X = 0.60f
 
-    private const val THUMB_PX = 12
-    private const val BLUR_PASSES = 2
+    /**
+     * Higher than it was when the crest was blurred.
+     *
+     * A blur spreads a badge into a haze that reads at almost any strength; a sharp one at the
+     * same alpha looks like a printing error. This is the point where the pattern is plainly
+     * legible and the score still wins the card.
+     */
+    private const val CREST_ALPHA = 104
 
     private const val VIGNETTE_INNER = 0x00000000
-    private const val VIGNETTE_OUTER = 0x9E000000.toInt()
+
+    /**
+     * Lighter than it was, for the same reason.
+     *
+     * The vignette existed to rescue contrast from a blur's unpredictable bright patches. A
+     * sharp crest at a known alpha has no such patches, so the darkening can come off and let
+     * the badge show.
+     */
+    private const val VIGNETTE_OUTER = 0x7A000000.toInt()
 
     private const val MIN_PX = 120
     private const val MAX_PX = 1400
