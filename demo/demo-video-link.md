@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Link** | _<!-- TODO: paste the video URL here before submitting -->_ |
+| **Link** | https://youtu.be/aLRzElPIAgY _<!-- TODO: paste the video URL here before submitting -->_ |
 | **Length** | ~60 seconds |
 | **Access** | Ensure the link is viewable by the designated T-Hub / FEG reviewer accounts |
 
